@@ -1,13 +1,9 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.20;
+pragma solidity ^0.8.25;
 
 import "@flarenetwork/flare-periphery-contracts/coston2/ContractRegistry.sol";
 import "@flarenetwork/flare-periphery-contracts/coston2/FtsoV2Interface.sol";
 
-/**
- * @title ClaimsManager
- * @notice Manages insurance claims with FTSO price-based triggers
- */
 contract ClaimsManager {
     FtsoV2Interface internal ftsoV2;
 
@@ -15,9 +11,9 @@ contract ClaimsManager {
         uint256 id;
         address beneficiary;
         uint256 payoutAmount;
-        bytes21 feedId; // Price feed (e.g., ETH/USD)
-        uint256 triggerPrice; // Price threshold
-        bool isPriceAbove; // true = trigger when price > threshold
+        bytes21 feedId;
+        uint256 triggerPrice;
+        bool isPriceAbove;
         uint256 createdAt;
         bool executed;
     }
@@ -41,13 +37,9 @@ contract ClaimsManager {
     );
 
     constructor() {
-        // Get FTSO v2 contract from Flare registry
         ftsoV2 = ContractRegistry.getFtsoV2();
     }
 
-    /**
-     * @notice Create a new insurance claim
-     */
     function createClaim(
         bytes21 _feedId,
         uint256 _triggerPrice,
@@ -79,29 +71,24 @@ contract ClaimsManager {
         );
     }
 
-    /**
-     * @notice Execute a claim if price condition is met
-     */
     function executeClaim(uint256 _claimId) external {
         Claim storage claim = claims[_claimId];
         require(!claim.executed, "Already executed");
         require(claim.payoutAmount > 0, "Claim does not exist");
 
-        // Get current price from FTSO
-        (uint256 feedValue, int8 decimals, uint64 timestamp) = ftsoV2
-            .getFeedById(claim.feedId);
+        // Skip decimals with ,
+        (uint256 feedValue, , uint64 timestamp) = ftsoV2.getFeedById(
+            claim.feedId
+        );
 
-        // Check if price condition is met
         bool conditionMet = claim.isPriceAbove
             ? feedValue >= claim.triggerPrice
             : feedValue <= claim.triggerPrice;
 
         require(conditionMet, "Price condition not met");
 
-        // Mark as executed (reentrancy protection)
         claim.executed = true;
 
-        // Transfer payout
         (bool success, ) = payable(claim.beneficiary).call{
             value: claim.payoutAmount
         }("");
@@ -110,19 +97,14 @@ contract ClaimsManager {
         emit ClaimExecuted(_claimId, feedValue, timestamp);
     }
 
-    /**
-     * @notice Get claim details
-     */
     function getClaim(uint256 _claimId) external view returns (Claim memory) {
         return claims[_claimId];
     }
 
-    /**
-     * @notice Get current price (for testing)
-     */
+    // Removed 'view' keyword
     function getCurrentPrice(
         bytes21 _feedId
-    ) external view returns (uint256 price, int8 decimals, uint64 timestamp) {
+    ) external returns (uint256 price, int8 decimals, uint64 timestamp) {
         return ftsoV2.getFeedById(_feedId);
     }
 }

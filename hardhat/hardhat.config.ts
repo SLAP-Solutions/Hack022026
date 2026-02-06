@@ -5,19 +5,9 @@ import * as dotenv from "dotenv";
 dotenv.config();
 
 const config: HardhatUserConfig = {
-  solidity: {
-    version: "0.8.20",
-    settings: {
-      optimizer: {
-        enabled: true,
-        runs: 200,
-      },
-      evmVersion: "cancun"
-    },
-  },
+  solidity: "0.8.25",
   networks: {
     coston2: {
-      type: "http",  // ← Changed to "http"
       url: "https://coston2-api.flare.network/ext/C/rpc",
       accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
       chainId: 114,
