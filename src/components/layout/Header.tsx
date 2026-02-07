@@ -8,10 +8,12 @@ export function Header() {
             <div className="flex h-16 items-center justify-between px-6 w-full">
                 <div className="flex items-center gap-2">
                     <div className="flex items-center gap-2">
-                        <div className="h-6 w-6 bg-primary rounded-full animate-pulse" />
-                        <span className="text-xl font-bold tracking-tight text-foreground">
-                            SLAPSure
-                        </span>
+                        <a href="/landing" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
+                            <div className="h-6 w-6 bg-primary rounded-full animate-pulse" />
+                            <span className="text-xl font-bold tracking-tight text-foreground">
+                                SLAPSure
+                            </span>
+                        </a>
                     </div>
                 </div>
 
