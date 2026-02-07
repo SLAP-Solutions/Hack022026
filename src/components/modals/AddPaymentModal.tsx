@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { usePaymentModal } from "@/stores/usePaymentModal";
 import { useClaimsStore } from "@/stores/useClaimsStore";
+import { FEEDS } from "@/config/feeds";
 import {
     Dialog,
     DialogContent,
@@ -32,7 +33,7 @@ export function AddPaymentModal() {
     const [cryptoFeedId, setCryptoFeedId] = useState("");
     const [stopLoss, setStopLoss] = useState("");
     const [takeProfit, setTakeProfit] = useState("");
-    const [collateral, setCollateral] = useState("");
+    // Collateral removed from UI, defaulting to 0
     const [durationDays, setDurationDays] = useState("30");
 
     const handleSubmit = (e: React.FormEvent) => {
@@ -51,7 +52,7 @@ export function AddPaymentModal() {
             cryptoFeedId: cryptoFeedId || "0x...",
             stopLossPrice: BigInt(Math.floor(parseFloat(stopLoss) * 100)),
             takeProfitPrice: BigInt(Math.floor(parseFloat(takeProfit) * 100)),
-            collateralAmount: BigInt(parseFloat(collateral || "0") * 1e18), // Mock FLR conversion
+            collateralAmount: BigInt(0), // Defaulting to 0 since removed from UI
             createdAt: BigInt(Math.floor(Date.now() / 1000)),
             expiresAt: BigInt(Math.floor(Date.now() / 1000) + (parseInt(durationDays) * 86400)),
             executed: false,
@@ -74,7 +75,6 @@ export function AddPaymentModal() {
         setCryptoFeedId("");
         setStopLoss("");
         setTakeProfit("");
-        setCollateral("");
         setDurationDays("30");
         closeModal();
     };
@@ -103,7 +103,7 @@ export function AddPaymentModal() {
                             />
                         </div>
 
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 gap-4">
                             <div className="grid gap-2">
                                 <Label htmlFor="amount">Amount (USD)</Label>
                                 <Input
@@ -116,19 +116,9 @@ export function AddPaymentModal() {
                                     required
                                 />
                             </div>
-                            <div className="grid gap-2">
-                                <Label htmlFor="collateral">Collateral (FLR)</Label>
-                                <Input
-                                    id="collateral"
-                                    type="number"
-                                    step="0.1"
-                                    placeholder="500"
-                                    value={collateral}
-                                    onChange={(e) => setCollateral(e.target.value)}
-                                    required
-                                />
-                            </div>
                         </div>
+
+
 
                         <div className="grid gap-2">
                             <Label htmlFor="feed">Crypto Feed ID (FTSO)</Label>
@@ -137,9 +127,11 @@ export function AddPaymentModal() {
                                     <SelectValue placeholder="Select asset feed" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="0x01...">BTC/USD</SelectItem>
-                                    <SelectItem value="0x02...">ETH/USD</SelectItem>
-                                    <SelectItem value="0x03...">FLR/USD</SelectItem>
+                                    {FEEDS.map((feed) => (
+                                        <SelectItem key={feed.id} value={feed.id}>
+                                            {feed.name}
+                                        </SelectItem>
+                                    ))}
                                 </SelectContent>
                             </Select>
                         </div>

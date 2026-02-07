@@ -11,6 +11,7 @@ import { AddPaymentModal } from "@/components/modals/AddPaymentModal";
 import { useClaimsStore } from "@/stores/useClaimsStore";
 import { Slider } from "@/components/ui/slider";
 import { cn } from "@/lib/utils";
+import { getFeedName, getFeedSymbol } from "@/config/feeds";
 
 const statusConfig = {
     pending: { color: "bg-amber-100 text-amber-800 border-amber-300" },
@@ -205,14 +206,15 @@ export default function ClaimDetailPage() {
                                                 </div>
 
                                                 <div className="grid grid-cols-2 gap-4">
+
                                                     <div>
                                                         <div className="text-xs text-muted-foreground mb-1">Amount</div>
                                                         <div className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-blue-700 bg-clip-text text-transparent">
                                                             ${amount.toFixed(2)}
                                                         </div>
-                                                        <div className="text-xs text-muted-foreground mt-1">
-                                                            Feed: {payment.cryptoFeedId?.slice(0, 8)}...
-                                                        </div>
+                                                        <Badge variant="outline" className="mt-1 text-[10px] h-5">
+                                                            {getFeedName(payment.cryptoFeedId) || "Unknown Feed"}
+                                                        </Badge>
                                                     </div>
                                                     <div>
                                                         <div className="text-xs text-muted-foreground mb-1">Receiver</div>
