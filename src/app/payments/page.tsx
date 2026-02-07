@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useWallet } from "@/hooks/useWallet";
 import { usePayments } from "@/hooks/usePayments";
@@ -6,6 +6,8 @@ import { CreatePaymentForm } from "@/components/payments/CreatePaymentForm";
 import { PaymentsList } from "@/components/payments/PaymentsList";
 import { TransactionHistory } from "@/components/payments/TransactionHistory";
 import { ConnectWallet } from "@/components/wallet/ConnectWallet";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Wallet } from "lucide-react";
 
 export default function PaymentsPage() {
     const { address, isConnected } = useWallet();
@@ -13,24 +15,34 @@ export default function PaymentsPage() {
 
     if (!isConnected) {
         return (
-            <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-                <div className="text-center">
-                    <h1 className="text-3xl font-bold mb-4">Payment Dashboard</h1>
-                    <p className="text-gray-600 mb-6">Connect your wallet to manage payments</p>
-                    <ConnectWallet />
+            <div className="max-w-7xl mx-auto space-y-6">
+                <div className="flex flex-col items-center justify-center min-h-[60vh]">
+                    <Card className="w-full max-w-md text-center">
+                        <CardHeader>
+                            <div className="mx-auto w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mb-4">
+                                <Wallet className="w-6 h-6 text-primary" />
+                            </div>
+                            <CardTitle className="text-2xl font-serif">Payment Dashboard</CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            <p className="text-muted-foreground">Connect your wallet to manage payments</p>
+                            <ConnectWallet />
+                        </CardContent>
+                    </Card>
                 </div>
             </div>
         );
     }
 
     return (
-        <div className="min-h-screen bg-gray-50 p-6">
-            <div className="max-w-7xl mx-auto">
-                <div className="flex justify-between items-center mb-6">
-                    <h1 className="text-3xl font-bold">Payment Dashboard</h1>
-                    <div className="text-sm text-gray-600">
-                        {address?.slice(0, 6)}...{address?.slice(-4)}
-                    </div>
+        <div className="max-w-7xl mx-auto space-y-6">
+            {/* Header */}
+            <div className="flex justify-between items-center">
+                <div>
+                    <h1 className="text-3xl font-bold font-serif">
+                        Payment Dashboard
+                    </h1>
+                    <p className="text-muted-foreground mt-1">Create and manage blockchain payments</p>
                 </div>
 
                 <div className="grid gap-6 lg:grid-cols-3 mb-6">
@@ -41,12 +53,44 @@ export default function PaymentsPage() {
                         <h2 className="text-2xl font-bold mb-4">Your Payments</h2>
                         <PaymentsList payments={payments} isLoading={isLoading} onRefresh={refetch} />
                     </div>
-                </div>
-
-                <div className="mt-6">
-                    <TransactionHistory />
+                <div className="text-sm text-muted-foreground font-mono bg-muted px-3 py-1.5 rounded-md">
+                    {address?.slice(0, 6)}...{address?.slice(-4)}
                 </div>
             </div>
+
+            {/* Main Content Grid */}
+            <div className="grid gap-6 lg:grid-cols-3">
+                <div className="lg:col-span-1">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Create Payment</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <CreatePaymentForm />
+                        </CardContent>
+                    </Card>
+                </div>
+                <div className="lg:col-span-2 space-y-6">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Your Payments</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <PaymentsList payments={payments} isLoading={isLoading} />
+                        </CardContent>
+                    </Card>
+                </div>
+            </div>
+
+            {/* Transaction History */}
+            <Card>
+                <CardHeader>
+                    <CardTitle>Transaction History</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <TransactionHistory />
+                </CardContent>
+            </Card>
         </div>
     );
 }

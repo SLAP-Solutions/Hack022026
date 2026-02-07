@@ -31,7 +31,7 @@ interface ClaimCardProps {
 
 const statusConfig = {
     pending: { color: "bg-amber-100 text-amber-800 border-amber-300", icon: Clock },
-    processing: { color: "bg-blue-100 text-blue-800 border-blue-300", icon: Clock },
+    processing: { color: "bg-primary/20 text-primary border-primary/40", icon: Clock },
     approved: { color: "bg-green-100 text-green-800 border-green-300", icon: CheckCircle },
     settled: { color: "bg-emerald-100 text-emerald-800 border-emerald-300", icon: CheckCircle },
     rejected: { color: "bg-red-100 text-red-800 border-red-300", icon: XCircle },
