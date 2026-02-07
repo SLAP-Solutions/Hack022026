@@ -32,7 +32,7 @@ jobs:
 
       - name: Install npm dependencies
         working-directory: ${{ env.WORKING_DIR }}
-        run: npm install
+        run: npm ci
 
       - name: Build Next.js application
         working-directory: ${{ env.WORKING_DIR }}
@@ -44,7 +44,11 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: nextjs-build
-          path: ${{ env.WORKING_DIR }}/out
+          path: |
+            ${{ env.WORKING_DIR }}/.next
+            ${{ env.WORKING_DIR }}/public
+            ${{ env.WORKING_DIR }}/package.json
+            ${{ env.WORKING_DIR }}/next.config.ts
           retention-days: 1
 
   terraform-apply:
@@ -105,7 +109,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: nextjs-build
-          path: build-output
+          path: ${{ env.WORKING_DIR }}
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
@@ -143,18 +147,18 @@ jobs:
           azure_static_web_apps_api_token: ${{ steps.get-swa.outputs.swa_api_key }}
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           action: 'upload'
-          app_location: 'build-output'
+          app_location: '${{ env.WORKING_DIR }}'
           skip_app_build: true
           skip_api_build: true
 
       - name: Health Check
         run: |
-          echo "Waiting for Static Web App to update..."
-          sleep 20
+          echo "Waiting for Static Web App to deploy..."
+          sleep 30
           SWA_URL="https://${{ steps.get-swa.outputs.swa_hostname }}"
           echo "Checking deployment at: $SWA_URL"
           
-          for i in {1..10}; do
+          for i in {1..15}; do
             HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" $SWA_URL)
             if [ $HTTP_CODE -eq 200 ]; then
               echo "✅ Health check passed! (HTTP $HTTP_CODE)"
@@ -162,10 +166,10 @@ jobs:
               exit 0
             fi
             echo "⏳ Attempt $i: HTTP $HTTP_CODE - Waiting for deployment to propagate..."
-            sleep 10
+            sleep 15
           done
           
-          echo "⚠️ Health check did not return 200 OK after 10 attempts"
+          echo "⚠️ Health check did not return 200 OK after 15 attempts"
           echo "Note: Static Web Apps may take a few minutes to fully propagate"
           echo "Check manually at: $SWA_URL"
 
