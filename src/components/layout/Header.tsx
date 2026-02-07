@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { ConnectWallet } from "../wallet/ConnectWallet";
+import { Home, FileText, TrendingUp } from "lucide-react";
 
 export function Header() {
     return (
@@ -15,9 +16,18 @@ export function Header() {
                 </div>
 
                 <nav className="hidden md:flex items-center gap-6 text-sm font-medium text-muted-foreground absolute left-1/2 -translate-x-1/2">
-                    <a href="/" className="hover:text-primary transition-colors">Home</a>
-                    <a href="/claims" className="hover:text-primary transition-colors">Claims</a>
-                    <a href="/prices" className="hover:text-primary transition-colors">Prices</a>
+                    <a href="/" className="flex items-center gap-2 hover:text-primary transition-colors">
+                        <Home className="w-4 h-4" />
+                        Home
+                    </a>
+                    <a href="/claims" className="flex items-center gap-2 hover:text-primary transition-colors">
+                        <FileText className="w-4 h-4" />
+                        Claims
+                    </a>
+                    <a href="/prices" className="flex items-center gap-2 hover:text-primary transition-colors">
+                        <TrendingUp className="w-4 h-4" />
+                        Prices
+                    </a>
                 </nav>
 
                 <div className="flex items-center gap-2">
