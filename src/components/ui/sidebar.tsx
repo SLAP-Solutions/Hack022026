@@ -223,7 +223,7 @@ const Sidebar = React.forwardRef<
               ? (side === "left" ? "left-[calc(var(--sidebar-width)*-1)]" : "right-[calc(var(--sidebar-width)*-1)]") 
               : "",
             state === "collapsed" && collapsible === "icon" ? "w-[var(--sidebar-width-icon)]" : "",
-            variant === "sidebar" && (side === "left" ? "border-r" : "border-l"),
+            variant === "sidebar" && (side === "left" ? "" : "border-l"),
             className
           )}
           {...props}
