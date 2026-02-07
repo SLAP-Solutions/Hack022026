@@ -231,6 +231,11 @@
       },
       {
         "internalType": "uint256",
+        "name": "createdAtPrice",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
         "name": "expiresAt",
         "type": "uint256"
       },
@@ -428,6 +433,11 @@
           {
             "internalType": "uint256",
             "name": "createdAt",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "createdAtPrice",
             "type": "uint256"
           },
           {
