@@ -10,41 +10,23 @@
       {
         "indexed": true,
         "internalType": "uint256",
-        "name": "claimId",
+        "name": "paymentId",
         "type": "uint256"
       },
       {
         "indexed": true,
         "internalType": "address",
-        "name": "beneficiary",
+        "name": "payer",
         "type": "address"
       },
       {
         "indexed": false,
         "internalType": "uint256",
-        "name": "payoutAmount",
+        "name": "refundedAmount",
         "type": "uint256"
-      },
-      {
-        "indexed": false,
-        "internalType": "bytes21",
-        "name": "feedId",
-        "type": "bytes21"
-      },
-      {
-        "indexed": false,
-        "internalType": "uint256",
-        "name": "triggerPrice",
-        "type": "uint256"
-      },
-      {
-        "indexed": false,
-        "internalType": "bool",
-        "name": "isPriceAbove",
-        "type": "bool"
       }
     ],
-    "name": "ClaimCreated",
+    "name": "ClaimPaymentCancelled",
     "type": "event"
   },
   {
@@ -53,13 +35,86 @@
       {
         "indexed": true,
         "internalType": "uint256",
-        "name": "claimId",
+        "name": "paymentId",
+        "type": "uint256"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "payer",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "receiver",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "usdAmount",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "bytes21",
+        "name": "cryptoFeedId",
+        "type": "bytes21"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "stopLossPrice",
         "type": "uint256"
       },
       {
         "indexed": false,
         "internalType": "uint256",
-        "name": "currentPrice",
+        "name": "takeProfitPrice",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "expiresAt",
+        "type": "uint256"
+      }
+    ],
+    "name": "ClaimPaymentCreated",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "paymentId",
+        "type": "uint256"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "executor",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "executedPrice",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "paidAmount",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "refundedAmount",
         "type": "uint256"
       },
       {
@@ -69,108 +124,18 @@
         "type": "uint256"
       }
     ],
-    "name": "ClaimExecuted",
+    "name": "ClaimPaymentExecuted",
     "type": "event"
   },
   {
-    "inputs": [],
-    "name": "claimCounter",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
     "inputs": [
       {
         "internalType": "uint256",
-        "name": "",
+        "name": "_paymentId",
         "type": "uint256"
       }
     ],
-    "name": "claims",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "id",
-        "type": "uint256"
-      },
-      {
-        "internalType": "address",
-        "name": "beneficiary",
-        "type": "address"
-      },
-      {
-        "internalType": "uint256",
-        "name": "payoutAmount",
-        "type": "uint256"
-      },
-      {
-        "internalType": "bytes21",
-        "name": "feedId",
-        "type": "bytes21"
-      },
-      {
-        "internalType": "uint256",
-        "name": "triggerPrice",
-        "type": "uint256"
-      },
-      {
-        "internalType": "bool",
-        "name": "isPriceAbove",
-        "type": "bool"
-      },
-      {
-        "internalType": "uint256",
-        "name": "createdAt",
-        "type": "uint256"
-      },
-      {
-        "internalType": "bool",
-        "name": "executed",
-        "type": "bool"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "bytes21",
-        "name": "_feedId",
-        "type": "bytes21"
-      },
-      {
-        "internalType": "uint256",
-        "name": "_triggerPrice",
-        "type": "uint256"
-      },
-      {
-        "internalType": "bool",
-        "name": "_isPriceAbove",
-        "type": "bool"
-      }
-    ],
-    "name": "createClaim",
-    "outputs": [],
-    "stateMutability": "payable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "_claimId",
-        "type": "uint256"
-      }
-    ],
-    "name": "executeClaim",
+    "name": "cancelClaimPayment",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
@@ -179,11 +144,181 @@
     "inputs": [
       {
         "internalType": "uint256",
-        "name": "_claimId",
+        "name": "",
         "type": "uint256"
       }
     ],
-    "name": "getClaim",
+    "name": "claimPayments",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "id",
+        "type": "uint256"
+      },
+      {
+        "internalType": "address",
+        "name": "payer",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "receiver",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "usdAmount",
+        "type": "uint256"
+      },
+      {
+        "internalType": "bytes21",
+        "name": "cryptoFeedId",
+        "type": "bytes21"
+      },
+      {
+        "internalType": "uint256",
+        "name": "stopLossPrice",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "takeProfitPrice",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "collateralAmount",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "createdAt",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "expiresAt",
+        "type": "uint256"
+      },
+      {
+        "internalType": "bool",
+        "name": "executed",
+        "type": "bool"
+      },
+      {
+        "internalType": "uint256",
+        "name": "executedAt",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "executedPrice",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "paidAmount",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_receiver",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_usdAmount",
+        "type": "uint256"
+      },
+      {
+        "internalType": "bytes21",
+        "name": "_cryptoFeedId",
+        "type": "bytes21"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_stopLossPrice",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_takeProfitPrice",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_expiryDays",
+        "type": "uint256"
+      }
+    ],
+    "name": "createClaimPayment",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "paymentId",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "payable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_paymentId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_estimatedPrice",
+        "type": "uint256"
+      },
+      {
+        "internalType": "int8",
+        "name": "_decimals",
+        "type": "int8"
+      }
+    ],
+    "name": "estimatePayoutAmount",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "estimatedAmount",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_paymentId",
+        "type": "uint256"
+      }
+    ],
+    "name": "executeClaimPayment",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_paymentId",
+        "type": "uint256"
+      }
+    ],
+    "name": "getClaimPayment",
     "outputs": [
       {
         "components": [
@@ -194,28 +329,38 @@
           },
           {
             "internalType": "address",
-            "name": "beneficiary",
+            "name": "payer",
+            "type": "address"
+          },
+          {
+            "internalType": "address",
+            "name": "receiver",
             "type": "address"
           },
           {
             "internalType": "uint256",
-            "name": "payoutAmount",
+            "name": "usdAmount",
             "type": "uint256"
           },
           {
             "internalType": "bytes21",
-            "name": "feedId",
+            "name": "cryptoFeedId",
             "type": "bytes21"
           },
           {
             "internalType": "uint256",
-            "name": "triggerPrice",
+            "name": "stopLossPrice",
             "type": "uint256"
           },
           {
-            "internalType": "bool",
-            "name": "isPriceAbove",
-            "type": "bool"
+            "internalType": "uint256",
+            "name": "takeProfitPrice",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "collateralAmount",
+            "type": "uint256"
           },
           {
             "internalType": "uint256",
@@ -223,12 +368,32 @@
             "type": "uint256"
           },
           {
+            "internalType": "uint256",
+            "name": "expiresAt",
+            "type": "uint256"
+          },
+          {
             "internalType": "bool",
             "name": "executed",
             "type": "bool"
+          },
+          {
+            "internalType": "uint256",
+            "name": "executedAt",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "executedPrice",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "paidAmount",
+            "type": "uint256"
           }
         ],
-        "internalType": "struct ClaimsManager.Claim",
+        "internalType": "struct ClaimPayments.ClaimPayment",
         "name": "",
         "type": "tuple"
       }
@@ -263,6 +428,51 @@
       }
     ],
     "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "getTotalPayments",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_paymentId",
+        "type": "uint256"
+      }
+    ],
+    "name": "isPaymentExecutable",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "executable",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "paymentCounter",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
     "type": "function"
   }
 ]
