@@ -1,6 +1,6 @@
-﻿"use client";
+"use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useContract, ClaimPayment } from "./useContract";
 import { useWallet } from "./useWallet";
 import { FEED_IDS } from "@/lib/contract/constants";
@@ -18,63 +18,100 @@ export interface ClaimPaymentWithPrice extends ClaimPayment {
 
 export function usePayments() {
     const { address } = useWallet();
-    const { getTotalPayments, getClaimPayment, getCurrentPrice } = useContract();
+    const contract = useContract();
     const [payments, setPayments] = useState<ClaimPaymentWithPrice[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
-
-    const fetchPayments = async () => {
-        if (!address) {
-            setPayments([]);
-            setLoading(false);
-            return;
-        }
-
-        try {
-            setLoading(true);
-            const total = await getTotalPayments();
-            const allPayments: ClaimPaymentWithPrice[] = [];
-
-            for (let i = 0; i < total; i++) {
-                try {
-                    const payment = await getClaimPayment(i);
-                    if (payment.payer.toLowerCase() === address.toLowerCase()) {
-                        // Fetch current price for this payment's feed
-                        const feedSymbol = FEED_ID_TO_SYMBOL[payment.cryptoFeedId];
-                        let currentPrice = 0;
-                        if (feedSymbol) {
-                            try {
-                                const priceData = await getCurrentPrice(feedSymbol);
-                                currentPrice = priceData.price;
-                            } catch (priceErr) {
-                                console.error(`Failed to fetch price for ${feedSymbol}:`, priceErr);
-                            }
-                        }
-
-                        allPayments.push({
-                            ...payment,
-                            currentPrice,
-                        });
-                    }
-                } catch (err) {
-                    console.error(`Failed to fetch payment ${i}:`, err);
-                }
-            }
-
-            setPayments(allPayments);
-            setError(null);
-        } catch (err: any) {
-            setError(err.message);
-        } finally {
-            setLoading(false);
-        }
-    };
+    const [refetchTrigger, setRefetchTrigger] = useState(0);
+    const hasFetchedOnce = useRef(false);
+    const contractRef = useRef(contract);
+    contractRef.current = contract;
 
     useEffect(() => {
-        fetchPayments();
-        const interval = setInterval(fetchPayments, 10000);
-        return () => clearInterval(interval);
-    }, [address]);
+        let cancelled = false;
+        
+        // Reset on address change
+        if (refetchTrigger === 0) {
+            hasFetchedOnce.current = false;
+        }
 
-    return { payments, isLoading: loading, error, refetch: fetchPayments };
+        const fetchPayments = async (showLoading: boolean) => {
+            if (!address) {
+                setPayments([]);
+                setLoading(false);
+                return;
+            }
+
+            const { getTotalPayments, getClaimPayment, getCurrentPrice } = contractRef.current;
+
+            try {
+                // Only show loading spinner on initial load
+                if (showLoading) {
+                    setLoading(true);
+                }
+                
+                const total = await getTotalPayments();
+                const allPayments: ClaimPaymentWithPrice[] = [];
+
+                for (let i = 0; i < total; i++) {
+                    if (cancelled) return;
+                    try {
+                        const payment = await getClaimPayment(i);
+                        if (payment.payer.toLowerCase() === address.toLowerCase()) {
+                            // Fetch current price for this payment's feed
+                            const feedSymbol = FEED_ID_TO_SYMBOL[payment.cryptoFeedId];
+                            let currentPrice = 0;
+                            if (feedSymbol) {
+                                try {
+                                    const priceData = await getCurrentPrice(feedSymbol);
+                                    currentPrice = priceData.price;
+                                } catch (priceErr) {
+                                    console.error(`Failed to fetch price for ${feedSymbol}:`, priceErr);
+                                }
+                            }
+
+                            allPayments.push({
+                                ...payment,
+                                currentPrice,
+                            });
+                        }
+                    } catch (err) {
+                        console.error(`Failed to fetch payment ${i}:`, err);
+                    }
+                }
+
+                if (!cancelled) {
+                    setPayments(allPayments);
+                    setError(null);
+                    hasFetchedOnce.current = true;
+                    setLoading(false);
+                }
+            } catch (err: any) {
+                if (!cancelled) {
+                    setError(err.message);
+                    setLoading(false);
+                }
+            }
+        };
+
+        // Initial fetch with loading
+        fetchPayments(!hasFetchedOnce.current);
+        
+        // Polling without loading
+        const interval = setInterval(() => {
+            fetchPayments(false);
+        }, 10000);
+
+        return () => {
+            cancelled = true;
+            clearInterval(interval);
+        };
+    }, [address, refetchTrigger]);
+
+    const refetch = () => {
+        hasFetchedOnce.current = false;
+        setRefetchTrigger(prev => prev + 1);
+    };
+
+    return { payments, isLoading: loading, error, refetch };
 }
