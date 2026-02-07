@@ -35,7 +35,7 @@ resource "azurerm_service_plan" "app_service_plan" {
   resource_group_name = azurerm_resource_group.main.name
   location            = azurerm_resource_group.main.location
   os_type             = "Linux"
-  sku_name            = "F1"
+  sku_name            = "B1"
 
   tags = {
     Environment = "Development"
@@ -54,7 +54,6 @@ resource "azurerm_linux_web_app" "webapp" {
       node_version = "20-lts"
     }
 
-    always_on = false
     app_command_line = "node_modules/.bin/next start -p 8080"
   }
 
