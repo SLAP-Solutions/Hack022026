@@ -28,6 +28,11 @@ resource "azurerm_static_web_app" "hack" {
   location            = var.location
   sku_tier            = "Free"
   sku_size            = "Free"
+
+  app_settings = {
+    COSMOSDB_ENDPOINT = azurerm_cosmosdb_account.hack_account.endpoint
+    COSMOSDB_KEY      = azurerm_cosmosdb_account.hack_account.primary_key
+  }
 }
 
 resource "azurerm_static_site_custom_domain" "apex" {
