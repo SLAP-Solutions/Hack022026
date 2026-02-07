@@ -19,7 +19,7 @@ output "webapp_name" {
 }
 
 output "webapp_url" {
-  value       = "https://${azurerm_linux_web_app.nextjs.default_hostname}"
+  value       = "https://${azurerm_linux_web_app.webapp.default_hostname}"
   description = "The URL of the deployed Next.js application"
 }
 
