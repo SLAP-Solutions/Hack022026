@@ -1,12 +1,15 @@
 "use client";
 
-import { useState } from "react";
-import claimsData from "@/data/claims.json";
+import { useState, useEffect } from "react";
 import { PriceDashboard } from "@/components/prices/PriceDashboard";
 import { ClaimCard } from "@/components/claims/ClaimCard";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
+import { useClaimsStore } from "@/stores/useClaimsStore";
+import { Loader2, Plus } from "lucide-react";
+import { Claim } from "@/types/claim";
+import { CreateClaimModal } from "@/components/modals/CreateClaimModal";
 
 const statusConfig = {
     pending: "bg-primary/10 text-primary border-primary/30 hover:bg-primary/20",
@@ -17,24 +20,44 @@ const statusConfig = {
 };
 
 export default function ClaimsPage() {
+    const { claims, isLoading, fetchClaims } = useClaimsStore();
     const [filter, setFilter] = useState<string>("all");
+    const [isCreateOpen, setIsCreateOpen] = useState(false);
     const router = useRouter();
 
+    useEffect(() => {
+        fetchClaims();
+    }, [fetchClaims]);
+
     const filteredClaims = filter === "all"
-        ? claimsData
-        : claimsData.filter(claim => claim.status === filter);
+        ? claims
+        : claims.filter(claim => claim.status === filter);
+
+    if (isLoading && claims.length === 0) {
+        return (
+            <div className="flex justify-center items-center h-screen">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+        );
+    }
 
     return (
         <div className="max-w-7xl mx-auto space-y-6">
             {/* Header */}
             <div className="flex flex-col gap-4">
-                <div>
-                    <h1 className="text-3xl font-bold font-serif">
-                        Claims
-                    </h1>
-                    <p className="text-muted-foreground mt-2">
-                        Manage and track all insurance claims
-                    </p>
+                <div className="flex justify-between items-start">
+                    <div>
+                        <h1 className="text-3xl font-bold font-serif">
+                            Claims
+                        </h1>
+                        <p className="text-muted-foreground mt-2">
+                            Manage and track all insurance claims
+                        </p>
+                    </div>
+                    <Button onClick={() => setIsCreateOpen(true)} className="bg-primary text-primary-foreground hover:bg-primary/90">
+                        <Plus className="mr-2 h-4 w-4" />
+                        Create Claim
+                    </Button>
                 </div>
 
                 {/* Filter Buttons and Prices Row */}
@@ -84,8 +107,8 @@ export default function ClaimsPage() {
                         lineOfBusiness={claim.lineOfBusiness}
                         status={claim.status as any}
                         totalCost={claim.payments?.reduce((acc: number, p: any) => acc + Number(p.usdAmount), 0) || 0}
-                        dateCreated={claim.dateCreated}
-                        dateSettled={claim.dateSettled}
+                        dateCreated={claim.dateCreated as string}
+                        dateSettled={claim.dateSettled as string}
                         payments={claim.payments as any}
                         onClick={() => router.push(`/claims/${claim.id}`)}
                     />
@@ -93,17 +116,22 @@ export default function ClaimsPage() {
             </div>
 
             {/* Empty State */}
-            {filteredClaims.length === 0 && (
+            {!isLoading && filteredClaims.length === 0 && (
                 <div className="text-center py-16">
                     <div className="text-6xl mb-4">📋</div>
                     <h3 className="text-2xl font-bold mb-2">
                         No claims found
                     </h3>
                     <p className="text-muted-foreground">
-                        Try adjusting your filters to see more results
+                        Try adjusting your filters to see more results or create a new claim.
                     </p>
+                    <Button onClick={() => setIsCreateOpen(true)} className="mt-4" variant="outline">
+                        Create New Claim
+                    </Button>
                 </div>
             )}
+
+            <CreateClaimModal isOpen={isCreateOpen} onClose={() => setIsCreateOpen(false)} />
         </div>
     );
 }
