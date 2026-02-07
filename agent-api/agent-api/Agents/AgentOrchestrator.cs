@@ -20,10 +20,29 @@ namespace agent_api.Agents
             _toolsFactory = toolsFactory;
         }
 
-        public async Task RunStreamingAsync(Action<string, bool>? onTextUpdate = null)
+        public async Task RunStreamingAsync(
+            string? input = null, 
+            string? documentBase64 = null, 
+            string? documentMediaType = null,
+            Action<string, bool>? onTextUpdate = null)
         {
-            var input = "";
-            _messages.Add(new ChatMessage(ChatRole.User, input));
+            // Build message content
+            var messageContents = new List<AIContent>();
+            
+            // Add document if provided
+            if (!string.IsNullOrEmpty(documentBase64) && !string.IsNullOrEmpty(documentMediaType))
+            {
+                var imageBytes = Convert.FromBase64String(documentBase64);
+                messageContents.Add(new DataContent(imageBytes, documentMediaType));
+            }
+            
+            // Add text input
+            if (!string.IsNullOrEmpty(input))
+            {
+                messageContents.Add(new TextContent(input));
+            }
+            
+            _messages.Add(new ChatMessage(ChatRole.User, messageContents));
 
             var workflow = BuildWorkflow();
             var run = await InProcessExecution.StreamAsync(workflow, _messages);
