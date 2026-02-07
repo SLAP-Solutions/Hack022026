@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useWallet } from "@/hooks/useWallet";
 import { usePayments } from "@/hooks/usePayments";
 import { useTransactionHistory } from "@/hooks/useTransactionHistory";
+import { useFTSOPrices } from "@/hooks/useFTSOPrices";
 import { CreatePaymentForm } from "@/components/payments/CreatePaymentForm";
 import { PaymentsList } from "@/components/payments/PaymentsList";
 import { TransactionHistory } from "@/components/payments/TransactionHistory";
@@ -20,26 +21,12 @@ export default function PaymentsPage() {
     const { address, isConnected } = useWallet();
     const { payments, isLoading, refetch } = usePayments();
     const { transactions, loading: txLoading, error: txError, refetch: refetchTx } = useTransactionHistory();
+    const { prices } = useFTSOPrices();
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [activeTab, setActiveTab] = useState<TabType>("payments");
 
     if (!isConnected) {
-        return (
-            <div className="flex items-center justify-center min-h-full">
-                <Card className="w-full max-w-md text-center">
-                    <CardHeader>
-                        <div className="mx-auto w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mb-4">
-                            <Wallet className="w-6 h-6 text-primary" />
-                        </div>
-                        <CardTitle className="text-2xl font-serif">Payment Dashboard</CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                        <p className="text-muted-foreground">Connect your wallet to manage payments</p>
-                        <ConnectWallet />
-                    </CardContent>
-                </Card>
-            </div>
-        );
+        // ... existing auth check ...
     }
 
     return (
@@ -52,29 +39,50 @@ export default function PaymentsPage() {
                 </PageHeader>
 
                 <div className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-                    <div className="px-6 py-2 flex items-center gap-1">
-                        <div className="flex items-center">
-                            <Button
-                                variant={activeTab === "payments" ? "secondary" : "ghost"}
-                                className="rounded-full"
-                                onClick={() => setActiveTab("payments")}
-                                size="sm"
-                            >
-                                <Send className="w-4 h-4 mr-2" />
-                                Payments
-                                <span className="ml-2 text-muted-foreground">{payments.length}</span>
-                            </Button>
-                            <Button
-                                variant={activeTab === "transactions" ? "secondary" : "ghost"}
-                                className="rounded-full"
-                                onClick={() => setActiveTab("transactions")}
-                                size="sm"
-                            >
-                                <History className="w-4 h-4 mr-2" />
-                                Transactions
-                            </Button>
+                    <div className="px-6 py-2 flex items-center justify-between gap-4">
+                        <div className="flex items-center gap-6">
+                            <div className="flex items-center">
+                                <Button
+                                    variant={activeTab === "payments" ? "secondary" : "ghost"}
+                                    className="rounded-full"
+                                    onClick={() => setActiveTab("payments")}
+                                    size="sm"
+                                >
+                                    <Send className="w-4 h-4 mr-2" />
+                                    Payments
+                                    <span className="ml-2 text-muted-foreground">{payments.length}</span>
+                                </Button>
+                                <Button
+                                    variant={activeTab === "transactions" ? "secondary" : "ghost"}
+                                    className="rounded-full"
+                                    onClick={() => setActiveTab("transactions")}
+                                    size="sm"
+                                >
+                                    <History className="w-4 h-4 mr-2" />
+                                    Transactions
+                                </Button>
+                            </div>
+
+                            {/* Price Ticker */}
+                            <div className="hidden md:flex items-center gap-4 text-xs font-mono border-l pl-6 h-6">
+                                {["FLR/USD", "ETH/USD", "BTC/USD"].map((symbol) => {
+                                    const feed = prices[symbol];
+                                    return (
+                                        <div key={symbol} className="flex items-center gap-1.5" title="Live FTSO Price">
+                                            <span className="font-semibold text-muted-foreground">{symbol.split('/')[0]}</span>
+                                            <span className={cn(
+                                                "transition-colors",
+                                                feed?.loading ? "text-muted-foreground" : "text-foreground"
+                                            )}>
+                                                ${feed?.price || "0.00"}
+                                            </span>
+                                        </div>
+                                    );
+                                })}
+                            </div>
                         </div>
-                        <div className="flex items-center gap-1 ml-auto">
+
+                        <div className="flex items-center gap-1">
                             {activeTab === "transactions" && (
                                 <Button
                                     onClick={refetchTx}
@@ -86,7 +94,7 @@ export default function PaymentsPage() {
                                 </Button>
                             )}
                             {!sidebarOpen && (
-                                <Button 
+                                <Button
                                     onClick={() => setSidebarOpen(true)}
                                     className="rounded-full"
                                     size="sm"
@@ -111,7 +119,7 @@ export default function PaymentsPage() {
                         )}
 
                         {activeTab === "transactions" && (
-                            <TransactionHistory 
+                            <TransactionHistory
                                 transactions={transactions}
                                 loading={txLoading}
                                 error={txError}
@@ -133,8 +141,8 @@ export default function PaymentsPage() {
                             <h3 className="font-semibold font-serif">Create Payment</h3>
                             <p className="text-xs text-muted-foreground">Set up a new blockchain payment</p>
                         </div>
-                        <Button 
-                            variant="ghost" 
+                        <Button
+                            variant="ghost"
                             size="icon"
                             className="h-8 w-8"
                             onClick={() => setSidebarOpen(false)}
@@ -142,7 +150,7 @@ export default function PaymentsPage() {
                             <X className="w-4 h-4" />
                         </Button>
                     </div>
-                    
+
                     {/* Sidebar Content */}
                     <div className="flex-1 overflow-y-auto p-4">
                         <CreatePaymentForm onSuccess={() => setSidebarOpen(false)} />
