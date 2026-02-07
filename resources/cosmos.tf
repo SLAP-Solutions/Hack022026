@@ -69,6 +69,10 @@ resource "azurerm_cosmosdb_sql_container" "hack_claims" {
       path = "/*"
     }
   }
+
+    lifecycle {
+        prevent_destroy = true
+    }
 }
 
 resource "azurerm_cosmosdb_sql_container" "hack_payments" {
