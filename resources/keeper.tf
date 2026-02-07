@@ -22,7 +22,7 @@ resource "azurerm_container_registry" "keeper" {
 # Container Instance for keeper service
 resource "azurecaf_name" "aci" {
   name          = "${local.name}-keeper"
-  resource_type = "azurerm_container_group"
+  resource_type = "azurerm_containerGroups"
   clean_input   = true
 }
 
