@@ -243,6 +243,67 @@ contract ClaimPayments {
     }
 
     /**
+     * @notice Executes a claim payment early, bypassing price trigger conditions
+     * @dev Only the original payer can execute early. Uses current price for calculation.
+     * 
+     * This function allows the payer to execute payment before triggers are hit,
+     * useful when they want immediate execution regardless of price conditions.
+     * 
+     * @param _paymentId The ID of the payment to execute early
+     * 
+     * Requirements:
+     * - Payment must exist and not be executed
+     * - Caller must be the original payer (only payer can execute early)
+     * - Current time must be before expiry deadline
+     * - Collateral must be sufficient to cover calculated payment amount
+     * 
+     * Emits ClaimPaymentExecuted event with execution details
+     */
+    function executePaymentEarly(uint256 _paymentId) external {
+        ClaimPayment storage payment = claimPayments[_paymentId];
+        
+        require(!payment.executed, "ClaimPayments: Already executed");
+        require(payment.collateralAmount > 0, "ClaimPayments: Payment does not exist");
+        require(msg.sender == payment.payer, "ClaimPayments: Only payer can execute early");
+        require(block.timestamp <= payment.expiresAt, "ClaimPayments: Payment expired");
+
+        // Query current price from Flare FTSO v2
+        (uint256 currentPrice, int8 decimals, uint64 timestamp) = 
+            ftsoV2.getFeedById(payment.cryptoFeedId);
+
+        // Calculate crypto amount based on current oracle price
+        uint256 paymentAmount = (payment.usdAmount * 1e18 * (10 ** uint256(int256(decimals)))) / (currentPrice * 100);
+
+        require(paymentAmount <= payment.collateralAmount, "ClaimPayments: Insufficient collateral");
+
+        // Update payment state before transfers (checks-effects-interactions pattern)
+        payment.executed = true;
+        payment.executedAt = block.timestamp;
+        payment.executedPrice = currentPrice;
+        payment.paidAmount = paymentAmount;
+
+        // Transfer calculated amount to receiver
+        (bool paymentSuccess, ) = payable(payment.receiver).call{value: paymentAmount}("");
+        require(paymentSuccess, "ClaimPayments: Payment transfer failed");
+
+        // Refund excess collateral to payer
+        uint256 excessCollateral = payment.collateralAmount - paymentAmount;
+        if (excessCollateral > 0) {
+            (bool refundSuccess, ) = payable(payment.payer).call{value: excessCollateral}("");
+            require(refundSuccess, "ClaimPayments: Refund transfer failed");
+        }
+
+        emit ClaimPaymentExecuted(
+            _paymentId,
+            msg.sender,
+            currentPrice,
+            paymentAmount,
+            excessCollateral,
+            timestamp
+        );
+    }
+
+    /**
      * @notice Creates and immediately executes a payment in a single transaction
      * @dev Combines createClaimPayment + executeClaimPayment for instant payments
      * 
