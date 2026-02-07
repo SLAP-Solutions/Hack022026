@@ -3,28 +3,29 @@
 .SYNOPSIS
     Start Full Development Environment
 .DESCRIPTION
-    Compiles contracts, deploys if changed, starts keeper bot, and launches UI
+    Starts keeper bot and launches UI. Optionally compiles and deploys contracts.
 .EXAMPLE
-    .\start-dev.ps1              # Full flow with deployment
-    .\start-dev.ps1 -SkipDeploy  # Skip deployment, just start services
+    .\start-dev.ps1                        # Start services only
+    .\start-dev.ps1 -CompileHardhat        # Compile, deploy if changed, then start services
+    .\start-dev.ps1 -CompileHardhat -Force # Force deploy and start services
 #>
 
 param(
-    [switch]$SkipDeploy,
+    [switch]$CompileHardhat,
     [switch]$Force
 )
 
 Write-Host "Starting development environment..." -ForegroundColor Cyan
 
-# Compile
-Write-Host "`nCompiling contract..." -ForegroundColor Yellow
-cd hardhat
-npx hardhat compile
-if ($LASTEXITCODE -ne 0) { exit 1 }
-cd ..
+if ($CompileHardhat) {
+    # Compile
+    Write-Host "`nCompiling contract..." -ForegroundColor Yellow
+    cd hardhat
+    npx hardhat compile
+    if ($LASTEXITCODE -ne 0) { exit 1 }
+    cd ..
 
-# Deploy
-if (-not $SkipDeploy) {
+    # Deploy
     $contractFile = "hardhat\contracts\ClaimPayments.sol"
     $hashFile = ".contract-hash"
     $shouldDeploy = $false
@@ -58,6 +59,8 @@ if (-not $SkipDeploy) {
     else {
         Write-Host "`nContract unchanged, skipping deploy" -ForegroundColor Green
     }
+} else {
+    Write-Host "`nSkipping contract compilation and deployment (use -CompileHardhat to enable)" -ForegroundColor Gray
 }
 
 # Start services in new windows

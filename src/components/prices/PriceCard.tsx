@@ -1,6 +1,8 @@
 "use client";
 
+import { useRef, useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
+import { ArrowUp, ArrowDown, Minus } from "lucide-react";
 
 interface PriceCardProps {
     symbol: string;
@@ -12,6 +14,22 @@ interface PriceCardProps {
 }
 
 export function PriceCard({ symbol, price, timestamp, loading, error, className }: PriceCardProps) {
+    const prevPriceRef = useRef<number | null>(null);
+    const [trend, setTrend] = useState<'up' | 'down' | 'neutral'>('neutral');
+
+    useEffect(() => {
+        const current = Number(price);
+        // Only run comparison if we have a previous price
+        // (Skipping initial render logic effectively, but setting ref)
+        if (prevPriceRef.current !== null) {
+            const prev = prevPriceRef.current;
+            if (current > prev) setTrend('up');
+            else if (current < prev) setTrend('down');
+            else setTrend('neutral');
+        }
+        prevPriceRef.current = current;
+    }, [price, timestamp]); // Run when timestamp updates even if price is same
+
     return (
         <div className={cn("flex items-center justify-between w-full p-2 rounded-md hover:bg-muted/50 transition-colors group", className)}>
             <div className="flex items-center gap-2">
@@ -25,9 +43,14 @@ export function PriceCard({ symbol, price, timestamp, loading, error, className 
             ) : error ? (
                 <span className="text-xs text-destructive">Error</span>
             ) : (
-                <span className="text-base font-mono font-bold">
-                    ${Number(price).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 4 })}
-                </span>
+                <div className="flex items-center gap-1.5">
+                    <span className="text-base font-mono font-bold">
+                        ${Number(price).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 4 })}
+                    </span>
+                    {trend === 'up' && <ArrowUp className="w-3 h-3 text-green-500" />}
+                    {trend === 'down' && <ArrowDown className="w-3 h-3 text-red-500" />}
+                    {trend === 'neutral' && <Minus className="w-3 h-3 text-blue-500" />}
+                </div>
             )}
         </div>
     );

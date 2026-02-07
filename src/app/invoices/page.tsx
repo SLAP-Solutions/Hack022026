@@ -9,6 +9,7 @@ import { useClaimsStore } from "@/stores/useClaimsStore";
 import { Loader2, Plus } from "lucide-react";
 import { Claim } from "@/types/claim";
 import { CreateInvoiceModal } from "@/components/modals/CreateInvoiceModal";
+import { PageHeader } from "@/components/layout/PageHeader";
 
 const statusConfig = {
     pending: "bg-primary/10 text-primary border-primary/30 hover:bg-primary/20",
@@ -41,28 +42,18 @@ export default function InvoicesPage() {
     }
 
     return (
-        <div className="max-w-7xl mx-auto space-y-6">
-            {/* Header */}
-            <div className="flex flex-col gap-4">
-                <div className="flex justify-between items-start">
-                    <div>
-                        <h1 className="text-3xl font-bold font-serif">
-                            Invoices
-                        </h1>
-                        <p className="text-muted-foreground mt-2">
-                            Manage and track all insurance invoices
-                        </p>
-                    </div>
-                    <Button onClick={() => setIsCreateOpen(true)} className="bg-primary text-primary-foreground hover:bg-primary/90">
-                        <Plus className="mr-2 h-4 w-4" />
-                        Create Invoice
-                    </Button>
-                </div>
+        <div className="flex flex-col h-full -m-6">
+            <PageHeader title="Invoices">
+                <Button onClick={() => setIsCreateOpen(true)} className="bg-primary text-primary-foreground hover:bg-primary/90" size="sm">
+                    <Plus className="mr-2 h-4 w-4" />
+                    Create Invoice
+                </Button>
+            </PageHeader>
 
-                {/* Filter Buttons and Prices Row */}
-                <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+            <div className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+                <div className="px-6 py-2 flex items-center gap-1">
                     {/* Filter Buttons */}
-                    <div className="flex gap-2 flex-nowrap overflow-x-auto pb-2">
+                    <div className="flex gap-2 flex-nowrap overflow-x-auto">
                         {["all", "pending", "processing", "approved", "settled", "rejected"].map((status) => {
                             const activeStyle = status === "all"
                                 ? "bg-primary text-primary-foreground hover:bg-primary/90"
@@ -75,7 +66,7 @@ export default function InvoicesPage() {
                                     variant={filter === status ? "default" : "outline"}
                                     size="sm"
                                     className={cn(
-                                        "capitalize whitespace-nowrap",
+                                        "capitalize whitespace-nowrap rounded-full",
                                         filter === status
                                             ? cn(activeStyle, "border-transparent shadow-sm")
                                             : "hover:bg-muted"
@@ -86,9 +77,11 @@ export default function InvoicesPage() {
                             );
                         })}
                     </div>
-
                 </div>
             </div>
+
+            <div className="flex-1 overflow-auto p-6">
+                <div className="max-w-7xl mx-auto space-y-6">
 
             {/* Claims Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -128,7 +121,9 @@ export default function InvoicesPage() {
                 )
             }
 
-            <CreateInvoiceModal isOpen={isCreateOpen} onClose={() => setIsCreateOpen(false)} />
-        </div >
+                <CreateInvoiceModal isOpen={isCreateOpen} onClose={() => setIsCreateOpen(false)} />
+                </div>
+            </div>
+        </div>
     );
 }

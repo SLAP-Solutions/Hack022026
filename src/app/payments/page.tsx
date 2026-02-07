@@ -1,19 +1,19 @@
 "use client";
 
 import { useState } from "react";
-import { useWallet } from "@/hooks/useWallet";
-import { usePayments } from "@/hooks/usePayments";
-import { useTransactionHistory } from "@/hooks/useTransactionHistory";
-import { useFTSOPrices } from "@/hooks/useFTSOPrices";
-import { CreatePaymentForm } from "@/components/payments/CreatePaymentForm";
-import { PaymentsList } from "@/components/payments/PaymentsList";
-import { TransactionHistory } from "@/components/payments/TransactionHistory";
-import { ConnectWallet } from "@/components/wallet/ConnectWallet";
-import { PageHeader } from "@/components/layout/PageHeader";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Wallet, Plus, X, RefreshCw, CreditCard, History, Send } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { useWallet } from "../../hooks/useWallet";
+import { usePayments } from "../../hooks/usePayments";
+import { useTransactionHistory } from "../../hooks/useTransactionHistory";
+import { useFTSOPrices } from "../../hooks/useFTSOPrices";
+import { CreatePaymentForm } from "../../components/payments/CreatePaymentForm";
+import { PaymentsList } from "../../components/payments/PaymentsList";
+import { TransactionHistory } from "../../components/payments/TransactionHistory";
+import { ConnectWallet } from "../../components/wallet/ConnectWallet";
+import { PageHeader } from "../../components/layout/PageHeader";
+import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
+import { Button } from "../../components/ui/button";
+import { Wallet, Plus, X, RefreshCw, Send, History } from "lucide-react";
+import { cn } from "../../lib/utils";
 
 type TabType = "payments" | "transactions";
 
@@ -31,7 +31,7 @@ export default function PaymentsPage() {
 
     return (
         <div className="flex h-full -m-6">
-            <div className="flex-1 overflow-auto flex flex-col">
+            <div className="flex-1 flex flex-col overflow-hidden">
                 <PageHeader title="Payments">
                     <div className="text-sm text-muted-foreground font-mono bg-muted px-3 py-1.5 rounded-md">
                         {address?.slice(0, 6)}...{address?.slice(-4)}
@@ -62,24 +62,6 @@ export default function PaymentsPage() {
                                     Transactions
                                 </Button>
                             </div>
-
-                            {/* Price Ticker */}
-                            <div className="hidden md:flex items-center gap-4 text-xs font-mono border-l pl-6 h-6">
-                                {["FLR/USD", "ETH/USD", "BTC/USD"].map((symbol) => {
-                                    const feed = prices[symbol];
-                                    return (
-                                        <div key={symbol} className="flex items-center gap-1.5" title="Live FTSO Price">
-                                            <span className="font-semibold text-muted-foreground">{symbol.split('/')[0]}</span>
-                                            <span className={cn(
-                                                "transition-colors",
-                                                feed?.loading ? "text-muted-foreground" : "text-foreground"
-                                            )}>
-                                                ${feed?.price || "0.00"}
-                                            </span>
-                                        </div>
-                                    );
-                                })}
-                            </div>
                         </div>
 
                         <div className="flex items-center gap-1">
@@ -108,7 +90,7 @@ export default function PaymentsPage() {
                 </div>
 
                 {/* Page Content */}
-                <div className="flex-1 p-6">
+                <div className="flex-1 overflow-auto p-6">
                     <div className="max-w-7xl">
                         {activeTab === "payments" && (
                             <PaymentsList
