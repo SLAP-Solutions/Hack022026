@@ -152,8 +152,7 @@ jobs:
           echo "📝 Recent Keeper Logs:"
           az container logs \
             --resource-group ${{ needs.terraform-apply.outputs.rg_name }} \
-            --name ${{ needs.terraform-apply.outputs.container_name }} \
-            --tail 30
+            --name ${{ needs.terraform-apply.outputs.container_name }}
 
   deploy-to-azure:
     name: Deploy to Azure Static Web Apps
