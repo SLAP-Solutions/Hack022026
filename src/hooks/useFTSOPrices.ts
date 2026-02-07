@@ -24,6 +24,8 @@ export function useFTSOPrices() {
         "BTC/USD": { symbol: "BTC/USD", price: "0", decimals: 0, timestamp: 0, loading: true, error: null },
     });
 
+    const [nextRefresh, setNextRefresh] = useState(Date.now() + 10000);
+
     const fetchPrice = async (symbol: keyof typeof FEED_IDS) => {
         try {
             const contract = new Contract(CONTRACT_ADDRESS, ABI, publicProvider);
@@ -65,6 +67,7 @@ export function useFTSOPrices() {
             fetchPrice("FLR/USD"),
             fetchPrice("BTC/USD"),
         ]);
+        setNextRefresh(Date.now() + 10000);
     };
 
     useEffect(() => {
@@ -75,5 +78,5 @@ export function useFTSOPrices() {
         return () => clearInterval(interval);
     }, []);
 
-    return { prices, refresh: fetchAllPrices };
+    return { prices, refresh: fetchAllPrices, nextRefresh };
 }

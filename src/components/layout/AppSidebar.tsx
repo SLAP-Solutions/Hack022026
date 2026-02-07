@@ -97,7 +97,6 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
         <SidebarGroup className="mt-auto group-data-[collapsible=icon]:hidden">
-          <SidebarGroupLabel>Market Prices</SidebarGroupLabel>
           <SidebarGroupContent>
             <PriceDashboard />
           </SidebarGroupContent>
