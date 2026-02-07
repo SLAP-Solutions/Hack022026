@@ -4,6 +4,17 @@ import { useState, useEffect } from "react";
 import { useContract } from "@/hooks/useContract";
 import { FEED_IDS } from "@/lib/contract/constants";
 import { ethers } from "ethers";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
+import { Info } from "lucide-react";
 
 type PaymentMode = "trigger" | "instant";
 
@@ -43,6 +54,10 @@ export function CreatePaymentForm() {
         }
 
         const usdCents = Math.floor(parseFloat(usdAmount) * 100);
+        const stopLoss = BigInt(Math.floor(currentPrice * (1 + stopLossPercent / 100)));
+        const takeProfit = BigInt(Math.floor(currentPrice * (1 + takeProfitPercent / 100)));
+        
+        const collateralInEth = calculateRequiredCollateral(stopLoss);
 
         try {
             if (mode === "instant") {
@@ -84,8 +99,6 @@ export function CreatePaymentForm() {
         
         // Max crypto needed = (usdCents * 10^18 * 10^decimals) / (stopLoss * 100)
         const maxCryptoNeeded = (usdCents * 1e18 * decimalsMultiplier) / (Number(stopLoss) * 100);
-        
-        // Apply collateral ratio
         const collateral = (maxCryptoNeeded * collateralRatio) / 100;
         
         return BigInt(Math.floor(collateral));
@@ -107,7 +120,6 @@ export function CreatePaymentForm() {
         return BigInt(Math.floor(collateral));
     };
 
-    // Calculate estimated payout at different price points
     const calculatePayout = (price: number) => {
         if (!usdAmount || !price) return BigInt(0);
         const usdCents = parseFloat(usdAmount) * 100;
@@ -148,6 +160,14 @@ export function CreatePaymentForm() {
                             but pays equivalent value in FLR tokens (Coston2 testnet).
                         </p>
                     </div>
+        <div className="space-y-4">
+            <div className="bg-primary/10 border-l-4 border-primary p-4 rounded-r-md">
+                <div className="flex gap-3">
+                    <Info className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
+                    <p className="text-sm text-muted-foreground">
+                        <strong className="text-foreground">Demo Mode:</strong> Calculates {feed.split('/')[0]} amount based on real {feed} price, 
+                        but pays that same amount in FLR. This demonstrates USD-optimization using real oracle prices on Coston2 testnet.
+                    </p>
                 </div>
             </div>
 
@@ -182,10 +202,13 @@ export function CreatePaymentForm() {
                 <div>
                     <label className="block text-sm font-medium mb-1">Recipient Address</label>
                     <input
+                <div className="space-y-2">
+                    <Label htmlFor="receiver">Recipient Address</Label>
+                    <Input
+                        id="receiver"
                         type="text"
                         value={receiver}
                         onChange={(e) => setReceiver(e.target.value)}
-                        className="w-full border rounded px-3 py-2"
                         placeholder="0x..."
                         required
                     />
@@ -194,15 +217,18 @@ export function CreatePaymentForm() {
                 {/* USD amount */}
                 <div>
                     <label className="block text-sm font-medium mb-1">Payment Amount (USD)</label>
+                <div className="space-y-2">
+                    <Label htmlFor="amount">Payment Amount (USD)</Label>
                     <div className="relative">
-                        <span className="absolute left-3 top-2 text-gray-500">$</span>
-                        <input
+                        <span className="absolute left-3 top-2.5 text-muted-foreground">$</span>
+                        <Input
+                            id="amount"
                             type="number"
                             step="0.01"
                             min="0.01"
                             value={usdAmount}
                             onChange={(e) => setUsdAmount(e.target.value)}
-                            className="w-full border rounded px-3 py-2 pl-7"
+                            className="pl-7"
                             placeholder="10.00"
                             required
                         />
@@ -225,6 +251,25 @@ export function CreatePaymentForm() {
                     </select>
                     <p className="text-xs text-gray-500 mt-1">
                         Calculates {ticker} amount, pays equivalent FLR
+                    <p className="text-xs text-muted-foreground">
+                        Recipient will receive exactly this USD value in crypto
+                    </p>
+                </div>
+
+                <div className="space-y-2">
+                    <Label>Price Feed</Label>
+                    <Select value={feed} onValueChange={(value) => setFeed(value as keyof typeof FEED_IDS)}>
+                        <SelectTrigger>
+                            <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="ETH/USD">ETH/USD (Recommended)</SelectItem>
+                            <SelectItem value="BTC/USD">BTC/USD</SelectItem>
+                            <SelectItem value="FLR/USD">FLR/USD</SelectItem>
+                        </SelectContent>
+                    </Select>
+                    <p className="text-xs text-muted-foreground">
+                        Contract calculates {feed.split('/')[0]} amount, but pays equivalent in FLR
                     </p>
                 </div>
 
@@ -233,6 +278,9 @@ export function CreatePaymentForm() {
                     <div className="bg-blue-50 p-3 rounded border border-blue-200">
                         <p className="text-sm font-semibold text-blue-900">
                             Current {feed} Price: ${(currentPrice / Math.pow(10, decimals)).toFixed(decimals === 3 ? 2 : 0)}
+                    <div className="bg-primary/10 p-4 rounded-lg border border-primary/20">
+                        <p className="text-sm font-semibold">
+                            Current {feed} Price: <span className="text-primary">${(currentPrice / Math.pow(10, decimals)).toFixed(decimals === 3 ? 2 : 0)}</span>
                         </p>
                     </div>
                 )}
@@ -299,6 +347,63 @@ export function CreatePaymentForm() {
                                 Safety buffer (150% recommended for {ticker})
                             </p>
                         </div>
+                <div className="space-y-2">
+                    <Label>
+                        Stop Loss: {stopLossPercent.toFixed(1)}% 
+                        <span className="text-red-600 font-semibold ml-2">
+                            ${(stopLossPrice / Math.pow(10, decimals)).toFixed(decimals === 3 ? 2 : 0)}
+                        </span>
+                    </Label>
+                    <input
+                        type="range"
+                        min="-20"
+                        max="-0.1"
+                        step="0.1"
+                        value={stopLossPercent}
+                        onChange={(e) => setStopLossPercent(parseFloat(e.target.value))}
+                        className="w-full accent-primary"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                        Execute if price drops here (limit losses from volatile markets)
+                    </p>
+                </div>
+
+                <div className="space-y-2">
+                    <Label>
+                        Take Profit: +{takeProfitPercent.toFixed(1)}%
+                        <span className="text-green-600 font-semibold ml-2">
+                            ${(takeProfitPrice / Math.pow(10, decimals)).toFixed(decimals === 3 ? 2 : 0)}
+                        </span>
+                    </Label>
+                    <input
+                        type="range"
+                        min="0.1"
+                        max="20"
+                        step="0.1"
+                        value={takeProfitPercent}
+                        onChange={(e) => setTakeProfitPercent(parseFloat(e.target.value))}
+                        className="w-full accent-primary"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                        Execute when price reaches here (pay less crypto, capture savings)
+                    </p>
+                </div>
+
+                <div className="space-y-2">
+                    <Label>Collateral Ratio: {collateralRatio}%</Label>
+                    <input
+                        type="range"
+                        min="110"
+                        max="200"
+                        step="5"
+                        value={collateralRatio}
+                        onChange={(e) => setCollateralRatio(parseInt(e.target.value))}
+                        className="w-full accent-primary"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                        Safety buffer (150% recommended for moderate volatility)
+                    </p>
+                </div>
 
                         <div>
                             <label className="block text-sm font-medium mb-1">
@@ -326,14 +431,14 @@ export function CreatePaymentForm() {
                         <h3 className="font-semibold text-sm">
                             {mode === "instant" ? "Instant Payment Details" : "Trigger-Based Payment Details"}
                         </h3>
+                    <div className="bg-muted/50 p-4 rounded-lg border space-y-2">
+                        <h3 className="font-semibold text-sm">Payment Breakdown</h3>
                         
                         <div className="grid grid-cols-2 gap-2 text-sm">
-                            <div>
-                                <span className="text-gray-600">Collateral Required:</span>
-                            </div>
-                            <div className="font-semibold text-right">
+                            <span className="text-muted-foreground">Collateral Required:</span>
+                            <span className="font-semibold text-right">
                                 {parseFloat(requiredCollateralEth).toFixed(6)} FLR
-                            </div>
+                            </span>
 
                             {mode === "instant" ? (
                                 <>
@@ -385,9 +490,37 @@ export function CreatePaymentForm() {
 
                 {/* Submit button */}
                 <button
+                            <span className="text-muted-foreground">If Stop Loss Hits:</span>
+                            <span className="text-right">
+                                {ethers.formatEther(payoutAtStopLoss.toString()).substring(0, 10)} FLR
+                            </span>
+
+                            <span className="text-muted-foreground">If Current Price:</span>
+                            <span className="text-right">
+                                {ethers.formatEther(payoutAtCurrent.toString()).substring(0, 10)} FLR
+                            </span>
+
+                            <span className="text-green-600 font-semibold">If Take Profit Hits:</span>
+                            <span className="text-right font-semibold text-green-600">
+                                {ethers.formatEther(payoutAtTakeProfit.toString()).substring(0, 10)} FLR
+                            </span>
+                        </div>
+
+                        {savingsAtTakeProfit > 0 && (
+                            <div className="pt-2 border-t">
+                                <p className="text-sm font-semibold text-green-600">
+                                    Potential Savings: {savingsAtTakeProfit.toFixed(1)}% if take profit executes
+                                </p>
+                            </div>
+                        )}
+                    </div>
+                )}
+
+                <Button
                     type="submit"
                     disabled={isLoading || !currentPrice}
-                    className="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 disabled:bg-gray-400 font-semibold"
+                    className="w-full"
+                    size="lg"
                 >
                     {isLoading 
                         ? (mode === "instant" ? "Executing Payment..." : "Creating Payment...") 
@@ -403,6 +536,11 @@ export function CreatePaymentForm() {
                         ? `Instant: Pays ${usdAmount || '0'} USD worth of FLR immediately`
                         : `Trigger: Waits for price to hit stop loss or take profit. Excess collateral refunded.`
                     }
+                    {isLoading ? "Creating Payment..." : `Lock ${requiredCollateralEth.substring(0, 8)} FLR Collateral`}
+                </Button>
+
+                <p className="text-xs text-muted-foreground text-center">
+                    Demo: Calculates ${usdAmount || '0'} USD as {feed.split('/')[0]} amount, pays that amount in FLR. Unused collateral refunded.
                 </p>
             </form>
         </div>

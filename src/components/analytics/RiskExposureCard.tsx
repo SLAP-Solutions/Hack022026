@@ -205,7 +205,7 @@ export function RiskExposureCard({ claims, title = "Overall Payment Estate", var
                                 type="monotone"
                                 dataKey="current"
                                 name="Current Value"
-                                stroke="#3b82f6"
+                                stroke="#ec4899"
                                 strokeWidth={2}
                                 dot={false}
                             />
