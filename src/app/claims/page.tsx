@@ -104,7 +104,7 @@ export default function ClaimsPage() {
                         title={claim.title}
                         description={claim.description}
                         claimantName={claim.claimantName}
-                        lineOfBusiness={claim.lineOfBusiness}
+                        type={claim.type}
                         status={claim.status as any}
                         totalCost={claim.payments?.reduce((acc: number, p: any) => acc + Number(p.usdAmount), 0) || 0}
                         dateCreated={claim.dateCreated as string}
