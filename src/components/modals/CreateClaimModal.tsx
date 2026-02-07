@@ -68,7 +68,7 @@ export function CreateClaimModal({ isOpen, onClose }: CreateClaimModalProps) {
         <Dialog open={isOpen} onOpenChange={handleClose}>
             <DialogContent className="sm:max-w-[525px]">
                 <DialogHeader>
-                    <DialogTitle className="text-2xl font-bold">Create New Claim</DialogTitle>
+                    <DialogTitle className="text-2xl font-bold font-serif">Create New Claim</DialogTitle>
                     <DialogDescription>
                         Enter the details for the new insurance claim.
                     </DialogDescription>

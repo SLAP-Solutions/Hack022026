@@ -20,24 +20,20 @@ function getClient(): CosmosClient {
 
 export const containerConfig = {
   claims: {
-    id: "claims",
-    partitionKey: "id", // Changed from "Id" to "id"
+    partitionKey: "id",
   },
   payments: {
-    id: "payments",
-    partitionKey: "ClaimId",
+    partitionKey: "claimId",
   },
   contacts: {
-    id: "contacts",
     partitionKey: "id",
   },
 } as const;
 
-export type ContainerName = keyof typeof containerConfig;
+type ContainerName = keyof typeof containerConfig;
 
-function getContainer(name: ContainerName) {
-  const config = containerConfig[name];
-  return getClient().database(databaseId).container(config.id);
+function getContainer(containerName: ContainerName) {
+  return getClient().database(databaseId).container(containerName);
 }
 
 export async function getAll(containerName: ContainerName) {
@@ -84,7 +80,7 @@ export async function update(
   const { resource } = await container.item(id, partitionKeyValue).replace(item);
   return resource;
 }
-
+    
 export async function deleteItem(
   containerName: ContainerName,
   id: string,
