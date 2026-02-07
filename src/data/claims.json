@@ -1,0 +1,56 @@
+[
+    {
+        "id": "CLM-001",
+        "title": "Medical Consultation",
+        "description": "Annual health checkup and consultation with specialist",
+        "amount": 450.00,
+        "status": "approved",
+        "date": "2026-02-05",
+        "category": "Healthcare"
+    },
+    {
+        "id": "CLM-002",
+        "title": "Equipment Purchase",
+        "description": "New laptop for remote work setup",
+        "amount": 1299.99,
+        "status": "processing",
+        "date": "2026-02-04",
+        "category": "Technology"
+    },
+    {
+        "id": "CLM-003",
+        "title": "Travel Expenses",
+        "description": "Business trip to London - flights and accommodation",
+        "amount": 875.50,
+        "status": "pending",
+        "date": "2026-02-03",
+        "category": "Travel"
+    },
+    {
+        "id": "CLM-004",
+        "title": "Professional Development",
+        "description": "Online course certification in cloud architecture",
+        "amount": 299.00,
+        "status": "approved",
+        "date": "2026-02-02",
+        "category": "Education"
+    },
+    {
+        "id": "CLM-005",
+        "title": "Office Supplies",
+        "description": "Ergonomic chair and desk accessories",
+        "amount": 520.00,
+        "status": "rejected",
+        "date": "2026-02-01",
+        "category": "Office"
+    },
+    {
+        "id": "CLM-006",
+        "title": "Software Subscription",
+        "description": "Annual license for development tools",
+        "amount": 699.00,
+        "status": "pending",
+        "date": "2026-01-31",
+        "category": "Technology"
+    }
+]
