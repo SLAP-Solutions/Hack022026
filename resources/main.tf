@@ -35,7 +35,7 @@ resource "azurerm_service_plan" "nextjs" {
   resource_group_name = azurerm_resource_group.main.name
   location            = azurerm_resource_group.main.location
   os_type             = "Linux"
-  sku_name            = "B1"
+  sku_name            = "F1"
 
   tags = {
     Environment = "Development"
@@ -54,7 +54,7 @@ resource "azurerm_linux_web_app" "nextjs" {
       node_version = "20-lts"
     }
 
-    always_on = true
+    always_on = false
     app_command_line = "node_modules/.bin/next start -p 8080"
   }
 
