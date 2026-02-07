@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useClaimModal } from "@/stores/useClaimModal";
+import { useClaimsStore } from "@/stores/useClaimsStore";
 import {
     Dialog,
     DialogContent,
@@ -14,148 +14,118 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from "@/components/ui/select";
 
-export function CreateClaimModal() {
-    const { isOpen, closeModal } = useClaimModal();
+interface CreateClaimModalProps {
+    isOpen: boolean;
+    onClose: () => void;
+}
+
+export function CreateClaimModal({ isOpen, onClose }: CreateClaimModalProps) {
+    const { addClaim } = useClaimsStore();
+    const [isLoading, setIsLoading] = useState(false);
+
+    // Form state
     const [title, setTitle] = useState("");
     const [description, setDescription] = useState("");
-    const [amount, setAmount] = useState("");
-    const [category, setCategory] = useState("");
+    const [claimantName, setClaimantName] = useState("");
+    const [lineOfBusiness, setLineOfBusiness] = useState("");
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
-        // Validate form
-        if (!title || !description || !amount || !category) {
+        if (!title || !description || !claimantName || !lineOfBusiness) {
             alert("Please fill in all fields");
             return;
         }
 
-        // Create new claim (in a real app, this would call an API)
-        const newClaim = {
-            id: `CLM-${String(Math.floor(Math.random() * 1000)).padStart(3, '0')}`,
-            title,
-            description,
-            amount: parseFloat(amount),
-            status: "pending" as const,
-            date: new Date().toISOString().split('T')[0],
-            category
-        };
-
-        console.log("New claim created:", newClaim);
-
-        // Reset form
-        setTitle("");
-        setDescription("");
-        setAmount("");
-        setCategory("");
-
-        // Close modal
-        closeModal();
-
-        // Show success message
-        alert("Claim created successfully!");
+        try {
+            setIsLoading(true);
+            await addClaim({
+                title,
+                description,
+                claimantName,
+                lineOfBusiness
+            });
+            handleClose();
+        } catch (error) {
+            console.error(error);
+            alert("Failed to create claim");
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     const handleClose = () => {
         // Reset form
         setTitle("");
         setDescription("");
-        setAmount("");
-        setCategory("");
-        closeModal();
+        setClaimantName("");
+        setLineOfBusiness("");
+        onClose();
     };
 
     return (
         <Dialog open={isOpen} onOpenChange={handleClose}>
             <DialogContent className="sm:max-w-[525px]">
                 <DialogHeader>
-                    <DialogTitle className="text-2xl font-bold text-primary">
-                        Create New Claim
-                    </DialogTitle>
+                    <DialogTitle className="text-2xl font-bold font-serif">Create New Claim</DialogTitle>
                     <DialogDescription>
-                        Fill in the details below to submit a new claim.
+                        Enter the details for the new insurance claim.
                     </DialogDescription>
                 </DialogHeader>
-                <form onSubmit={handleSubmit}>
-                    <div className="grid gap-4 py-4">
-                        {/* Title Field */}
-                        <div className="grid gap-2">
-                            <Label htmlFor="title">Title</Label>
-                            <Input
-                                id="title"
-                                placeholder="e.g., Medical Consultation"
-                                value={title}
-                                onChange={(e) => setTitle(e.target.value)}
-                                required
-                            />
-                        </div>
 
-                        {/* Description Field */}
-                        <div className="grid gap-2">
-                            <Label htmlFor="description">Description</Label>
-                            <Textarea
-                                id="description"
-                                placeholder="Provide details about your claim..."
-                                value={description}
-                                onChange={(e) => setDescription(e.target.value)}
-                                rows={4}
-                                required
-                            />
-                        </div>
-
-                        {/* Amount Field */}
-                        <div className="grid gap-2">
-                            <Label htmlFor="amount">Amount (£)</Label>
-                            <Input
-                                id="amount"
-                                type="number"
-                                step="0.01"
-                                min="0"
-                                placeholder="0.00"
-                                value={amount}
-                                onChange={(e) => setAmount(e.target.value)}
-                                required
-                            />
-                        </div>
-
-                        {/* Category Field */}
-                        <div className="grid gap-2">
-                            <Label htmlFor="category">Category</Label>
-                            <Select value={category} onValueChange={setCategory} required>
-                                <SelectTrigger>
-                                    <SelectValue placeholder="Select a category" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="Healthcare">Healthcare</SelectItem>
-                                    <SelectItem value="Technology">Technology</SelectItem>
-                                    <SelectItem value="Travel">Travel</SelectItem>
-                                    <SelectItem value="Education">Education</SelectItem>
-                                    <SelectItem value="Office">Office</SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </div>
+                <form onSubmit={handleSubmit} className="space-y-4 py-4">
+                    <div className="space-y-2">
+                        <Label htmlFor="title">Claim Title</Label>
+                        <Input
+                            id="title"
+                            placeholder="e.g. Vehicle Accident"
+                            value={title}
+                            onChange={(e) => setTitle(e.target.value)}
+                            required
+                        />
                     </div>
+
+                    <div className="space-y-2">
+                        <Label htmlFor="claimantName">Claimant Name</Label>
+                        <Input
+                            id="claimantName"
+                            placeholder="e.g. John Doe"
+                            value={claimantName}
+                            onChange={(e) => setClaimantName(e.target.value)}
+                            required
+                        />
+                    </div>
+
+                    <div className="space-y-2">
+                        <Label htmlFor="lineOfBusiness">Line of Business</Label>
+                        <Input
+                            id="lineOfBusiness"
+                            placeholder="e.g. Auto, Home, Health"
+                            value={lineOfBusiness}
+                            onChange={(e) => setLineOfBusiness(e.target.value)}
+                            required
+                        />
+                    </div>
+
+                    <div className="space-y-2">
+                        <Label htmlFor="description">Description</Label>
+                        <Textarea
+                            id="description"
+                            placeholder="Detailed description of the claim..."
+                            value={description}
+                            onChange={(e) => setDescription(e.target.value)}
+                            required
+                            className="min-h-[100px]"
+                        />
+                    </div>
+
                     <DialogFooter>
-                        <Button
-                            type="button"
-                            variant="outline"
-                            onClick={handleClose}
-                        >
+                        <Button type="button" variant="outline" onClick={handleClose}>
                             Cancel
                         </Button>
-                        <Button
-                            type="submit"
-                            className="bg-primary hover:bg-primary/90"
-                        >
-                            Create Claim
+                        <Button type="submit" disabled={isLoading}>
+                            {isLoading ? "Creating..." : "Create Claim"}
                         </Button>
                     </DialogFooter>
                 </form>

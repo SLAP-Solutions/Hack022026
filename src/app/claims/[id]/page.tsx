@@ -219,13 +219,13 @@ export default function ClaimDetailPage() {
                                             </div>
 
                                             {payment.status === 'pending' && payment.expiresAt && (
-                                                <div className="mb-4 p-2 bg-primary/10 dark:bg-primary/20 rounded border border-primary/30 dark:border-primary/40" title={`Expires on ${new Date(payment.expiresAt).toLocaleDateString()}`}>
+                                                <div className="mb-4 p-2 bg-primary/10 dark:bg-primary/20 rounded border border-primary/30 dark:border-primary/40" title={`Expires on ${new Date(Number(payment.expiresAt) * 1000).toLocaleDateString()}`}>
                                                     <div className="flex justify-between items-baseline">
                                                         <span className="text-sm font-semibold text-primary">
-                                                            {Math.ceil((new Date(payment.expiresAt).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))} Days Remaining
+                                                            {Math.ceil((new Date(Number(payment.expiresAt) * 1000).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))} Days Remaining
                                                         </span>
                                                         <span className="text-xs text-muted-foreground">
-                                                            Window ends: {new Date(payment.expiresAt).toLocaleDateString()}
+                                                            Window ends: {new Date(Number(payment.expiresAt) * 1000).toLocaleDateString()}
                                                         </span>
                                                     </div>
                                                 </div>

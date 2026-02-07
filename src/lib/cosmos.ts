@@ -1,29 +1,24 @@
-import { CosmosClient, Container, SqlQuerySpec } from "@azure/cosmos";
+import { CosmosClient, SqlQuerySpec } from "@azure/cosmos";
 
-const databaseId = "hack";
-
-// Lazy initialization to avoid build-time errors when env vars are not available
+// Lazy initialization to avoid build-time errors
 let client: CosmosClient | null = null;
+const databaseId = "hack";
 
 function getClient(): CosmosClient {
   if (!client) {
     const endpoint = process.env.COSMOSDB_ENDPOINT;
     const key = process.env.COSMOSDB_KEY;
-    
+
     if (!endpoint || !key) {
       throw new Error("COSMOSDB_ENDPOINT and COSMOSDB_KEY environment variables are required");
     }
-    
+
     client = new CosmosClient({ endpoint, key });
   }
   return client;
 }
 
-function getContainer(containerName: string): Container {
-  return getClient().database(databaseId).container(containerName);
-}
-
-const containerConfig = {
+export const containerConfig = {
   claims: {
     partitionKey: "id",
   },
@@ -36,6 +31,10 @@ const containerConfig = {
 } as const;
 
 type ContainerName = keyof typeof containerConfig;
+
+function getContainer(containerName: ContainerName) {
+  return getClient().database(databaseId).container(containerName);
+}
 
 export async function getAll(containerName: ContainerName) {
   const container = getContainer(containerName);
