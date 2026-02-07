@@ -60,7 +60,7 @@ export default function ClaimDetailPage() {
     const statusInfo = statusConfig[claim.status as keyof typeof statusConfig];
 
     return (
-        <div className="min-h-screen pt-24 p-8">
+        <div className="min-h-screen bg-slate-50 dark:bg-slate-950 pt-24 p-8">
             <div className="max-w-7xl mx-auto space-y-6">
                 {/* Back Button */}
                 <Button

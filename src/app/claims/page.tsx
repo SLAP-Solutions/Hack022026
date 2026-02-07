@@ -6,6 +6,15 @@ import { PriceDashboard } from "@/components/prices/PriceDashboard";
 import { ClaimCard } from "@/components/claims/ClaimCard";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
+import { cn } from "@/lib/utils";
+
+const statusConfig = {
+    pending: "bg-amber-100 text-amber-800 border-amber-300 hover:bg-amber-200",
+    processing: "bg-blue-100 text-blue-800 border-blue-300 hover:bg-blue-200",
+    approved: "bg-green-100 text-green-800 border-green-300 hover:bg-green-200",
+    settled: "bg-emerald-100 text-emerald-800 border-emerald-300 hover:bg-emerald-200",
+    rejected: "bg-red-100 text-red-800 border-red-300 hover:bg-red-200",
+};
 
 export default function ClaimsPage() {
     const [filter, setFilter] = useState<string>("all");
@@ -16,7 +25,7 @@ export default function ClaimsPage() {
         : claimsData.filter(claim => claim.status === filter);
 
     return (
-        <div className="min-h-screen p-8 pt-24">
+        <div className="min-h-screen bg-slate-50 dark:bg-slate-950 p-8 pt-24">
             <div className="max-w-7xl mx-auto space-y-8">
                 {/* Header */}
                 <div className="flex flex-col gap-4">
@@ -31,17 +40,28 @@ export default function ClaimsPage() {
 
                     {/* Filter Buttons */}
                     <div className="flex gap-2 flex-wrap">
-                        {["all", "pending", "processing", "approved", "settled", "rejected"].map((status) => (
-                            <Button
-                                key={status}
-                                onClick={() => setFilter(status)}
-                                variant={filter === status ? "default" : "outline"}
-                                size="sm"
-                                className={filter === status ? "bg-gradient-to-r from-blue-600 to-blue-700" : ""}
-                            >
-                                {status.charAt(0).toUpperCase() + status.slice(1)}
-                            </Button>
-                        ))}
+                        {["all", "pending", "processing", "approved", "settled", "rejected"].map((status) => {
+                            const activeStyle = status === "all"
+                                ? "bg-primary text-primary-foreground hover:bg-primary/90"
+                                : statusConfig[status as keyof typeof statusConfig];
+
+                            return (
+                                <Button
+                                    key={status}
+                                    onClick={() => setFilter(status)}
+                                    variant={filter === status ? "default" : "outline"}
+                                    size="sm"
+                                    className={cn(
+                                        "capitalize",
+                                        filter === status
+                                            ? cn(activeStyle, "border-transparent shadow-sm")
+                                            : "hover:bg-muted"
+                                    )}
+                                >
+                                    {status}
+                                </Button>
+                            );
+                        })}
                     </div>
                 </div>
 
