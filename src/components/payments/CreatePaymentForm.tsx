@@ -15,7 +15,8 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
-import { Info } from "lucide-react";
+import { Info, Activity } from "lucide-react";
+import { PriceHistoryModal } from "./PriceHistoryModal";
 
 type PaymentMode = "trigger" | "instant";
 
@@ -48,6 +49,7 @@ export function CreatePaymentForm({ onSuccess }: CreatePaymentFormProps) {
     // Price data
     const [currentPrice, setCurrentPrice] = useState<number | null>(null);
     const [decimals, setDecimals] = useState<number>(3);
+    const [showGraphModal, setShowGraphModal] = useState(false);
 
     useEffect(() => {
         getCurrentPrice(feed).then(data => {
@@ -85,7 +87,7 @@ export function CreatePaymentForm({ onSuccess }: CreatePaymentFormProps) {
             // Reset form
             setReceiver("");
             setUsdAmount("10");
-            
+
             // Call success callback if provided
             onSuccess?.();
         } catch (error: any) {
@@ -248,6 +250,20 @@ export function CreatePaymentForm({ onSuccess }: CreatePaymentFormProps) {
                 {/* Trigger-based settings */}
                 {mode === "trigger" && (
                     <>
+                        <div className="flex justify-between items-center pb-2">
+                            <h3 className="font-semibold text-sm">Trigger Settings</h3>
+                            <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setShowGraphModal(true)}
+                                disabled={!currentPrice}
+                                className="h-8"
+                            >
+                                <Activity className="w-3.5 h-3.5 mr-2" />
+                                Set Graphically
+                            </Button>
+                        </div>
                         <div className="space-y-2">
                             <Label>
                                 Stop Loss: {stopLossPercent.toFixed(1)}%
@@ -384,6 +400,26 @@ export function CreatePaymentForm({ onSuccess }: CreatePaymentFormProps) {
                     Unused collateral refunded.
                 </p>
             </form>
+            {/* Graph Modal */}
+            {showGraphModal && currentPrice && (
+                <PriceHistoryModal
+                    isOpen={showGraphModal}
+                    onClose={() => setShowGraphModal(false)}
+                    ticker={ticker}
+                    currentPrice={currentPrice / Math.pow(10, decimals)}
+                    initialTp={takeProfitPrice / Math.pow(10, decimals)}
+                    initialSl={stopLossPrice / Math.pow(10, decimals)}
+                    onSave={(tp, sl) => {
+                        const current = currentPrice / Math.pow(10, decimals);
+                        const newTpPercent = ((tp - current) / current) * 100;
+                        const newSlPercent = ((sl - current) / current) * 100;
+
+                        setTakeProfitPercent(parseFloat(newTpPercent.toFixed(1)));
+                        setStopLossPercent(parseFloat(newSlPercent.toFixed(1)));
+                        setShowGraphModal(false);
+                    }}
+                />
+            )}
         </div>
     );
 }

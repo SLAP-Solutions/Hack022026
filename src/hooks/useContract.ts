@@ -1,9 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { Contract, parseEther, formatEther } from "ethers";
+import { Contract, parseEther, formatEther, JsonRpcProvider } from "ethers";
 import { useWallet } from "./useWallet";
-import { CONTRACT_ADDRESS, FEED_IDS } from "../lib/contract/constants";
+import { CONTRACT_ADDRESS, FEED_IDS, RPC_URL } from "../lib/contract/constants";
 import ABI from "../lib/contract/abi.json";
 
 export interface ClaimPayment {
@@ -122,12 +122,26 @@ export function useContract() {
         return Number(total);
     };
 
+    const getReadOnlyContract = () => {
+        // Use connected provider if available, otherwise fallback to public RPC
+        if (provider) {
+            return new Contract(CONTRACT_ADDRESS, ABI, provider);
+        }
+        const jsonRpcProvider = new JsonRpcProvider(RPC_URL);
+        return new Contract(CONTRACT_ADDRESS, ABI, jsonRpcProvider);
+    };
+
     const getCurrentPrice = async (feedSymbol: keyof typeof FEED_IDS) => {
         try {
-            const contract = await getContract();
+            const contract = getReadOnlyContract();
             const feedId = FEED_IDS[feedSymbol];
-            // Use staticCall to avoid creating an unnecessary transaction (read-only operation)
-            const [price, decimals, timestamp] = await contract.getCurrentPrice.staticCall(feedId);
+            // The ABI defines this function as 'nonpayable' (write), implying a state change.
+            // Since we are using a read-only provider (no signer), we must use .staticCall()
+            // to simulate the transaction and read the return value without broadcasting a tx.
+            const result = await contract.getCurrentPrice.staticCall(feedId);
+            const [price, decimals, timestamp] = result;
+
+            console.log(`Fetched price for ${feedSymbol}:`, Number(price));
 
             return {
                 price: Number(price),
@@ -135,7 +149,7 @@ export function useContract() {
                 timestamp: Number(timestamp),
             };
         } catch (err: any) {
-            console.error("Error getting price:", err);
+            console.error(`Error getting price for ${feedSymbol}:`, err);
             throw err;
         }
     };
