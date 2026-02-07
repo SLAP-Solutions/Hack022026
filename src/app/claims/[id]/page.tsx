@@ -129,9 +129,9 @@ export default function ClaimDetailPage() {
                     <CardContent className="p-4">
                         <div className="flex items-center gap-2 text-muted-foreground mb-1">
                             <Building className="w-4 h-4" />
-                            <span className="text-xs font-medium">Line of Business</span>
+                            <span className="text-xs font-medium">Type</span>
                         </div>
-                        <Badge variant="secondary">{claim.lineOfBusiness}</Badge>
+                        <Badge variant="secondary">{claim.type}</Badge>
                     </CardContent>
                 </Card>
 

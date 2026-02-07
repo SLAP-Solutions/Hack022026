@@ -28,12 +28,12 @@ export function CreateClaimModal({ isOpen, onClose }: CreateClaimModalProps) {
     const [title, setTitle] = useState("");
     const [description, setDescription] = useState("");
     const [claimantName, setClaimantName] = useState("");
-    const [lineOfBusiness, setLineOfBusiness] = useState("");
+    const [type, setType] = useState("");
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
-        if (!title || !description || !claimantName || !lineOfBusiness) {
+        if (!title || !description || !claimantName || !type) {
             alert("Please fill in all fields");
             return;
         }
@@ -44,7 +44,7 @@ export function CreateClaimModal({ isOpen, onClose }: CreateClaimModalProps) {
                 title,
                 description,
                 claimantName,
-                lineOfBusiness
+                type
             });
             handleClose();
         } catch (error) {
@@ -60,7 +60,7 @@ export function CreateClaimModal({ isOpen, onClose }: CreateClaimModalProps) {
         setTitle("");
         setDescription("");
         setClaimantName("");
-        setLineOfBusiness("");
+        setType("");
         onClose();
     };
 
@@ -98,12 +98,12 @@ export function CreateClaimModal({ isOpen, onClose }: CreateClaimModalProps) {
                     </div>
 
                     <div className="space-y-2">
-                        <Label htmlFor="lineOfBusiness">Line of Business</Label>
+                        <Label htmlFor="type">Type</Label>
                         <Input
-                            id="lineOfBusiness"
+                            id="type"
                             placeholder="e.g. Auto, Home, Health"
-                            value={lineOfBusiness}
-                            onChange={(e) => setLineOfBusiness(e.target.value)}
+                            value={type}
+                            onChange={(e) => setType(e.target.value)}
                             required
                         />
                     </div>

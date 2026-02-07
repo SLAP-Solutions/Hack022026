@@ -20,7 +20,7 @@ interface ClaimCardProps {
     title: string;
     description: string;
     claimantName: string;
-    lineOfBusiness: string;
+    type: string;
     status: "pending" | "approved" | "rejected" | "processing" | "settled";
     totalCost: number;
     dateCreated: string;
@@ -90,8 +90,8 @@ export function ClaimCard(props: ClaimCardProps) {
                         </div>
                     </div>
                     <div className="flex items-center gap-2 text-sm">
-                        <span className="text-xs text-muted-foreground">Line of Business</span>
-                        <Badge variant="secondary" className="text-xs">{props.lineOfBusiness}</Badge>
+                        <span className="text-xs text-muted-foreground">Type</span>
+                        <Badge variant="secondary" className="text-xs">{props.type}</Badge>
                     </div>
                 </div>
             </CardHeader>
