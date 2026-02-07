@@ -1,13 +1,28 @@
 "use client";
 
-import { useTransactionHistory } from "@/hooks/useTransactionHistory";
 import { BLOCK_EXPLORER } from "@/lib/contract/constants";
 import { Button } from "@/components/ui/button";
-import { RefreshCw } from "lucide-react";
 
-export function TransactionHistory() {
-    const { transactions, loading, error, refetch } = useTransactionHistory();
+interface Transaction {
+    hash: string;
+    from: string;
+    to: string;
+    value: string;
+    timestamp: number;
+    blockNumber: number;
+    isContractInteraction: boolean;
+    method?: string;
+    status?: string;
+}
 
+interface TransactionHistoryProps {
+    transactions: Transaction[];
+    loading: boolean;
+    error: string | null;
+    onRetry: () => void;
+}
+
+export function TransactionHistory({ transactions, loading, error, onRetry }: TransactionHistoryProps) {
     if (loading && transactions.length === 0) {
         return (
             <div className="text-center py-8">
@@ -21,7 +36,7 @@ export function TransactionHistory() {
             <div className="text-center py-8 space-y-4">
                 <p className="text-destructive">Error: {error}</p>
                 <Button
-                    onClick={refetch}
+                    onClick={onRetry}
                     variant="outline"
                     size="sm"
                 >
@@ -33,18 +48,6 @@ export function TransactionHistory() {
 
     return (
         <div>
-            <div className="flex justify-end mb-4">
-                <Button
-                    onClick={refetch}
-                    variant="outline"
-                    size="sm"
-                    disabled={loading}
-                >
-                    <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
-                    {loading ? "Refreshing..." : "Refresh"}
-                </Button>
-            </div>
-
             {transactions.length === 0 ? (
                 <p className="text-muted-foreground text-center py-8">No transactions found.</p>
             ) : (
