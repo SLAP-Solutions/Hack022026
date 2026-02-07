@@ -113,6 +113,10 @@ export function PaymentCard({ payment, onRefresh }: PaymentCardProps) {
     const createdAtPrice = Number(payment.createdAtPrice) / multiplier;
     const amountAtCreation = createdAtPrice > 0 ? usdAmountDollars / createdAtPrice : 0;
 
+    const pnlPercent = createdAtPrice > 0
+        ? ((createdAtPrice / current) - 1) * 100
+        : 0;
+
 
     // Mock data generation for HoverCard preview
     const chartData = useMemo(() => {
@@ -228,11 +232,14 @@ export function PaymentCard({ payment, onRefresh }: PaymentCardProps) {
                     <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
                         {!payment.executed ? (
                             <>
+                                <span className="text-muted-foreground">Price at Creation:</span>
+                                <span className="font-mono text-right">${createdAtPrice.toFixed(2)}</span>
+
                                 <span className="text-muted-foreground">Amount Entered:</span>
                                 <span className="font-mono text-right">{amountAtCreation.toFixed(6)} {ticker}</span>
 
-                                <span className="text-muted-foreground">Collateral Locked:</span>
-                                <span className="font-mono text-right">{collateralAmount.toFixed(6)} {ticker}</span>
+                                <span className="text-muted-foreground mt-3">Collateral Locked:</span>
+                                <span className="font-mono text-right mt-3">{collateralAmount.toFixed(6)} {ticker}</span>
 
                                 <span className="text-muted-foreground">Current Refund:</span>
                                 <span className={cn("font-mono text-right", refundAmount >= 0 ? "text-green-600" : "text-red-600")}>
@@ -257,8 +264,11 @@ export function PaymentCard({ payment, onRefresh }: PaymentCardProps) {
 
                                 <div className="col-span-2 border-t pt-1 mt-1 flex justify-between items-center">
                                     <span className="text-muted-foreground">PNL:</span>
-                                    <span className={cn("font-bold", savingsVsStopLoss > 0 ? "text-green-600" : "text-muted-foreground")}>
-                                        {savingsVsStopLoss.toFixed(2)}%
+                                    <span className={cn(
+                                        "font-bold",
+                                        pnlPercent > 0 ? "text-green-600" : pnlPercent < 0 ? "text-red-600" : "text-muted-foreground"
+                                    )}>
+                                        {pnlPercent > 0 ? "+" : ""}{pnlPercent.toFixed(2)}%
                                     </span>
                                 </div>
                             </>
