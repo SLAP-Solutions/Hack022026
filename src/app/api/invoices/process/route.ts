@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const AGENT_API_URL = process.env.AGENT_API_URL || "http://localhost:5000";
+const AGENT_API_URL = process.env.AGENT_API_URL || "http://localhost:5129";
 
 export async function POST(request: NextRequest) {
     try {
@@ -15,8 +15,8 @@ export async function POST(request: NextRequest) {
         }
 
         console.log(`Processing file: ${file.name} (${file.type})`);
+        console.log(`Calling Agent API at: ${AGENT_API_URL}/agents/workflows/invoice/run`);
 
-        // Forward the file to the C# Agent API
         const agentFormData = new FormData();
         agentFormData.append("file", file);
 
@@ -32,9 +32,6 @@ export async function POST(request: NextRequest) {
         }
 
         const result = await agentResponse.json();
-
-        // Parse the agent response to extract structured data
-        // The agent returns a natural language response, we'll extract key info
         const extractedData = parseAgentResponse(result.response, file.name);
 
         return NextResponse.json({
@@ -44,17 +41,37 @@ export async function POST(request: NextRequest) {
         });
 
     } catch (error) {
-        console.error("Error processing invoice:", error);
+        // Enhanced error logging for debugging
+        console.error("=== Error processing invoice ===");
+        console.error("Error type:", error instanceof Error ? error.constructor.name : typeof error);
+        console.error("Error message:", error instanceof Error ? error.message : String(error));
+        
+        if (error instanceof Error && 'cause' in error) {
+            console.error("Error cause:", error.cause);
+        }
+        
+        // Log the full error object for debugging
+        console.error("Full error:", JSON.stringify(error, Object.getOwnPropertyNames(error as object), 2));
         
         // Fallback to basic extraction if agent API fails
         const formData = await request.formData().catch(() => null);
         const file = formData?.get("file") as File | null;
         
+        const errorMessage = error instanceof Error ? error.message : "Unknown error";
+        const errorCause = error instanceof Error && 'cause' in error 
+            ? String((error.cause as Error)?.message || error.cause)
+            : undefined;
+        
         return NextResponse.json({
             success: false,
             error: "Failed to process invoice with AI agent",
+            details: {
+                message: errorMessage,
+                cause: errorCause,
+                agentApiUrl: AGENT_API_URL,
+            },
             data: {
-                title: file?.name?.split('.')[0] || "Invoice",
+                title: file?.name?.split('.')[0] || "No document name",
                 description: "Document uploaded - manual review required",
                 claimantName: "",
                 type: "General"
