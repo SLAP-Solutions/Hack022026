@@ -150,7 +150,7 @@ export default function AgentsPage() {
     };
 
     return (
-        <div className="flex flex-col h-full -m-6">
+        <div className="flex flex-col h-full">
             <PageHeader title="Agents">
                 <Button size="sm" variant="outline" className="gap-2">
                     <Bot className="w-4 h-4" />
