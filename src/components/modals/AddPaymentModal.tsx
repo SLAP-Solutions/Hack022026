@@ -29,6 +29,7 @@ export function AddPaymentModal() {
 
     // Form State
     const [receiver, setReceiver] = useState("");
+    const [description, setDescription] = useState("");
     const [usdAmount, setUsdAmount] = useState("");
     const [cryptoFeedId, setCryptoFeedId] = useState("");
     const [stopLoss, setStopLoss] = useState("");
@@ -48,6 +49,7 @@ export function AddPaymentModal() {
             id: BigInt(Date.now()), // Mock ID
             payer: "0x123...MockPayer",
             receiver: receiver || "0x...",
+            description: description || "Payment",
             usdAmount: BigInt(Math.floor(parseFloat(usdAmount) * 100)), // Convert to cents
             cryptoFeedId: cryptoFeedId || "0x...",
             stopLossPrice: BigInt(Math.floor(parseFloat(stopLoss) * 100)),
@@ -71,6 +73,7 @@ export function AddPaymentModal() {
 
     const handleClose = () => {
         setReceiver("");
+        setDescription("");
         setUsdAmount("");
         setCryptoFeedId("");
         setStopLoss("");
@@ -99,6 +102,17 @@ export function AddPaymentModal() {
                                 placeholder="0x..."
                                 value={receiver}
                                 onChange={(e) => setReceiver(e.target.value)}
+                                required
+                            />
+                        </div>
+
+                        <div className="grid gap-2">
+                            <Label htmlFor="description">Description</Label>
+                            <Input
+                                id="description"
+                                placeholder="Payment for..."
+                                value={description}
+                                onChange={(e) => setDescription(e.target.value)}
                                 required
                             />
                         </div>
