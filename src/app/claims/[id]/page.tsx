@@ -9,6 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { ArrowLeft, Calendar, DollarSign, Tag, Receipt, Plus } from "lucide-react";
 import { usePaymentModal } from "@/stores/usePaymentModal";
 import { AddPaymentModal } from "@/components/modals/AddPaymentModal";
+import { Slider } from "@/components/ui/slider";
 
 interface Claim {
     id: string;
@@ -29,6 +30,7 @@ interface Payment {
     reference: string;
     lowerBound?: number;
     upperBound?: number;
+    marketPrice?: number;
 }
 
 const sampleClaims: Claim[] = [
@@ -107,7 +109,7 @@ const claimPayments: Record<string, Payment[]> = {
         { id: "PAY-001-1", date: "2026-02-06", amount: 450.00, method: "Bank Transfer", status: "completed", reference: "TXN-20260206-001" }
     ],
     "CLM-002": [
-        { id: "PAY-002-1", date: "2026-02-05", amount: 649.99, method: "Credit Card", status: "completed", reference: "TXN-20260205-002" },
+        { id: "PAY-002-1", date: "2026-02-05", amount: 649.99, method: "Credit Card", status: "completed", reference: "TXN-20260205-002", lowerBound: 640.00, upperBound: 660.00, marketPrice: 655.00 },
         { id: "PAY-002-2", date: "2026-02-06", amount: 650.00, method: "Credit Card", status: "pending", reference: "TXN-20260206-003" }
     ],
     "CLM-003": [],
@@ -309,6 +311,37 @@ export default function ClaimDetailPage() {
                                                             </div>
                                                         </div>
                                                     </div>
+
+                                                    {(payment.lowerBound !== undefined && payment.upperBound !== undefined) && (
+                                                        <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800">
+                                                            <div className="mb-3">
+                                                                <div className="flex justify-between items-end mb-2">
+                                                                    <div className="text-xs text-slate-500">
+                                                                        Lower: <span className="font-mono font-medium text-slate-700 dark:text-slate-300">£{payment.lowerBound.toFixed(2)}</span>
+                                                                    </div>
+                                                                    {payment.marketPrice !== undefined && (
+                                                                        <div className="text-xs text-blue-600 font-medium">
+                                                                            Market: <span className="font-mono">£{payment.marketPrice.toFixed(2)}</span>
+                                                                        </div>
+                                                                    )}
+                                                                    <div className="text-xs text-slate-500">
+                                                                        Upper: <span className="font-mono font-medium text-slate-700 dark:text-slate-300">£{payment.upperBound.toFixed(2)}</span>
+                                                                    </div>
+                                                                </div>
+                                                                <Slider
+                                                                    value={[payment.marketPrice || payment.amount]}
+                                                                    max={payment.upperBound}
+                                                                    min={payment.lowerBound}
+                                                                    step={0.01}
+                                                                    className="py-1 opacity-100"
+                                                                    disabled
+                                                                    trackClassName="bg-gradient-to-r from-red-500 to-green-500"
+                                                                    rangeClassName="opacity-0"
+                                                                    thumbContent={`£${(payment.marketPrice || payment.amount).toFixed(2)}`}
+                                                                />
+                                                            </div>
+                                                        </div>
+                                                    )}
 
                                                     <div className="mt-3 pt-3 border-t border-slate-200 dark:border-slate-700">
                                                         <div className="text-xs text-slate-500 dark:text-slate-400">
