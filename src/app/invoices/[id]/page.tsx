@@ -63,7 +63,7 @@ export default function InvoiceDetailPage() {
     const statusInfo = statusConfig[invoice.status as keyof typeof statusConfig];
 
     return (
-        <div className="max-w-7xl mx-auto space-y-6">
+        <div className="max-w-7xl mx-auto space-y-6 p-6">
             {/* Back Button */}
             <Button
                 variant="ghost"
