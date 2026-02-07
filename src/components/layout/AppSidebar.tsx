@@ -3,7 +3,7 @@
 import Link from "next/link"
 import Image from "next/image"
 import { usePathname } from "next/navigation"
-import { Home, FileText, TrendingUp, BarChart, DollarSign } from "lucide-react"
+import { Home, FileText, TrendingUp, DollarSign } from "lucide-react"
 import {
   Sidebar,
   SidebarContent,
@@ -22,13 +22,8 @@ import { ConnectWallet } from "../wallet/ConnectWallet"
 const menuItems = [
   {
     title: "Home",
-    href: "/landing",
-    icon: Home,
-  },
-  {
-    title: "Dashboard",
     href: "/",
-    icon: BarChart,
+    icon: Home,
   },
   {
     title: "Claims",
@@ -40,11 +35,6 @@ const menuItems = [
     href: "/payments",
     icon: DollarSign,
   },
-  {
-    title: "Prices",
-    href: "/prices",
-    icon: TrendingUp,
-  },
 ]
 
 export function AppSidebar() {
@@ -54,19 +44,19 @@ export function AppSidebar() {
     <Sidebar collapsible="icon">
       <SidebarHeader>
         <div className="flex items-center gap-2 px-2 py-2 group-data-[collapsible=icon]:justify-center">
-          <Link href="/landing" className="flex items-center justify-center gap-2 hover:opacity-80 transition-opacity group-data-[collapsible=icon]:w-full group-data-[collapsible=icon]:justify-center">
-            <Image 
-              src="/logo.png" 
-              alt="SLAPSure Logo" 
-              width={120} 
+          <Link href="/" className="flex items-center justify-center gap-2 hover:opacity-80 transition-opacity group-data-[collapsible=icon]:w-full group-data-[collapsible=icon]:justify-center">
+            <Image
+              src="/logo.png"
+              alt="SLAPSure Logo"
+              width={120}
               height={32}
               className="h-8 w-auto group-data-[collapsible=icon]:hidden"
               priority
             />
-            <Image 
-              src="/icon-logo.png" 
-              alt="SLAPSure" 
-              width={36} 
+            <Image
+              src="/icon-logo.png"
+              alt="SLAPSure"
+              width={36}
               height={36}
               className="size-9 shrink-0 object-contain hidden group-data-[collapsible=icon]:block"
               priority

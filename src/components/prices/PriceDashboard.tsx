@@ -7,8 +7,8 @@ export function PriceDashboard() {
     const { prices } = useFTSOPrices();
 
     return (
-        <div className="w-[60%]">
-            <div className="grid grid-cols-3 w-full">
+        <div className="w-full">
+            <div className="grid grid-cols-3 gap-6 w-full">
                 <PriceCard
                     symbol={prices["ETH/USD"].symbol}
                     price={prices["ETH/USD"].price}

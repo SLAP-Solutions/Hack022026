@@ -37,35 +37,40 @@ export default function ClaimsPage() {
                     </p>
                 </div>
 
-                {/* Filter Buttons */}
-                <div className="flex gap-2 flex-wrap">
-                    {["all", "pending", "processing", "approved", "settled", "rejected"].map((status) => {
-                        const activeStyle = status === "all"
-                            ? "bg-primary text-primary-foreground hover:bg-primary/90"
-                            : statusConfig[status as keyof typeof statusConfig];
+                {/* Filter Buttons and Prices Row */}
+                <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                    {/* Filter Buttons */}
+                    <div className="flex gap-2 flex-nowrap overflow-x-auto pb-2">
+                        {["all", "pending", "processing", "approved", "settled", "rejected"].map((status) => {
+                            const activeStyle = status === "all"
+                                ? "bg-primary text-primary-foreground hover:bg-primary/90"
+                                : statusConfig[status as keyof typeof statusConfig];
 
-                        return (
-                            <Button
-                                key={status}
-                                onClick={() => setFilter(status)}
-                                variant={filter === status ? "default" : "outline"}
-                                size="sm"
-                                className={cn(
-                                    "capitalize",
-                                    filter === status
-                                        ? cn(activeStyle, "border-transparent shadow-sm")
-                                        : "hover:bg-muted"
-                                )}
-                            >
-                                {status}
-                            </Button>
-                        );
-                    })}
+                            return (
+                                <Button
+                                    key={status}
+                                    onClick={() => setFilter(status)}
+                                    variant={filter === status ? "default" : "outline"}
+                                    size="sm"
+                                    className={cn(
+                                        "capitalize whitespace-nowrap",
+                                        filter === status
+                                            ? cn(activeStyle, "border-transparent shadow-sm")
+                                            : "hover:bg-muted"
+                                    )}
+                                >
+                                    {status}
+                                </Button>
+                            );
+                        })}
+                    </div>
+
+                    {/* Price Dashboard - Same Row */}
+                    <div className="shrink-0">
+                        <PriceDashboard />
+                    </div>
                 </div>
             </div>
-
-            {/* Price Dashboard */}
-            <PriceDashboard />
 
             {/* Claims Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
