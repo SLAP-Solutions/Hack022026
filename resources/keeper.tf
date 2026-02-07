@@ -33,6 +33,9 @@ resource "azurerm_container_group" "keeper" {
   os_type             = "Linux"
   restart_policy      = "Always"
 
+  ip_address_type = "Public"
+  dns_name_label  = azurecaf_name.aci.result
+
   # Note: Image will be updated by GitHub Actions after build
   # Initial placeholder image - will be replaced on first deployment
   container {
@@ -40,6 +43,11 @@ resource "azurerm_container_group" "keeper" {
     image  = "mcr.microsoft.com/azuredocs/aci-helloworld:latest"
     cpu    = "0.5"
     memory = "0.5"
+
+    ports {
+      port     = 8080
+      protocol = "TCP"
+    }
 
     # Environment variables - set via GitHub Actions on deployment
     # These are placeholders and will be overridden
