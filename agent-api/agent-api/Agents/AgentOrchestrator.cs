@@ -1,4 +1,4 @@
-﻿using Anthropic;
+using Anthropic;
 using Microsoft.Agents.AI;
 using Microsoft.Agents.AI.Workflows;
 using Microsoft.Extensions.AI;
@@ -10,17 +10,46 @@ namespace agent_api.Agents
 
         private readonly IConfiguration _config;
         private readonly List<ChatMessage> _messages = [];
-        private Agents agents;
+        private readonly Agents _agents;
+        private readonly ToolsFactory _toolsFactory;
 
-        public AgentOrchestrator(IConfiguration config)
+        public AgentOrchestrator(IConfiguration config, Agents agents, ToolsFactory toolsFactory)
         {
             _config = config;
+            _agents = agents;
+            _toolsFactory = toolsFactory;
+        }
+
+        public async Task RunStreamingAsync(Action<string, bool>? onTextUpdate = null)
+        {
+            var input = "";
+            _messages.Add(new ChatMessage(ChatRole.User, input));
+
+            var workflow = BuildWorkflow();
+            var run = await InProcessExecution.StreamAsync(workflow, _messages);
+            await run.TrySendMessageAsync(new TurnToken(emitEvents: true));
+
+            await foreach (var evt in run.WatchStreamAsync())
+            {
+                if (evt is AgentResponseUpdateEvent e)
+                {
+                    onTextUpdate?.Invoke(e.Data?.ToString() ?? "", false);
+                }
+                else if (evt is WorkflowOutputEvent outputEvt && outputEvt.Data is List<ChatMessage> newMessages)
+                {
+                    foreach (var msg in newMessages.Skip(_messages.Count))
+                    {
+                        _messages.Add(msg);
+                    }
+                    break;
+                }
+            }
         }
 
         private Workflow BuildWorkflow()
         {
             var client = CreateChatClient();
-            var definitions = agents.All;
+            var definitions = _agents.All;
 
             var agentList = string.Join("\n", definitions.Select(d => $"- {d.Name}: {d.Description}"));
             var triageInstructions = $"""
@@ -44,7 +73,7 @@ namespace agent_api.Agents
                     instructions: d.Instructions,
                     name: d.Name,
                     description: d.Description,
-                    tools: d.GetTools))
+                    tools: d.GetTools(_toolsFactory)))
                 .ToArray();
 
             var builder = AgentWorkflowBuilder.CreateHandoffBuilderWith(triageAgent).WithHandoffs(triageAgent, specialists);
@@ -57,7 +86,7 @@ namespace agent_api.Agents
 
         private IChatClient CreateChatClient()
         {
-            return new AnthropicClient(new Anthropic.Core.ClientOptions { APIKey = _config.ApiKey }).AsIChatClient(_config.Model);
+            return new AnthropicClient(new Anthropic.Core.ClientOptions { ApiKey = _config["Anthropic:Key"] }).AsIChatClient(_config["Anthropic:Model"]);
         }
     }
 }

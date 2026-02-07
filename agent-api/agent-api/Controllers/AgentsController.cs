@@ -1,4 +1,7 @@
+using agent_api.Agents;
+using Microsoft.Agents.AI;
 using Microsoft.AspNetCore.Mvc;
+using System.Text;
 
 namespace agent_api.Controllers
 {
@@ -6,15 +9,19 @@ namespace agent_api.Controllers
     [Route("[controller]")]
     public class AgentsController : ControllerBase
     {
-        private static readonly string[] Summaries =
-        [
-            "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
-        ];
+        private AgentOrchestrator _orchestrator;
 
-        [HttpGet("run")]
-        public IEnumerable<WeatherForecast> RunAsync()
+        [HttpGet("workflows/run/invoice")]
+        public async Task<string> RunInvoiceWorkflow([FromBody] IFormFile file)
         {
+            var response = string.Empty;
+            await _orchestrator.RunStreamingAsync(onTextUpdate: (text, isThinking) =>
+            {
+                var fullResponse = new StringBuilder();
+                response = fullResponse.ToString();
+            });
 
+            return response;
         }
     }
 }
