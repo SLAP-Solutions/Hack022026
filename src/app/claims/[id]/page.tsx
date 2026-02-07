@@ -1,11 +1,14 @@
 "use client";
 
+import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ArrowLeft, Calendar, DollarSign, Tag, Receipt } from "lucide-react";
+import { ArrowLeft, Calendar, DollarSign, Tag, Receipt, Plus } from "lucide-react";
+import { usePaymentModal } from "@/stores/usePaymentModal";
+import { AddPaymentModal } from "@/components/modals/AddPaymentModal";
 
 interface Claim {
     id: string;
@@ -24,6 +27,8 @@ interface Payment {
     method: string;
     status: "completed" | "pending" | "failed";
     reference: string;
+    lowerBound?: number;
+    upperBound?: number;
 }
 
 const sampleClaims: Claim[] = [
@@ -119,8 +124,17 @@ export default function ClaimDetailPage() {
     const params = useParams();
     const router = useRouter();
     const claimId = params.id as string;
+    const { openModal } = usePaymentModal();
 
     const claim = sampleClaims.find(c => c.id === claimId);
+
+    // Initialize payments state
+    const [payments, setPayments] = useState(claimPayments[claimId] || []);
+
+    // Handle adding new payment
+    const handlePaymentAdded = (newPayment: any) => {
+        setPayments(prev => [...prev, newPayment]);
+    };
 
     if (!claim) {
         return (
@@ -242,13 +256,23 @@ export default function ClaimDetailPage() {
                 {/* Payment History */}
                 <Card>
                     <CardHeader>
-                        <div className="flex items-center gap-2 text-slate-900 dark:text-white">
-                            <Receipt className="w-5 h-5" />
-                            <h3 className="text-xl font-semibold">Payment History</h3>
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2 text-slate-900 dark:text-white">
+                                <Receipt className="w-5 h-5" />
+                                <h3 className="text-xl font-semibold">Payment History</h3>
+                            </div>
+                            <Button
+                                onClick={() => openModal(claim.id)}
+                                size="sm"
+                                className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800"
+                            >
+                                <Plus className="w-4 h-4 mr-2" />
+                                Add Payment
+                            </Button>
                         </div>
                     </CardHeader>
                     <CardContent>
-                        {claimPayments[claim.id] && claimPayments[claim.id].length > 0 ? (
+                        {payments && payments.length > 0 ? (
                             <Table>
                                 <TableHeader>
                                     <TableRow>
@@ -260,7 +284,7 @@ export default function ClaimDetailPage() {
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
-                                    {claimPayments[claim.id].map((payment) => (
+                                    {payments.map((payment) => (
                                         <TableRow key={payment.id}>
                                             <TableCell className="font-medium">
                                                 {new Date(payment.date).toLocaleDateString('en-GB', {
@@ -293,6 +317,9 @@ export default function ClaimDetailPage() {
                         )}
                     </CardContent>
                 </Card>
+
+                {/* Add Payment Modal */}
+                <AddPaymentModal onPaymentAdded={handlePaymentAdded} />
             </div>
         </div>
     );
