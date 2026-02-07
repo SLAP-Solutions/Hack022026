@@ -7,6 +7,7 @@ interface ClaimsStore {
     claims: Claim[];
     getClaim: (id: string) => Claim | undefined;
     addPayment: (claimId: string, payment: Payment) => void;
+    updatePaymentStatus: (claimId: string, paymentId: string | bigint, status: 'pending' | 'committed' | 'executed' | 'expired') => void;
 }
 
 export const useClaimsStore = create<ClaimsStore>((set, get) => ({
@@ -24,8 +25,29 @@ export const useClaimsStore = create<ClaimsStore>((set, get) => ({
                     return {
                         ...claim,
                         payments: [...claim.payments, payment],
-                        // Update total cost if needed, though for now just adding to list is fine
-                        // totalCost: claim.totalCost + Number(payment.usdAmount) / 100 
+                    };
+                }
+                return claim;
+            }),
+        }));
+    },
+
+    updatePaymentStatus: (claimId: string, paymentId: string | bigint, status: 'pending' | 'committed' | 'executed' | 'expired') => {
+        set((state) => ({
+            claims: state.claims.map((claim) => {
+                if (claim.id === claimId) {
+                    return {
+                        ...claim,
+                        payments: claim.payments.map((p) => {
+                            if (p.id.toString() === paymentId.toString()) {
+                                return {
+                                    ...p,
+                                    status,
+                                    executedAt: status === 'executed' ? BigInt(Math.floor(Date.now() / 1000)) : p.executedAt
+                                };
+                            }
+                            return p;
+                        })
                     };
                 }
                 return claim;

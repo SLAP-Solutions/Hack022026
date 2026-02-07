@@ -5,12 +5,15 @@ import { useParams, useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Calendar, DollarSign, Tag, Receipt, User, Building, Plus } from "lucide-react";
+import { ArrowLeft, Calendar, DollarSign, Tag, Receipt, User, Building, Plus, ShieldAlert, CreditCard } from "lucide-react";
 import { usePaymentModal } from "@/stores/usePaymentModal";
 import { AddPaymentModal } from "@/components/modals/AddPaymentModal";
+import { ClaimRiskModal } from "@/components/modals/ClaimRiskModal";
 import { useClaimsStore } from "@/stores/useClaimsStore";
 import { Slider } from "@/components/ui/slider";
 import { cn } from "@/lib/utils";
+import { getFeedName, getFeedSymbol } from "@/config/feeds";
+import { useFTSOPrices } from "@/hooks/useFTSOPrices";
 
 const statusConfig = {
     pending: { color: "bg-amber-100 text-amber-800 border-amber-300" },
@@ -22,6 +25,7 @@ const statusConfig = {
 
 const paymentStatusConfig = {
     pending: { color: "bg-amber-50 text-amber-700 border-amber-200", label: "Pending" },
+    committed: { color: "bg-blue-50 text-blue-700 border-blue-200", label: "Committed" },
     executed: { color: "bg-green-50 text-green-700 border-green-200", label: "Executed" },
     expired: { color: "bg-gray-50 text-gray-700 border-gray-200", label: "Expired" },
 };
@@ -30,28 +34,28 @@ export default function ClaimDetailPage() {
     const params = useParams();
     const router = useRouter();
     const claimId = params.id as string;
-    const { getClaim } = useClaimsStore();
+    const { getClaim, updatePaymentStatus } = useClaimsStore();
     const { openModal } = usePaymentModal();
+    const { prices } = useFTSOPrices();
+    const [isRiskModalOpen, setIsRiskModalOpen] = useState(false);
 
     const claim = getClaim(claimId);
 
     if (!claim) {
         return (
-            <div className="min-h-screen pt-24 p-8">
-                <div className="max-w-4xl mx-auto">
-                    <Card>
-                        <CardContent className="pt-16 pb-16 text-center">
-                            <h1 className="text-4xl font-bold mb-4">Claim Not Found</h1>
-                            <p className="text-muted-foreground mb-8">
-                                The claim you're looking for doesn't exist.
-                            </p>
-                            <Button onClick={() => router.push("/claims")}>
-                                <ArrowLeft className="w-4 h-4 mr-2" />
-                                Back to Claims
-                            </Button>
-                        </CardContent>
-                    </Card>
-                </div>
+            <div className="max-w-4xl mx-auto">
+                <Card>
+                    <CardContent className="pt-16 pb-16 text-center">
+                        <h1 className="text-4xl font-bold mb-4">Claim Not Found</h1>
+                        <p className="text-muted-foreground mb-8">
+                            The claim you're looking for doesn't exist.
+                        </p>
+                        <Button onClick={() => router.push("/claims")}>
+                            <ArrowLeft className="w-4 h-4 mr-2" />
+                            Back to Claims
+                        </Button>
+                    </CardContent>
+                </Card>
             </div>
         );
     }
@@ -59,8 +63,7 @@ export default function ClaimDetailPage() {
     const statusInfo = statusConfig[claim.status as keyof typeof statusConfig];
 
     return (
-        <div className="min-h-screen pt-24 p-8">
-            <div className="max-w-7xl mx-auto space-y-6">
+        <div className="max-w-7xl mx-auto space-y-6">
                 {/* Back Button */}
                 <Button
                     variant="ghost"
@@ -103,7 +106,7 @@ export default function ClaimDetailPage() {
                                     <span className="text-xs font-medium uppercase tracking-wider">Total Cost</span>
                                 </div>
                                 <div className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-blue-700 bg-clip-text text-transparent">
-                                    ${claim.totalCost.toFixed(2)}
+                                    ${(claim.payments?.reduce((acc: number, payment: any) => acc + Number(payment.usdAmount), 0) || 0).toFixed(2)}
                                 </div>
                             </div>
                         </CardContent>
@@ -168,14 +171,25 @@ export default function ClaimDetailPage() {
                                 <h3 className="text-xl font-semibold">Payments</h3>
                                 <Badge variant="secondary">{claim.payments.length}</Badge>
                             </div>
-                            <Button
-                                onClick={() => openModal(claim.id)}
-                                size="sm"
-                                className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800"
-                            >
-                                <Plus className="w-4 h-4 mr-2" />
-                                Add Payment
-                            </Button>
+                            <div className="flex gap-2">
+                                <Button
+                                    variant="outline"
+                                    onClick={() => setIsRiskModalOpen(true)}
+                                    size="sm"
+                                    className="text-muted-foreground hover:text-primary"
+                                >
+                                    <ShieldAlert className="w-4 h-4 mr-2" />
+                                    View Risk Exposure
+                                </Button>
+                                <Button
+                                    onClick={() => openModal(claim.id)}
+                                    size="sm"
+                                    className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800"
+                                >
+                                    <Plus className="w-4 h-4 mr-2" />
+                                    Add Payment
+                                </Button>
+                            </div>
                         </div>
                     </CardHeader>
                     <CardContent>
@@ -185,9 +199,9 @@ export default function ClaimDetailPage() {
                                     const paymentStatus = paymentStatusConfig[(payment.status || "pending") as keyof typeof paymentStatusConfig];
 
                                     // Calculate display values
-                                    const amount = Number(payment.usdAmount) / 100;
-                                    const lower = Number(payment.stopLossPrice) / 100;
-                                    const upper = Number(payment.takeProfitPrice) / 100;
+                                    const amount = Number(payment.usdAmount);
+                                    const lower = Number(payment.stopLossPrice);
+                                    const upper = Number(payment.takeProfitPrice);
 
                                     return (
                                         <Card key={payment.id.toString()} className="hover:shadow-md transition-shadow">
@@ -204,15 +218,35 @@ export default function ClaimDetailPage() {
                                                     </Badge>
                                                 </div>
 
+                                                {payment.status === 'pending' && payment.expiresAt && (
+                                                    <div className="mb-4 p-2 bg-blue-50 dark:bg-blue-950/30 rounded border border-blue-100 dark:border-blue-900" title={`Expires on ${new Date(payment.expiresAt).toLocaleDateString()}`}>
+                                                        <div className="flex justify-between items-baseline">
+                                                            <span className="text-sm font-semibold text-blue-700 dark:text-blue-400">
+                                                                {Math.ceil((new Date(payment.expiresAt).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))} Days Remaining
+                                                            </span>
+                                                            <span className="text-xs text-muted-foreground">
+                                                                Window ends: {new Date(payment.expiresAt).toLocaleDateString()}
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                )}
+
                                                 <div className="grid grid-cols-2 gap-4">
+
+                                                    <div>
+                                                        <div className="text-xs text-muted-foreground mb-1">Description</div>
+                                                        <div className="text-xl font-bold text-foreground">
+                                                            {payment.description || "Payment"}
+                                                        </div>
+                                                    </div>
                                                     <div>
                                                         <div className="text-xs text-muted-foreground mb-1">Amount</div>
-                                                        <div className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-blue-700 bg-clip-text text-transparent">
+                                                        <div className="text-sm font-mono font-semibold">
                                                             ${amount.toFixed(2)}
                                                         </div>
-                                                        <div className="text-xs text-muted-foreground mt-1">
-                                                            Feed: {payment.cryptoFeedId?.slice(0, 8)}...
-                                                        </div>
+                                                        <Badge variant="outline" className="mt-1 text-[10px] h-5">
+                                                            {getFeedName(payment.cryptoFeedId) || "Unknown Feed"}
+                                                        </Badge>
                                                     </div>
                                                     <div>
                                                         <div className="text-xs text-muted-foreground mb-1">Receiver</div>
@@ -233,7 +267,7 @@ export default function ClaimDetailPage() {
                                                         </div>
                                                     </div>
                                                     <Slider
-                                                        value={[lower + (upper - lower) * 0.5]} // Setting fake "current" price for visualization
+                                                        value={[amount]}
                                                         max={upper}
                                                         min={lower}
                                                         step={0.01}
@@ -241,9 +275,84 @@ export default function ClaimDetailPage() {
                                                         className="opacity-100"
                                                         trackClassName="bg-gradient-to-r from-red-500 to-green-500"
                                                         rangeClassName="opacity-0"
-                                                        thumbContent="Pending"
+                                                        thumbContent={(() => {
+                                                            const feedName = getFeedName(payment.cryptoFeedId);
+                                                            const priceData = prices[feedName];
+                                                            return priceData && !priceData.loading
+                                                                ? `$${parseFloat(priceData.price).toFixed(2)}`
+                                                                : "...";
+                                                        })()}
                                                     />
                                                 </div>
+
+                                                {payment.status === 'pending' && (
+                                                    <div className="mt-4 flex items-center gap-3">
+                                                        <Button
+                                                            size="sm"
+                                                            className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
+                                                            onClick={() => updatePaymentStatus(claim.id, payment.id, 'committed')}
+                                                        >
+                                                            <Receipt className="w-4 h-4 mr-2" />
+                                                            Commit
+                                                        </Button>
+                                                    </div>
+                                                )}
+
+                                                {payment.status === 'committed' && (
+                                                    <div className="mt-4 flex items-center gap-3">
+                                                        <Button
+                                                            size="sm"
+                                                            className="flex-1 bg-green-600 hover:bg-green-700 text-white"
+                                                            onClick={() => updatePaymentStatus(claim.id, payment.id, 'executed')}
+                                                        >
+                                                            <CreditCard className="w-4 h-4 mr-2" />
+                                                            Pay Now
+                                                        </Button>
+
+                                                        {(() => {
+                                                            if (!payment.originalAmount) return null;
+
+                                                            const feedName = getFeedName(payment.cryptoFeedId);
+                                                            const feedSymbol = getFeedSymbol(payment.cryptoFeedId);
+                                                            const currentPriceData = prices[feedName];
+
+                                                            if (!currentPriceData) return null;
+
+                                                            const currentPrice = parseFloat(currentPriceData.price);
+                                                            if (!currentPrice) return null;
+
+                                                            const currentCryptoAmount = amount / currentPrice;
+                                                            const originalCryptoAmount = payment.originalAmount / currentPrice;
+                                                            const diff = originalCryptoAmount - currentCryptoAmount;
+                                                            const isSaving = diff > 0;
+                                                            const percentDiff = (Math.abs(diff) / payment.originalAmount) * 100;
+
+                                                            // Removed absolute threshold, just check for non-zero to show even small diffs
+                                                            if (Math.abs(diff) === 0) return null;
+
+                                                            return (
+                                                                <div className={cn(
+                                                                    "text-xs px-3 py-1.5 rounded-md font-medium flex flex-col items-end leading-tight min-w-[120px]",
+                                                                    isSaving
+                                                                        ? "text-green-700 bg-green-50 dark:bg-green-900/20 dark:text-green-400 border border-green-200 dark:border-green-800"
+                                                                        : "text-red-700 bg-red-50 dark:bg-red-900/20 dark:text-red-400 border border-red-200 dark:border-red-800"
+                                                                )}>
+                                                                    {isSaving ? (
+                                                                        <>
+                                                                            <span className="font-bold">Save {diff.toFixed(4)} {feedSymbol}</span>
+                                                                            <span className="text-[10px] opacity-80">({percentDiff.toFixed(1)}%)</span>
+                                                                        </>
+                                                                    ) : (
+                                                                        <>
+                                                                            <span className="font-bold">+{Math.abs(diff).toFixed(4)} {feedSymbol}</span>
+                                                                            <span className="text-[10px] opacity-80">({percentDiff.toFixed(1)}%)</span>
+                                                                        </>
+                                                                    )}
+                                                                </div>
+                                                            );
+                                                        })()}
+                                                    </div>
+                                                )}
 
                                                 {payment.executedAt > 0 && (
                                                     <div className="mt-3 pt-3 border-t">
@@ -266,9 +375,13 @@ export default function ClaimDetailPage() {
                     </CardContent>
                 </Card>
 
-                {/* Modals */}
-                <AddPaymentModal />
-            </div>
+            {/* Modals */}
+            <AddPaymentModal />
+            <ClaimRiskModal
+                open={isRiskModalOpen}
+                onOpenChange={setIsRiskModalOpen}
+                claim={claim}
+            />
         </div>
     );
 }

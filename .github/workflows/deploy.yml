@@ -11,52 +11,8 @@ env:
   TF_DIR: './resources'
 
 jobs:
-  build-nextjs:
-    name: Build Next.js Application
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Remove old artifacts
-        uses: c-hive/gha-remove-artifacts@v1
-        with:
-          age: '14 days'
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-          cache-dependency-path: ${{ env.WORKING_DIR }}/package-lock.json
-
-      - name: Install npm dependencies
-        run: |
-          cd src
-          npm install
-
-      - name: Build Next.js application
-        run: |
-          cd src
-          npm run build
-        env:
-          NODE_ENV: production
-
-      - name: Upload build artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: nextjs-build
-          path: |
-            ${{ env.WORKING_DIR }}/.next
-            ${{ env.WORKING_DIR }}/public
-            ${{ env.WORKING_DIR }}/package.json
-            ${{ env.WORKING_DIR }}/package-lock.json
-            ${{ env.WORKING_DIR }}/next.config.ts
-          retention-days: 1
-
   terraform-apply:
     name: Terraform Apply
-    needs: [build-nextjs]
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/smart-contracts'
     environment: production
@@ -98,7 +54,7 @@ jobs:
           ARM_USE_CLI: false
 
   deploy-to-azure:
-    name: Deploy to Azure App Service
+    name: Deploy to Azure Static Web Apps
     needs: [terraform-apply]
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/smart-contracts'
@@ -108,11 +64,20 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Download build artifacts
-        uses: actions/download-artifact@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
-          name: nextjs-build
-          path: ${{ env.WORKING_DIR }}
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: '${{ env.WORKING_DIR }}/package-lock.json'
+
+      - name: Install dependencies
+        working-directory: ${{ env.WORKING_DIR }}
+        run: npm ci
+
+      - name: Build Next.js app
+        working-directory: ${{ env.WORKING_DIR }}
+        run: npm run build
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
@@ -125,69 +90,54 @@ jobs:
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-      - name: Get Web App Name
-        id: get-webapp
+      - name: Get Static Web App Details
+        id: get-swa
         working-directory: ${{ env.TF_DIR }}
         run: |
           # Re-initialize terraform to get outputs
           terraform init
-          WEBAPP_NAME=$(terraform output -raw webapp_name)
-          echo "webapp_name=$WEBAPP_NAME" >> $GITHUB_OUTPUT
+          SWA_NAME=$(terraform output -raw static_web_app_name)
+          SWA_HOSTNAME=$(terraform output -raw static_web_app_default_host_name)
+          SWA_API_KEY=$(terraform output -raw static_web_app_api_key)
+          echo "swa_name=$SWA_NAME" >> $GITHUB_OUTPUT
+          echo "swa_hostname=$SWA_HOSTNAME" >> $GITHUB_OUTPUT
+          echo "swa_api_key=$SWA_API_KEY" >> $GITHUB_OUTPUT
         env:
           ARM_CLIENT_ID: ${{ fromJSON(secrets.AZURE_CREDENTIALS).clientId }}
           ARM_CLIENT_SECRET: ${{ fromJSON(secrets.AZURE_CREDENTIALS).clientSecret }}
           ARM_SUBSCRIPTION_ID: ${{ fromJSON(secrets.AZURE_CREDENTIALS).subscriptionId }}
           ARM_TENANT_ID: ${{ fromJSON(secrets.AZURE_CREDENTIALS).tenantId }}
           ARM_USE_CLI: false
-
-      - name: Create deployment package
-        working-directory: ${{ env.WORKING_DIR }}
-        run: |
-          # Create a zip file with all necessary files
-          zip -r ../deploy.zip .next public package.json package-lock.json next.config.ts node_modules -x "node_modules/.cache/*"
-
-      - name: Deploy to Azure Web App
-        uses: azure/webapps-deploy@v3
+  
+      - name: Deploy to Static Web App
+        uses: Azure/static-web-apps-deploy@v1
         with:
-          app-name: ${{ steps.get-webapp.outputs.webapp_name }}
-          package: ./deploy.zip
-
-      - name: Azure CLI - Restart Web App
-        run: |
-          az webapp restart --name ${{ steps.get-webapp.outputs.webapp_name }} --resource-group $(az webapp show --name ${{ steps.get-webapp.outputs.webapp_name }} --query resourceGroup -o tsv)
+          azure_static_web_apps_api_token: ${{ steps.get-swa.outputs.swa_api_key }}
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          action: 'upload'
+          app_location: '${{ env.WORKING_DIR }}'
+          output_location: ''
+          skip_app_build: true
 
       - name: Health Check
         run: |
-          echo "Waiting for app to start..."
+          echo "Waiting for Static Web App to deploy..."
           sleep 30
-          WEBAPP_URL="https://${{ steps.get-webapp.outputs.webapp_name }}.azurewebsites.net"
-          echo "Checking health at: $WEBAPP_URL"
+          SWA_URL="https://${{ steps.get-swa.outputs.swa_hostname }}"
+          echo "Checking deployment at: $SWA_URL"
           
-          for i in {1..10}; do
-            HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" $WEBAPP_URL)
-            if [ $HTTP_CODE -eq 200 ] || [ $HTTP_CODE -eq 301 ] || [ $HTTP_CODE -eq 302 ]; then
-              echo "✅ App is healthy! (HTTP $HTTP_CODE)"
-              echo "🚀 Deployment successful: $WEBAPP_URL"
+          for i in {1..15}; do
+            HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" $SWA_URL)
+            if [ $HTTP_CODE -eq 200 ]; then
+              echo "✅ Health check passed! (HTTP $HTTP_CODE)"
+              echo "🚀 Deployment successful: $SWA_URL"
               exit 0
             fi
-            echo "⏳ Attempt $i: HTTP $HTTP_CODE - Waiting..."
-            sleep 10
+            echo "⏳ Attempt $i: HTTP $HTTP_CODE - Waiting for deployment to propagate..."
+            sleep 15
           done
           
-          echo "⚠️ Health check did not return 200 OK, but deployment completed"
-          exit 0
+          echo "⚠️ Health check did not return 200 OK after 15 attempts"
+          echo "Note: Static Web Apps may take a few minutes to fully propagate"
+          echo "Check manually at: $SWA_URL"
 
-  cleanup:
-    name: Cleanup Artifacts
-    needs: [deploy-to-azure]
-    runs-on: ubuntu-latest
-    if: always()
-    
-    steps:
-      - name: Delete artifacts
-        uses: geekyeggo/delete-artifact@v5
-        with:
-          name: |
-            tfplan
-            nextjs-build
-          failOnError: false

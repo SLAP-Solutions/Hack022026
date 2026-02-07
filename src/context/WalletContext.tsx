@@ -24,6 +24,7 @@ interface WalletContextType {
     address: string | null;
     provider: BrowserProvider | null;
     isConnecting: boolean;
+    isInitializing: boolean;
     error: string | null;
     connectWallet: (preferredWallet?: "metamask" | "phantom") => Promise<void>;
     disconnect: () => void;
@@ -37,6 +38,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     const [address, setAddress] = useState<string | null>(null);
     const [provider, setProvider] = useState<BrowserProvider | null>(null);
     const [isConnecting, setIsConnecting] = useState(false);
+    const [isInitializing, setIsInitializing] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [walletType, setWalletType] = useState<"metamask" | "phantom" | null>(null);
 
@@ -163,31 +165,78 @@ export function WalletProvider({ children }: { children: ReactNode }) {
         setWalletType(null);
     };
 
+    // Auto-connect on mount
+    useEffect(() => {
+        const checkConnection = async () => {
+            if (typeof window !== "undefined" && window.ethereum) {
+                try {
+                    const accounts = await window.ethereum.request({ method: "eth_accounts" });
+                    if (accounts && accounts.length > 0) {
+                        const browserProvider = new BrowserProvider(window.ethereum);
+                        const signer = await browserProvider.getSigner();
+                        const userAddress = await signer.getAddress();
+
+                        setProvider(browserProvider);
+                        setAddress(userAddress);
+
+                        // Check network silently
+                        const network = await browserProvider.getNetwork();
+                        if (Number(network.chainId) !== CHAIN_ID) {
+                            // We don't force switch here to avoid annoying popups on load
+                        }
+                    }
+                } catch (err) {
+                    console.error("Failed to restore connection:", err);
+                } finally {
+                    setIsInitializing(false);
+                }
+            } else {
+                setIsInitializing(false);
+            }
+        };
+
+        checkConnection();
+    }, []);
+
+    // Event listeners
     useEffect(() => {
         if (typeof window !== "undefined" && window.ethereum) {
-            const handleAccountsChanged = (accounts: string[]) => {
+            const handleAccountsChanged = async (accounts: string[]) => {
                 if (accounts.length === 0) {
                     disconnect();
                 } else {
                     setAddress(accounts[0]);
+
+                    // If we somehow don't have a provider yet (unlikely), set it up
+                    if (!provider && window.ethereum) {
+                        const browserProvider = new BrowserProvider(window.ethereum);
+                        setProvider(browserProvider);
+                    }
                 }
             };
 
+            const handleChainChanged = () => {
+                window.location.reload();
+            }
+
             window.ethereum.on("accountsChanged", handleAccountsChanged);
+            window.ethereum.on("chainChanged", handleChainChanged);
 
             return () => {
                 if (window.ethereum?.removeListener) {
                     window.ethereum.removeListener("accountsChanged", handleAccountsChanged);
+                    window.ethereum.removeListener("chainChanged", handleChainChanged);
                 }
             };
         }
-    }, []);
+    }, [provider]); // Re-bind if provider changes/init, though window.ethereum is usually static
 
     return (
         <WalletContext.Provider value={{
             address,
             provider,
             isConnecting,
+            isInitializing,
             error,
             connectWallet,
             disconnect,

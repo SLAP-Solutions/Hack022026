@@ -1,0 +1,6 @@
+# Azure region where resources will be deployed
+location = "westeurope"
+
+# Email address for receiving alerts and notifications from Azure Monitor
+# Replace with your actual email address
+alert_email_address = "your-email@example.com"
