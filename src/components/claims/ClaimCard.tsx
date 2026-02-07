@@ -49,7 +49,7 @@ export function ClaimCard(props: ClaimCardProps) {
     const StatusIcon = statusInfo.icon;
 
     return (
-        <Card className="hover:shadow-lg transition-all duration-300" onClick={props.onClick}>
+        <Card className="shadow-none hover:shadow-lg transition-all duration-300" onClick={props.onClick}>
             <CardHeader>
                 <div className="flex items-start justify-between">
                     <div className="flex-1">

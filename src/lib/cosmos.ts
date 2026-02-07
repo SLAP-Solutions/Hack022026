@@ -30,6 +30,10 @@ const containerConfig = {
   payments: {
     partitionKey: "ClaimId",
   },
+  contacts: {
+    container: database.container("contacts"),
+    partitionKey: "id",
+  },
 } as const;
 
 type ContainerName = keyof typeof containerConfig;
@@ -66,4 +70,24 @@ export async function query(
   const container = getContainer(containerName);
   const { resources } = await container.items.query(querySpec).fetchAll();
   return resources;
+}
+
+export async function update(
+  containerName: keyof typeof containers,
+  id: string,
+  partitionKeyValue: string,
+  item: Record<string, unknown>
+) {
+  const { container } = containers[containerName];
+  const { resource } = await container.item(id, partitionKeyValue).replace(item);
+  return resource;
+}
+
+export async function deleteItem(
+  containerName: keyof typeof containers,
+  id: string,
+  partitionKeyValue: string
+) {
+  const { container } = containers[containerName];
+  await container.item(id, partitionKeyValue).delete();
 }
