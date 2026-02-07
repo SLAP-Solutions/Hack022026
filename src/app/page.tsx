@@ -2,8 +2,9 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Slider } from "@/components/ui/slider";
 import Link from "next/link";
-import { ArrowRight, DollarSign, Activity, FileText, CheckCircle, Clock } from "lucide-react";
+import { ArrowRight, DollarSign, Activity, FileText, CheckCircle, Clock, ShieldAlert } from "lucide-react";
 import claimsData from "@/data/claims.json";
 import {
   BarChart,
@@ -30,6 +31,15 @@ export default function Home() {
 
   const activeClaims = claimsData.filter(c => ['pending', 'processing', 'approved'].includes(c.status)).length;
   const settledClaims = claimsData.filter(c => c.status === 'settled').length;
+
+  // Calculate Estate Aggregates
+  const totalLowerBound = claimsData.reduce((acc, claim) => {
+    return acc + (claim.payments?.reduce((sum: number, p: any) => sum + (Number(p.stopLossPrice) / 100), 0) || 0);
+  }, 0);
+
+  const totalUpperBound = claimsData.reduce((acc, claim) => {
+    return acc + (claim.payments?.reduce((sum: number, p: any) => sum + (Number(p.takeProfitPrice) / 100), 0) || 0);
+  }, 0);
 
   // Prepare Chart Data
   const statusDistribution = [
@@ -107,6 +117,55 @@ export default function Home() {
             </CardContent>
           </Card>
         </div>
+
+        {/* Overall Payment Estate Card */}
+        <Card className="border-2 border-primary/10 bg-gradient-to-br from-background to-primary/5">
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <ShieldAlert className="w-5 h-5 text-primary" />
+              <CardTitle>Overall Payment Estate</CardTitle>
+            </div>
+            <p className="text-sm text-muted-foreground">Aggregate risk exposure across all active payments.</p>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-6">
+              <div className="flex justify-between items-end">
+                <div>
+                  <p className="text-xs text-muted-foreground mb-1">Total Lower Bound (Stop Loss)</p>
+                  <p className="font-mono font-bold text-lg text-red-600">${totalLowerBound.toLocaleString(undefined, { minimumFractionDigits: 2 })}</p>
+                </div>
+                <div className="text-center">
+                  <p className="text-xs text-muted-foreground mb-1">Total Current Value</p>
+                  <p className="font-mono font-bold text-3xl text-primary">${totalPayments.toLocaleString(undefined, { minimumFractionDigits: 2 })}</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-xs text-muted-foreground mb-1">Total Upper Bound (Take Profit)</p>
+                  <p className="font-mono font-bold text-lg text-green-600">${totalUpperBound.toLocaleString(undefined, { minimumFractionDigits: 2 })}</p>
+                </div>
+              </div>
+
+              <div className="pt-2 pb-6">
+                <Slider
+                  defaultValue={[totalLowerBound + (totalUpperBound - totalLowerBound) * 0.5]} // Mock position for now as we don't have real-time price feeds for all
+                  value={[totalPayments]}
+                  max={totalUpperBound}
+                  min={totalLowerBound}
+                  step={0.01}
+                  disabled
+                  className="opacity-100"
+                  trackClassName="bg-gradient-to-r from-red-500 via-yellow-400 to-green-500 h-4"
+                  rangeClassName="opacity-0"
+                  thumbContent="Current"
+                />
+                <div className="flex justify-between mt-2 text-xs text-muted-foreground">
+                  <span>High Risk Zone</span>
+                  <span>Optimal Zone</span>
+                  <span>Profit Zone</span>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Charts Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
