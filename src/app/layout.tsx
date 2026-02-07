@@ -19,7 +19,7 @@ const manrope = Manrope({
 });
 
 export const metadata: Metadata = {
-  title: "SLAPSure - Insurance Claims",
+  title: "Slapsure - Insurance Claims",
   description: "Automated insurance claims and payouts on Flare using FTSO",
   icons: {
     icon: "/favicon.png",
@@ -33,16 +33,15 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className={`${manrope.variable} ${merriweather.variable}`}>
-      <body className={`${manrope.className} antialiased`}>
+      <body className={`${manrope.className} antialiased bg-sidebar`}>
         <WalletProvider>
           <SidebarProvider>
             <AppSidebar />
-            <SidebarInset className='rounded-xl mr-3 bg-white h-[calc(100vh-4.5rem)] overflow-hidden'>
-              <main className="flex-1 bg-slate-50 dark:bg-slate-950 p-6 overflow-auto">
+            <SidebarInset className="p-4 pl-0 h-screen overflow-hidden bg-sidebar">
+              <main className="bg-white dark:bg-slate-950 rounded-xl border border-slate-200 dark:border-slate-800 h-full overflow-auto p-6">
                 {children}
               </main>
             </SidebarInset>
-
           </SidebarProvider>
         </WalletProvider>
       </body>
