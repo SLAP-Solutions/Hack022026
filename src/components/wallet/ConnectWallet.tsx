@@ -1,18 +1,20 @@
 "use client";
 
-import { useState } from "react";
 import { useWallet } from "../../hooks/useWallet";
 import { Button } from "../ui/button";
-import { Loader2, LogOut, Wallet, ChevronDown } from "lucide-react";
+import { Loader2, LogOut, Wallet } from "lucide-react";
+import Image from "next/image";
 
-export function ConnectWallet() {
+interface ConnectWalletProps {
+    variant?: "default" | "white";
+}
+
+export function ConnectWallet({ variant = "default" }: ConnectWalletProps) {
     const { address, isConnecting, isInitializing, error, connectWallet, disconnect, isConnected, walletType } = useWallet();
-    const [showWalletMenu, setShowWalletMenu] = useState(false);
 
-    const handleConnect = (wallet: "metamask" | "phantom") => {
-        connectWallet(wallet);
-        setShowWalletMenu(false);
-    };
+    const buttonClassName = variant === "white"
+        ? "gap-2 bg-white text-gray-900 hover:bg-white/90 group-data-[collapsible=icon]:size-9 group-data-[collapsible=icon]:p-0 group-data-[collapsible=icon]:min-w-0"
+        : "gap-2 bg-primary text-primary-foreground hover:bg-primary/90 group-data-[collapsible=icon]:size-9 group-data-[collapsible=icon]:p-0 group-data-[collapsible=icon]:min-w-0";
 
     if (isInitializing) {
         return (
@@ -26,44 +28,18 @@ export function ConnectWallet() {
     return (
         <div className="relative flex items-center gap-4">
             {!isConnected ? (
-                <>
-                    <Button
-                        onClick={() => setShowWalletMenu(!showWalletMenu)}
-                        disabled={isConnecting}
-                        className="gap-2 bg-primary text-primary-foreground hover:bg-primary/90 group-data-[collapsible=icon]:size-9 group-data-[collapsible=icon]:p-0 group-data-[collapsible=icon]:min-w-0"
-                    >
-                        {isConnecting ? (
-                            <Loader2 className="w-4 h-4 animate-spin shrink-0" />
-                        ) : (
-                            <Wallet className="w-4 h-4 shrink-0" />
-                        )}
-                        <span className="group-data-[collapsible=icon]:hidden">{isConnecting ? "Connecting..." : "Connect Wallet"}</span>
-                        <ChevronDown className={`w-4 h-4 shrink-0 transition-transform group-data-[collapsible=icon]:hidden ${showWalletMenu ? "rotate-180" : ""}`} />
-                    </Button>
-
-                    {showWalletMenu && (
-                        <div className="absolute bottom-full right-0 mb-2 w-56 bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-lg shadow-lg overflow-hidden z-50 animate-in fade-in slide-in-from-bottom-2 group-data-[collapsible=icon]:bottom-auto group-data-[collapsible=icon]:top-1/2 group-data-[collapsible=icon]:-translate-y-1/2 group-data-[collapsible=icon]:left-full group-data-[collapsible=icon]:ml-2 group-data-[collapsible=icon]:mb-0 group-data-[collapsible=icon]:right-auto group-data-[collapsible=icon]:slide-in-from-left-2">
-                            <div className="p-2 flex flex-col gap-1">
-                                <Button
-                                    variant="ghost"
-                                    onClick={() => handleConnect("metamask")}
-                                    className="w-full justify-start h-12 gap-3 font-normal"
-                                >
-                                    <span className="text-xl">🦊</span>
-                                    <span>MetaMask</span>
-                                </Button>
-                                <Button
-                                    variant="ghost"
-                                    onClick={() => handleConnect("phantom")}
-                                    className="w-full justify-start h-12 gap-3 font-normal"
-                                >
-                                    <span className="text-xl">👻</span>
-                                    <span>Phantom</span>
-                                </Button>
-                            </div>
-                        </div>
+                <Button
+                    onClick={() => connectWallet("metamask")}
+                    disabled={isConnecting}
+                    className={buttonClassName}
+                >
+                    {isConnecting ? (
+                        <Loader2 className="w-4 h-4 animate-spin shrink-0" />
+                    ) : (
+                        <Image src="/metamask-logo.svg" alt="MetaMask" width={20} height={20} className="shrink-0" />
                     )}
-                </>
+                    <span className="group-data-[collapsible=icon]:hidden">{isConnecting ? "Connecting..." : "Connect MetaMask"}</span>
+                </Button>
             ) : (
                 <div className="flex items-center gap-3">
                     <div className="hidden md:flex flex-col items-end mr-2 group-data-[collapsible=icon]:hidden">
