@@ -115,8 +115,7 @@ jobs:
           azure_static_web_apps_api_token: ${{ steps.get-swa.outputs.swa_api_key }}
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           action: 'upload'
-          app_location: '${{ env.WORKING_DIR }}/.next/standalone'
-          api_location: ''
+          app_location: '${{ env.WORKING_DIR }}'
           output_location: ''
           skip_app_build: true
 

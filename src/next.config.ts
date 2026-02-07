@@ -1,9 +1,8 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  // Enable standalone output for optimized hybrid deployment to Azure Static Web Apps
-  // This creates a minimal production build with all dependencies included
-  output: 'standalone',
+  // Default output mode for Azure Static Web Apps hybrid rendering
+  // SWA detects the .next folder and handles SSR + static content automatically
 };
 
 export default nextConfig;
