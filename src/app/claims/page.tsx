@@ -9,11 +9,11 @@ import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 
 const statusConfig = {
-    pending: "bg-amber-100 text-amber-800 border-amber-300 hover:bg-amber-200",
-    processing: "bg-blue-100 text-blue-800 border-blue-300 hover:bg-blue-200",
-    approved: "bg-green-100 text-green-800 border-green-300 hover:bg-green-200",
-    settled: "bg-emerald-100 text-emerald-800 border-emerald-300 hover:bg-emerald-200",
-    rejected: "bg-red-100 text-red-800 border-red-300 hover:bg-red-200",
+    pending: "bg-primary/10 text-primary border-primary/30 hover:bg-primary/20",
+    processing: "bg-primary/20 text-primary border-primary/40 hover:bg-primary/30",
+    approved: "bg-primary/30 text-primary border-primary/50 hover:bg-primary/40",
+    settled: "bg-primary/40 text-primary border-primary/60 hover:bg-primary/50",
+    rejected: "bg-primary/15 text-primary border-primary/35 hover:bg-primary/25",
 };
 
 export default function ClaimsPage() {
