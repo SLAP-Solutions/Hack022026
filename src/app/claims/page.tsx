@@ -95,9 +95,9 @@ export default function ClaimsPage() {
         : sampleClaims.filter(claim => claim.status === filter);
 
     return (
-        <div className="min-h-screen bg-white dark:bg-black">
-            {/* Header */}
-            <header className="border-b border-slate-200/50 dark:border-slate-800/50 bg-white/50 dark:bg-black/50 backdrop-blur-xl sticky top-0 z-10">
+        <div className="min-h-screen bg-white dark:bg-black pt-16">
+            {/* Page Header */}
+            <div className="border-b border-slate-200/50 dark:border-slate-800/50 bg-white/50 dark:bg-black/50 backdrop-blur-xl">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
                     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                         <div>
@@ -124,7 +124,7 @@ export default function ClaimsPage() {
                         </div>
                     </div>
                 </div>
-            </header>
+            </div>
 
             {/* Main Content */}
             <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">

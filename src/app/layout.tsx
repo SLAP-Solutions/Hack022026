@@ -17,10 +17,8 @@ export default function RootLayout({
     <html lang="en">
       <body className="min-h-screen bg-white dark:bg-black font-sans antialiased">
         <WalletProvider>
-          <main className="container mx-auto px-4 py-8">
-            <Header />
-            {children}
-          </main>
+          <Header />
+          {children}
         </WalletProvider>
       </body>
     </html>
