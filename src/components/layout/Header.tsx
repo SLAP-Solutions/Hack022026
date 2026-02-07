@@ -9,7 +9,7 @@ export function Header() {
                     <div className="flex items-center gap-2">
                         <div className="h-6 w-6 bg-primary rounded-full animate-pulse" />
                         <span className="text-xl font-bold tracking-tight text-foreground">
-                            Flare Insurance
+                            SLAPSure
                         </span>
                     </div>
                 </div>

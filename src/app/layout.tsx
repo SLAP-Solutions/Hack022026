@@ -4,8 +4,8 @@ import { Header } from "../components/layout/Header";
 import { WalletProvider } from "../context/WalletContext";
 
 export const metadata: Metadata = {
-  title: "Flare Insurance Claims",
-  description: "Automated insurance payouts on Flare using FTSO",
+  title: "SLAPSure - Insurance Claims",
+  description: "Automated insurance claims and payouts on Flare using FTSO",
 };
 
 export default function RootLayout({

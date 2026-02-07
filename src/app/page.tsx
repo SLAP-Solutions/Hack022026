@@ -8,7 +8,7 @@ export default function Home() {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
         <div className="text-center">
           <h1 className="text-6xl font-bold bg-gradient-to-r from-blue-600 via-blue-700 to-blue-800 bg-clip-text text-transparent mb-6">
-            Welcome to Flare Insurance
+            Welcome to SLAPSure
           </h1>
           <p className="text-xl text-slate-600 dark:text-slate-400 mb-12 max-w-2xl mx-auto">
             Decentralized insurance powered by blockchain technology. Secure, transparent, and efficient claims management.
