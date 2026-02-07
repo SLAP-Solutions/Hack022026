@@ -240,6 +240,35 @@
         "internalType": "bytes21",
         "name": "_cryptoFeedId",
         "type": "bytes21"
+      }
+    ],
+    "name": "createAndExecutePayment",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "paymentId",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "payable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_receiver",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_usdAmount",
+        "type": "uint256"
+      },
+      {
+        "internalType": "bytes21",
+        "name": "_cryptoFeedId",
+        "type": "bytes21"
       },
       {
         "internalType": "uint256",

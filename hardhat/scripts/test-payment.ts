@@ -88,24 +88,7 @@ async function main() {
     let priceTimestamp: number;
 
     try {
-        const priceTx = await contract.getCurrentPrice(FEED_IDS['ETH/USD']);
-        const receipt = await priceTx.wait();
-        
-        // Parse return value from transaction
-        const returnData = receipt?.logs.find((log: any) => {
-            try {
-                const parsed = contract.interface.parseLog({
-                    topics: [...log.topics],
-                    data: log.data
-                });
-                return parsed !== null;
-            } catch {
-                return false;
-            }
-        });
-
-        // Actually, getCurrentPrice is state-changing but returns data
-        // Let's call it as a static call to get the return value
+        // Query price using staticCall (read-only, no transaction created)
         const priceData = await contract.getCurrentPrice.staticCall(FEED_IDS['ETH/USD']);
         currentPrice = Number(priceData[0]);
         priceDecimals = Number(priceData[1]);

@@ -102,7 +102,8 @@ export function useContract() {
         try {
             const contract = await getContract();
             const feedId = FEED_IDS[feedSymbol];
-            const [price, decimals, timestamp] = await contract.getCurrentPrice(feedId);
+            // Use staticCall to avoid creating an unnecessary transaction (read-only operation)
+            const [price, decimals, timestamp] = await contract.getCurrentPrice.staticCall(feedId);
 
             return {
                 price: formatEther(price),
@@ -115,11 +116,51 @@ export function useContract() {
         }
     };
 
+    /**
+     * Creates and executes a payment instantly in a single transaction
+     * Use this for immediate payments without price trigger conditions
+     */
+    const createInstantPayment = async (
+        receiverAddress: string,
+        usdAmountCents: number,
+        feedSymbol: keyof typeof FEED_IDS,
+        collateralEth: string
+    ) => {
+        try {
+            setIsLoading(true);
+            setError(null);
+
+            const contract = await getContract();
+            const feedId = FEED_IDS[feedSymbol];
+            const collateralWei = parseEther(collateralEth);
+
+            const tx = await contract.createAndExecutePayment(
+                receiverAddress,
+                usdAmountCents,
+                feedId,
+                { value: collateralWei }
+            );
+
+            console.log("💸 Instant payment transaction sent:", tx.hash);
+            const receipt = await tx.wait();
+            console.log("✅ Instant payment confirmed:", receipt);
+
+            return tx.hash;
+        } catch (err: any) {
+            const errorMessage = err.reason || err.message || "Unknown error";
+            setError(errorMessage);
+            throw new Error(errorMessage);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
     return {
         createClaim,
         executeClaim,
         getClaim,
         getCurrentPrice,
+        createInstantPayment,
         isLoading,
         error,
     };

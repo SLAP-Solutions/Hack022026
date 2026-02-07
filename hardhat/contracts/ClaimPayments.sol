@@ -230,6 +230,99 @@ contract ClaimPayments {
     }
 
     /**
+     * @notice Creates and immediately executes a payment in a single transaction
+     * @dev Combines createClaimPayment + executeClaimPayment for instant payments
+     * 
+     * This function is useful when:
+     * - You want instant payment without waiting for price triggers
+     * - Current price is acceptable for immediate execution
+     * - You want to minimize transactions and gas costs
+     * 
+     * @param _receiver Address that will receive the payment
+     * @param _usdAmount USD value to pay in cents (e.g., $1000 = 100000)
+     * @param _cryptoFeedId FTSO feed ID for payment crypto
+     * 
+     * @return paymentId The unique identifier for the created and executed payment
+     * 
+     * Requirements:
+     * - Receiver address must be valid (non-zero)
+     * - USD amount must be greater than zero
+     * - Must send sufficient collateral (msg.value) to cover payment amount
+     * 
+     * Emits ClaimPaymentCreated and ClaimPaymentExecuted events
+     */
+    function createAndExecutePayment(
+        address _receiver,
+        uint256 _usdAmount,
+        bytes21 _cryptoFeedId
+    ) external payable returns (uint256 paymentId) {
+        require(_receiver != address(0), "ClaimPayments: Invalid receiver address");
+        require(_usdAmount > 0, "ClaimPayments: USD amount must be positive");
+        require(msg.value > 0, "ClaimPayments: Must provide collateral");
+
+        // Query current price from FTSO
+        (uint256 currentPrice, int8 decimals, uint64 timestamp) = 
+            ftsoV2.getFeedById(_cryptoFeedId);
+
+        // Calculate payment amount needed at current price
+        uint256 paymentAmount = (_usdAmount * 1e18 * (10 ** uint256(int256(decimals)))) / (currentPrice * 100);
+
+        require(paymentAmount <= msg.value, "ClaimPayments: Insufficient collateral");
+
+        // Create payment record with instant execution
+        paymentId = paymentCounter++;
+        uint256 expiryTimestamp = block.timestamp + 1 days; // Expires in 1 day (already executed)
+
+        claimPayments[paymentId] = ClaimPayment({
+            id: paymentId,
+            payer: msg.sender,
+            receiver: _receiver,
+            usdAmount: _usdAmount,
+            cryptoFeedId: _cryptoFeedId,
+            stopLossPrice: currentPrice, // Set to current price (already executed)
+            takeProfitPrice: currentPrice, // Set to current price (already executed)
+            collateralAmount: msg.value,
+            createdAt: block.timestamp,
+            expiresAt: expiryTimestamp,
+            executed: true, // Mark as executed immediately
+            executedAt: block.timestamp,
+            executedPrice: currentPrice,
+            paidAmount: paymentAmount
+        });
+
+        // Transfer payment to receiver
+        (bool paymentSuccess, ) = payable(_receiver).call{value: paymentAmount}("");
+        require(paymentSuccess, "ClaimPayments: Payment transfer failed");
+
+        // Refund excess collateral to payer
+        uint256 excessCollateral = msg.value - paymentAmount;
+        if (excessCollateral > 0) {
+            (bool refundSuccess, ) = payable(msg.sender).call{value: excessCollateral}("");
+            require(refundSuccess, "ClaimPayments: Refund transfer failed");
+        }
+
+        emit ClaimPaymentCreated(
+            paymentId,
+            msg.sender,
+            _receiver,
+            _usdAmount,
+            _cryptoFeedId,
+            currentPrice, // stopLossPrice = currentPrice
+            currentPrice, // takeProfitPrice = currentPrice
+            expiryTimestamp
+        );
+
+        emit ClaimPaymentExecuted(
+            paymentId,
+            msg.sender,
+            currentPrice,
+            paymentAmount,
+            excessCollateral,
+            timestamp
+        );
+    }
+
+    /**
      * @notice Cancels a claim payment and refunds collateral to payer
      * @dev Can only be called by the original payer before execution
      * 
