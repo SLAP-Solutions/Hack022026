@@ -18,6 +18,9 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { CopyAddressButton } from "@/components/ui/CopyAddressButton";
+
+
 
 export default function ContactsPage() {
     const { contacts, isLoading, fetchContacts, deleteContact } = useContactsStore();
@@ -119,16 +122,7 @@ export default function ContactsPage() {
                                             <code className="text-[10px] font-mono bg-muted px-2 py-1 rounded flex-1 break-all">
                                                 {contact.receiverAddress}
                                             </code>
-                                            <Button
-                                                size="sm"
-                                                variant="ghost"
-                                                onClick={() => {
-                                                    navigator.clipboard.writeText(contact.receiverAddress);
-                                                }}
-                                                className="h-7 w-7 p-0"
-                                            >
-                                                📋
-                                            </Button>
+                                            <CopyAddressButton address={contact.receiverAddress} />
                                         </div>
                                     </div>
 
@@ -146,7 +140,7 @@ export default function ContactsPage() {
                                             size="sm"
                                             variant="outline"
                                             onClick={() => handleDeleteClick(contact.id)}
-                                            className="flex-1 text-destructive hover:bg-destructive hover:text-destructive-foreground"
+                                            className="flex-1 text-destructive hover:bg-destructive hover:text-white"
                                         >
                                             <Trash2 className="mr-2 h-3 w-3" />
                                             Delete

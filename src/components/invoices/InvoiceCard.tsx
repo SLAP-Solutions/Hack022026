@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Claim } from "@/types/claim";
 import { ChevronDown, ChevronUp, User, Calendar, DollarSign, CheckCircle, Clock, XCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -15,12 +16,10 @@ interface Payment {
     executedAt: string | number | bigint | null;
 }
 
-interface ClaimCardProps {
-    id: string;
-    title: string;
+interface InvoiceCardProps extends Omit<Claim, 'dateCreated' | 'dateSettled' | 'payments'> {
     description: string;
     claimantName: string;
-    lineOfBusiness: string;
+    type: string;
     status: "pending" | "approved" | "rejected" | "processing" | "settled";
     totalCost: number;
     dateCreated: string;
@@ -43,7 +42,7 @@ const paymentStatusConfig = {
     expired: { color: "bg-gray-50 text-gray-700 border-gray-200", label: "Expired" },
 };
 
-export function ClaimCard(props: ClaimCardProps) {
+export function InvoiceCard(props: InvoiceCardProps) {
     const [isExpanded, setIsExpanded] = useState(false);
     const statusInfo = statusConfig[props.status];
     const StatusIcon = statusInfo.icon;
@@ -71,8 +70,8 @@ export function ClaimCard(props: ClaimCardProps) {
                     <div className="flex items-center gap-2 text-sm">
                         <User className="w-4 h-4 text-muted-foreground" />
                         <div>
-                            <p className="text-xs text-muted-foreground">Claimant</p>
-                            <p className="font-medium">{props.claimantName}</p>
+                            <span className="text-xs text-muted-foreground">Client</span>
+                            <span className="font-semibold text-sm truncate">{props.claimantName}</span>
                         </div>
                     </div>
                     <div className="flex items-center gap-2 text-sm">
@@ -90,8 +89,8 @@ export function ClaimCard(props: ClaimCardProps) {
                         </div>
                     </div>
                     <div className="flex items-center gap-2 text-sm">
-                        <span className="text-xs text-muted-foreground">Line of Business</span>
-                        <Badge variant="secondary" className="text-xs">{props.lineOfBusiness}</Badge>
+                        <span className="text-xs text-muted-foreground">Type</span>
+                        <Badge variant="secondary" className="text-xs">{props.type}</Badge>
                     </div>
                 </div>
             </CardHeader>

@@ -19,7 +19,11 @@ import { Info } from "lucide-react";
 
 type PaymentMode = "trigger" | "instant";
 
-export function CreatePaymentForm() {
+interface CreatePaymentFormProps {
+    onSuccess?: () => void;
+}
+
+export function CreatePaymentForm({ onSuccess }: CreatePaymentFormProps) {
     const { createClaimPayment, createInstantPayment, getCurrentPrice, isLoading } = useContract();
     const { contacts, fetchContacts } = useContactsStore();
 
@@ -81,6 +85,9 @@ export function CreatePaymentForm() {
             // Reset form
             setReceiver("");
             setUsdAmount("10");
+            
+            // Call success callback if provided
+            onSuccess?.();
         } catch (error: any) {
             console.error(error);
             alert(`Failed: ${error.message || "Unknown error"}`);

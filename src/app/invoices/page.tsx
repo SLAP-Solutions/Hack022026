@@ -2,14 +2,14 @@
 
 import { useState, useEffect } from "react";
 import { PriceDashboard } from "@/components/prices/PriceDashboard";
-import { ClaimCard } from "@/components/claims/ClaimCard";
+import { InvoiceCard } from "@/components/invoices/InvoiceCard";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { useClaimsStore } from "@/stores/useClaimsStore";
 import { Loader2, Plus } from "lucide-react";
 import { Claim } from "@/types/claim";
-import { CreateClaimModal } from "@/components/modals/CreateClaimModal";
+import { CreateInvoiceModal } from "@/components/modals/CreateInvoiceModal";
 
 const statusConfig = {
     pending: "bg-primary/10 text-primary border-primary/30 hover:bg-primary/20",
@@ -19,7 +19,7 @@ const statusConfig = {
     rejected: "bg-primary/15 text-primary border-primary/35 hover:bg-primary/25",
 };
 
-export default function ClaimsPage() {
+export default function InvoicesPage() {
     const { claims, isLoading, fetchClaims } = useClaimsStore();
     const [filter, setFilter] = useState<string>("all");
     const [isCreateOpen, setIsCreateOpen] = useState(false);
@@ -48,15 +48,15 @@ export default function ClaimsPage() {
                 <div className="flex justify-between items-start">
                     <div>
                         <h1 className="text-3xl font-bold font-serif">
-                            Claims
+                            Invoices
                         </h1>
                         <p className="text-muted-foreground mt-2">
-                            Manage and track all insurance claims
+                            Manage and track all insurance invoices
                         </p>
                     </div>
                     <Button onClick={() => setIsCreateOpen(true)} className="bg-primary text-primary-foreground hover:bg-primary/90">
                         <Plus className="mr-2 h-4 w-4" />
-                        Create Claim
+                        Create Invoice
                     </Button>
                 </div>
 
@@ -98,19 +98,19 @@ export default function ClaimsPage() {
             {/* Claims Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {filteredClaims.map((claim) => (
-                    <ClaimCard
+                    <InvoiceCard
                         key={claim.id}
                         id={claim.id}
                         title={claim.title}
                         description={claim.description}
                         claimantName={claim.claimantName}
-                        lineOfBusiness={claim.lineOfBusiness}
+                        type={claim.type}
                         status={claim.status as any}
                         totalCost={claim.payments?.reduce((acc: number, p: any) => acc + Number(p.usdAmount), 0) || 0}
                         dateCreated={claim.dateCreated as string}
                         dateSettled={claim.dateSettled as string}
                         payments={claim.payments as any}
-                        onClick={() => router.push(`/claims/${claim.id}`)}
+                        onClick={() => router.push(`/invoices/${claim.id}`)}
                     />
                 ))}
             </div>
@@ -120,18 +120,18 @@ export default function ClaimsPage() {
                 <div className="text-center py-16">
                     <div className="text-6xl mb-4">📋</div>
                     <h3 className="text-2xl font-bold mb-2">
-                        No claims found
+                        No invoices found
                     </h3>
                     <p className="text-muted-foreground">
-                        Try adjusting your filters to see more results or create a new claim.
+                        Try adjusting your filters to see more results or create a new invoice.
                     </p>
                     <Button onClick={() => setIsCreateOpen(true)} className="mt-4" variant="outline">
-                        Create New Claim
+                        Create New Invoice
                     </Button>
                 </div>
             )}
 
-            <CreateClaimModal isOpen={isCreateOpen} onClose={() => setIsCreateOpen(false)} />
+            <CreateInvoiceModal isOpen={isCreateOpen} onClose={() => setIsCreateOpen(false)} />
         </div>
     );
 }

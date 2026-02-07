@@ -8,7 +8,7 @@ export interface Claim {
     title: string;
     description: string;
     claimantName: string;
-    lineOfBusiness: string;         // e.g., "Auto", "Health", "Property"
+    type: string;         // e.g., "Auto", "Health", "Property"
     status: ClaimStatus;
     totalCost: number;              // Sum of all payment costs in USD
     dateCreated: Date | string;     // When the claim was created
@@ -38,7 +38,7 @@ export interface CreateClaimInput {
     title: string;
     description: string;
     claimantName: string;
-    lineOfBusiness: string;
+    type: string;
 }
 
 /**

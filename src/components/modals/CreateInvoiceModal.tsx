@@ -20,7 +20,7 @@ interface CreateClaimModalProps {
     onClose: () => void;
 }
 
-export function CreateClaimModal({ isOpen, onClose }: CreateClaimModalProps) {
+export function CreateInvoiceModal({ isOpen, onClose }: CreateClaimModalProps) {
     const { addClaim } = useClaimsStore();
     const [isLoading, setIsLoading] = useState(false);
 
@@ -28,12 +28,12 @@ export function CreateClaimModal({ isOpen, onClose }: CreateClaimModalProps) {
     const [title, setTitle] = useState("");
     const [description, setDescription] = useState("");
     const [claimantName, setClaimantName] = useState("");
-    const [lineOfBusiness, setLineOfBusiness] = useState("");
+    const [type, setType] = useState("");
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
-        if (!title || !description || !claimantName || !lineOfBusiness) {
+        if (!title || !description || !claimantName || !type) {
             alert("Please fill in all fields");
             return;
         }
@@ -44,7 +44,7 @@ export function CreateClaimModal({ isOpen, onClose }: CreateClaimModalProps) {
                 title,
                 description,
                 claimantName,
-                lineOfBusiness
+                type
             });
             handleClose();
         } catch (error) {
@@ -60,7 +60,7 @@ export function CreateClaimModal({ isOpen, onClose }: CreateClaimModalProps) {
         setTitle("");
         setDescription("");
         setClaimantName("");
-        setLineOfBusiness("");
+        setType("");
         onClose();
     };
 
@@ -68,15 +68,15 @@ export function CreateClaimModal({ isOpen, onClose }: CreateClaimModalProps) {
         <Dialog open={isOpen} onOpenChange={handleClose}>
             <DialogContent className="sm:max-w-[525px]">
                 <DialogHeader>
-                    <DialogTitle className="text-2xl font-bold font-serif">Create New Claim</DialogTitle>
+                    <DialogTitle className="text-2xl font-bold font-serif">Create New Invoice</DialogTitle>
                     <DialogDescription>
-                        Enter the details for the new insurance claim.
+                        Enter the details for the new insurance invoice.
                     </DialogDescription>
                 </DialogHeader>
 
                 <form onSubmit={handleSubmit} className="space-y-4 py-4">
                     <div className="space-y-2">
-                        <Label htmlFor="title">Claim Title</Label>
+                        <Label htmlFor="title">Invoice Title</Label>
                         <Input
                             id="title"
                             placeholder="e.g. Vehicle Accident"
@@ -87,7 +87,7 @@ export function CreateClaimModal({ isOpen, onClose }: CreateClaimModalProps) {
                     </div>
 
                     <div className="space-y-2">
-                        <Label htmlFor="claimantName">Claimant Name</Label>
+                        <Label htmlFor="claimantName">Client Name</Label>
                         <Input
                             id="claimantName"
                             placeholder="e.g. John Doe"
@@ -98,12 +98,12 @@ export function CreateClaimModal({ isOpen, onClose }: CreateClaimModalProps) {
                     </div>
 
                     <div className="space-y-2">
-                        <Label htmlFor="lineOfBusiness">Line of Business</Label>
+                        <Label htmlFor="type">Type</Label>
                         <Input
-                            id="lineOfBusiness"
+                            id="type"
                             placeholder="e.g. Auto, Home, Health"
-                            value={lineOfBusiness}
-                            onChange={(e) => setLineOfBusiness(e.target.value)}
+                            value={type}
+                            onChange={(e) => setType(e.target.value)}
                             required
                         />
                     </div>
@@ -112,7 +112,7 @@ export function CreateClaimModal({ isOpen, onClose }: CreateClaimModalProps) {
                         <Label htmlFor="description">Description</Label>
                         <Textarea
                             id="description"
-                            placeholder="Detailed description of the claim..."
+                            placeholder="Detailed description of the invoice..."
                             value={description}
                             onChange={(e) => setDescription(e.target.value)}
                             required
@@ -125,7 +125,7 @@ export function CreateClaimModal({ isOpen, onClose }: CreateClaimModalProps) {
                             Cancel
                         </Button>
                         <Button type="submit" disabled={isLoading}>
-                            {isLoading ? "Creating..." : "Create Claim"}
+                            {isLoading ? "Creating..." : "Create Invoice"}
                         </Button>
                     </DialogFooter>
                 </form>
