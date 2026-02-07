@@ -57,8 +57,8 @@ export default function Home() {
           <p className="text-muted-foreground mt-1">Overview of all insurance activity</p>
         </div>
         <Button asChild>
-          <Link href="/claims">
-            View All Claims <ArrowRight className="ml-2 w-4 h-4" />
+          <Link href="/invoices">
+            View All Invoices <ArrowRight className="ml-2 w-4 h-4" />
           </Link>
         </Button>
       </div>
@@ -70,7 +70,7 @@ export default function Home() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Claims</CardTitle>
+            <CardTitle className="text-sm font-medium">Total Invoices</CardTitle>
             <FileText className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -90,7 +90,7 @@ export default function Home() {
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Active Claims</CardTitle>
+            <CardTitle className="text-sm font-medium">Active Invoices</CardTitle>
             <Activity className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -100,7 +100,7 @@ export default function Home() {
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Settled Claims</CardTitle>
+            <CardTitle className="text-sm font-medium">Settled Invoices</CardTitle>
             <CheckCircle className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -115,7 +115,7 @@ export default function Home() {
         {/* Status Distribution Pie Chart */}
         <Card className="col-span-1">
           <CardHeader>
-            <CardTitle>Claims by Status</CardTitle>
+            <CardTitle>Invoices by Status</CardTitle>
           </CardHeader>
           <CardContent className="h-[300px]">
             <ResponsiveContainer width="100%" height="100%">
@@ -143,7 +143,7 @@ export default function Home() {
         {/* Top Claims by Cost Bar Chart */}
         <Card className="col-span-1">
           <CardHeader>
-            <CardTitle>Top Claims by Cost</CardTitle>
+            <CardTitle>Top Invoices by Cost</CardTitle>
           </CardHeader>
           <CardContent className="h-[300px]">
             <ResponsiveContainer width="100%" height="100%">
@@ -159,13 +159,13 @@ export default function Home() {
         </Card>
       </div>
 
-          <div className="mt-16">
-            <Button asChild size="lg">
-              <Link href="/payments">
-                Payment Dashboard
-              </Link>
-            </Button>
-          </div>
-        </div>
+      <div className="mt-16">
+        <Button asChild size="lg">
+          <Link href="/payments">
+            Payment Dashboard
+          </Link>
+        </Button>
+      </div>
+    </div>
   );
 }

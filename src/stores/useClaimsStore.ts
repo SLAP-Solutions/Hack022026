@@ -21,7 +21,7 @@ export const useClaimsStore = create<ClaimsStore>((set, get) => ({
     fetchClaims: async () => {
         set({ isLoading: true, error: null });
         try {
-            const response = await fetch('/api/claims');
+            const response = await fetch('/api/invoices');
             if (!response.ok) throw new Error('Failed to fetch claims');
 
             const text = await response.text();
@@ -49,7 +49,7 @@ export const useClaimsStore = create<ClaimsStore>((set, get) => ({
     addClaim: async (claimInput: CreateClaimInput) => {
         set({ isLoading: true, error: null });
         try {
-            const response = await fetch('/api/claims', {
+            const response = await fetch('/api/invoices', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(claimInput),
@@ -88,7 +88,7 @@ export const useClaimsStore = create<ClaimsStore>((set, get) => ({
                 return value;
             };
 
-            const response = await fetch(`/api/claims/${claimId}`, {
+            const response = await fetch(`/api/invoices/${claimId}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(updatedClaim, replacer),
@@ -145,7 +145,7 @@ export const useClaimsStore = create<ClaimsStore>((set, get) => ({
                 return value;
             };
 
-            const response = await fetch(`/api/claims/${claimId}`, {
+            const response = await fetch(`/api/invoices/${claimId}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(updatedClaim, replacer),
