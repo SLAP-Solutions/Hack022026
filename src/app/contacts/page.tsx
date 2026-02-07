@@ -7,7 +7,7 @@ import { ContactModal } from "@/components/modals/ContactModal";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Plus, Search, Edit, Trash2, User, Loader2, Copy, Check } from "lucide-react";
+import { Plus, Search, Edit, Trash2, User, Loader2 } from "lucide-react";
 import {
     AlertDialog,
     AlertDialogAction,
@@ -18,27 +18,9 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { CopyAddressButton } from "@/components/ui/CopyAddressButton";
 
-function CopyAddressButton({ address }: { address: string }) {
-    const [copied, setCopied] = useState(false);
 
-    const handleCopy = () => {
-        navigator.clipboard.writeText(address);
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2000);
-    };
-
-    return (
-        <Button
-            size="sm"
-            variant="ghost"
-            onClick={handleCopy}
-            className="h-7 w-7 p-0"
-        >
-            {copied ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3 text-muted-foreground" />}
-        </Button>
-    );
-}
 
 export default function ContactsPage() {
     const { contacts, isLoading, fetchContacts, deleteContact } = useContactsStore();

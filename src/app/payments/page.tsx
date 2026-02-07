@@ -8,6 +8,7 @@ import { TransactionHistory } from "@/components/payments/TransactionHistory";
 import { ConnectWallet } from "@/components/wallet/ConnectWallet";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Wallet } from "lucide-react";
+import { CopyAddressButton } from "@/components/ui/CopyAddressButton";
 
 export default function PaymentsPage() {
     const { address, isConnected } = useWallet();
@@ -33,7 +34,7 @@ export default function PaymentsPage() {
             </div>
         );
     }
-    
+
 
     return (
         <div className="max-w-7xl mx-auto space-y-6">
@@ -43,8 +44,9 @@ export default function PaymentsPage() {
                     <h1 className="text-3xl font-bold font-serif">Payment Dashboard</h1>
                     <p className="text-muted-foreground mt-1">Create and manage blockchain payments</p>
                 </div>
-                <div className="text-sm text-muted-foreground font-mono bg-muted px-3 py-1.5 rounded-md">
-                    {address?.slice(0, 6)}...{address?.slice(-4)}
+                <div className="flex items-center gap-2 text-sm text-muted-foreground font-mono bg-muted px-3 py-1.5 rounded-md">
+                    <span>{address?.slice(0, 6)}...{address?.slice(-4)}</span>
+                    {address && <CopyAddressButton address={address} className="h-5 w-5" />}
                 </div>
             </div>
 
