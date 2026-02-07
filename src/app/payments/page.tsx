@@ -33,26 +33,16 @@ export default function PaymentsPage() {
             </div>
         );
     }
+    
 
     return (
         <div className="max-w-7xl mx-auto space-y-6">
             {/* Header */}
             <div className="flex justify-between items-center">
                 <div>
-                    <h1 className="text-3xl font-bold font-serif">
-                        Payment Dashboard
-                    </h1>
+                    <h1 className="text-3xl font-bold font-serif">Payment Dashboard</h1>
                     <p className="text-muted-foreground mt-1">Create and manage blockchain payments</p>
                 </div>
-
-                <div className="grid gap-6 lg:grid-cols-3 mb-6">
-                    <div className="lg:col-span-1">
-                        <CreatePaymentForm />
-                    </div>
-                    <div className="lg:col-span-2">
-                        <h2 className="text-2xl font-bold mb-4">Your Payments</h2>
-                        <PaymentsList payments={payments} isLoading={isLoading} onRefresh={refetch} />
-                    </div>
                 <div className="text-sm text-muted-foreground font-mono bg-muted px-3 py-1.5 rounded-md">
                     {address?.slice(0, 6)}...{address?.slice(-4)}
                 </div>
@@ -70,13 +60,17 @@ export default function PaymentsPage() {
                         </CardContent>
                     </Card>
                 </div>
-                <div className="lg:col-span-2 space-y-6">
+                <div className="lg:col-span-2">
                     <Card>
                         <CardHeader>
                             <CardTitle>Your Payments</CardTitle>
                         </CardHeader>
                         <CardContent>
-                            <PaymentsList payments={payments} isLoading={isLoading} />
+                            <PaymentsList
+                                payments={payments}
+                                isLoading={isLoading}
+                                onRefresh={refetch}
+                            />
                         </CardContent>
                     </Card>
                 </div>
