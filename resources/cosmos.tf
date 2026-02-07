@@ -16,16 +16,14 @@ resource "azurerm_cosmosdb_account" "hack_account" {
   offer_type                 = "Standard"
   kind                       = "GlobalDocumentDB"
   free_tier_enabled          = true
-  automatic_failover_enabled = true
+  automatic_failover_enabled = false
 
   capabilities {
     name = "EnableServerless"
   }
 
   consistency_policy {
-    consistency_level       = "Session"
-    max_interval_in_seconds = 5
-    max_staleness_prefix    = 100
+    consistency_level = "Session"
   }
 
   geo_location {
