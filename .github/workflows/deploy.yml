@@ -1,8 +1,8 @@
 name: Build and Deploy Next.js to Azure
 
 on:
-  push:
   workflow_dispatch:
+  workflow_call:
 
 env:
   NODE_VERSION: '20.x'
