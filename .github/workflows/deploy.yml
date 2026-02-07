@@ -108,17 +108,27 @@ jobs:
             ${{ needs.terraform-apply.outputs.acr_login_server }}/payment-keeper:latest
             ${{ needs.terraform-apply.outputs.acr_login_server }}/payment-keeper:${{ github.sha }}
 
-      - name: Update Container Instance with Secrets
+      - name: Deploy Container Instance with Secrets
         run: |
           ACR_USERNAME=$(az acr credential show --name ${{ needs.terraform-apply.outputs.acr_name }} --query "username" -o tsv)
           ACR_PASSWORD=$(az acr credential show --name ${{ needs.terraform-apply.outputs.acr_name }} --query "passwords[0].value" -o tsv)
           
+          # Delete existing container if it exists (for updates)
+          az container delete \
+            --resource-group ${{ needs.terraform-apply.outputs.rg_name }} \
+            --name ${{ needs.terraform-apply.outputs.container_name }} \
+            --yes 2>/dev/null || true
+          
+          # Create container with actual image and secrets (GitHub Actions manages this resource)
           az container create \
             --resource-group ${{ needs.terraform-apply.outputs.rg_name }} \
             --name ${{ needs.terraform-apply.outputs.container_name }} \
             --image ${{ needs.terraform-apply.outputs.acr_login_server }}/payment-keeper:latest \
+            --os-type Linux \
             --cpu 0.5 \
             --memory 0.5 \
+            --ip-address-type Public \
+            --ports 8080 \
             --registry-login-server ${{ needs.terraform-apply.outputs.acr_login_server }} \
             --registry-username "$ACR_USERNAME" \
             --registry-password "$ACR_PASSWORD" \
