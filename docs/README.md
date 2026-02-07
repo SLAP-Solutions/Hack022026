@@ -1,6 +1,6 @@
 # ClaimPayments Contract Documentation
 
-Welcome to the ClaimPayments contract documentation. This wiki explains how the insurance claim payment system works and how to interact with it.
+Welcome to the ClaimPayments contract documentation. This system optimizes crypto payments for USD-denominated claims using Flare's decentralized price oracles.
 
 ## 📚 Documentation Index
 
@@ -16,18 +16,18 @@ Welcome to the ClaimPayments contract documentation. This wiki explains how the 
 
 ### What is ClaimPayments?
 
-ClaimPayments is a smart contract that allows insurance companies to optimize crypto payments by executing claims when market prices are favorable.
+A smart contract that lets insurance companies optimize crypto payments by executing claims when market prices are favorable. Input claims in USD, execute when crypto prices are high, and automatically minimize crypto spent.
 
-**Problem:** Insurance companies hold crypto reserves but owe claims in USD. When crypto prices fluctuate, the amount of crypto needed to pay the same USD value changes.
+**Problem:** Insurance companies hold crypto reserves but owe claims in USD. Price volatility means the same USD claim costs vastly different amounts of crypto at different times.
 
-**Solution:** Set price triggers (stop loss / take profit) and let the contract automatically execute when optimal conditions are met.
+**Solution:** Set price triggers (stop loss / take profit) and let the contract automatically execute when optimal conditions are met, minimizing crypto expenditure.
 
 ### Key Features
 
 - ✅ **USD-Pegged Payments** - Define payment in USD, pay in crypto
-- ✅ **Price Range Triggers** - Set optimal execution window
-- ✅ **Flare FTSO Integration** - Real-time decentralized price feeds
-- ✅ **Automatic Refunds** - Excess collateral returned to payer
+- ✅ **Price Triggers** - Stop loss and take profit automation  
+- ✅ **Flare FTSO Integration** - Real-time decentralized price feeds (updates ~1.8s)
+- ✅ **Automatic Refunds** - Excess collateral returned instantly
 - ✅ **Permissionless Execution** - Anyone can trigger when conditions met
 - ✅ **Full Transparency** - All payments stored on-chain with events
 
@@ -37,17 +37,30 @@ ClaimPayments is a smart contract that allows insurance companies to optimize cr
 Insurance Company owes: $1,000 USD
 Holds: BTC reserves
 
-Option 1: Pay immediately at BTC = $50,000
+Scenario 1: Pay immediately at BTC = $50,000
   → Must pay 0.02 BTC
 
-Option 2: Wait for better rate at BTC = $70,000
+Scenario 2: Wait for optimal rate at BTC = $70,000
   → Only pay 0.0143 BTC
   → SAVED 0.0057 BTC (~$400)!
 ```
 
-The ClaimPayments contract automates this optimization by:
-1. Creating payment with price triggers
-2. Locking collateral in contract
+The ClaimPayments contract automates this optimization:
+1. Create payment with USD amount and price triggers
+2. Lock collateral in contract (150% ratio for safety)
+3. Monitor prices via Flare FTSO
+4. Execute when trigger hit (price drops to stop loss OR rises to take profit)
+5. Pay calculated crypto amount, refund excess collateral
+
+## 🎮 Demo Mode (Coston2)
+
+Since FLR/USD prices are small ($0.03), the testnet demo uses:
+- **Input:** USD amount (e.g., $10)  
+- **Price Feed:** ETH/USD or BTC/USD (realistic prices)
+- **Calculation:** Amount in chosen crypto (Flare FTSO provides real prices)
+- **Payment:** Same numeric value sent in FLR
+
+This demonstrates real savings using authentic FTSO market data while staying on testnet.
 3. Monitoring FTSO oracle prices
 4. Executing when price enters optimal range
 5. Paying beneficiary calculated crypto amount

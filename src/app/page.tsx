@@ -159,11 +159,13 @@ export default function Home() {
         </Card>
       </div>
 
-      <div className="flex justify-center pt-8">
-        <Link href="/landing" className="text-sm text-muted-foreground hover:text-primary underline">
-          Back to Landing Page
-        </Link>
-      </div>
-    </div>
+          <div className="mt-16">
+            <Button asChild size="lg" className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 shadow-lg shadow-blue-500/50 hover:shadow-xl hover:shadow-blue-500/60">
+              <Link href="/payments">
+                Payment Dashboard
+              </Link>
+            </Button>
+          </div>
+        </div>
   );
 }

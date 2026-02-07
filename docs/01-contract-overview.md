@@ -2,15 +2,16 @@
 
 ## What is ClaimPayments?
 
-ClaimPayments is a smart contract deployed on Flare Network that enables insurance companies to create crypto-based claim payments with dynamic execution based on real-time market prices from Flare's FTSO (Time Series Oracle).
+ClaimPayments is a smart contract on Flare Network that enables insurance companies to optimize crypto payments for USD-denominated claims by executing when market prices are favorable. It uses Flare's FTSO (Time Series Oracle) for decentralized real-time price data.
 
 ## The Problem
 
-Insurance companies often hold cryptocurrency reserves but need to pay claims denominated in fiat currency (USD). The challenge is:
+Insurance companies hold cryptocurrency reserves but pay claims in fiat (USD). Crypto volatility creates significant inefficiency:
 
-- **Crypto volatility** causes the amount of crypto needed to fluctuate
-- **Paying at wrong time** can be expensive
+- **Price volatility** causes the crypto cost of the same USD claim to vary wildly
+- **Paying at suboptimal times** wastes valuable crypto reserves
 - **Manual monitoring** is inefficient and error-prone
+- **Timing the market** requires constant attention
 
 ### Example Scenario
 
@@ -19,35 +20,45 @@ Insurance Company Assets: 10 BTC
 Outstanding Claim: $1,000 USD owed to Alice
 
 Day 1: BTC = $50,000
-  → Needs: $1,000 ÷ $50,000 = 0.02 BTC to pay claim
+  → Cost: $1,000 ÷ $50,000 = 0.02 BTC
   
 Day 5: BTC = $70,000
-  → Needs: $1,000 ÷ $70,000 = 0.0143 BTC to pay claim
+  → Cost: $1,000 ÷ $70,000 = 0.0143 BTC
   → SAVES: 0.0057 BTC worth ~$400!
 ```
 
+Paying on Day 5 instead of Day 1 saves **28% in crypto** for the exact same USD claim.
+
 ## The Solution
 
-ClaimPayments contract allows insurance companies to:
+ClaimPayments automates optimal payment execution:
 
-1. **Create a payment** with USD value and price triggers
-2. **Lock collateral** in the smart contract
-3. **Set execution range** (stop loss / take profit)
-4. **Automatic execution** when FTSO price enters optimal range
-5. **Dynamic calculation** of crypto amount at execution time
+1. **Create Payment** - Set USD amount and price triggers
+2. **Lock Collateral** - Over-collateralize for security (150% ratio)
+3. **Monitor via FTSO** - Flare oracle provides real-time prices
+4. **Auto-Execute** - Triggers when price hits stop loss OR take profit
+5. **Dynamic Calculation** - Crypto amount calculated at execution (not creation)
+6. **Automatic Refunds** - Excess collateral returned instantly
 
 ## Key Concepts
 
+### USD-Denominated Storage
+
+Payments store the **USD amount in cents** (e.g., 100000 = $1,000 USD). The actual crypto amount is **calculated at execution time** based on current FTSO price, not locked at creation time.
+
 ### Stop Loss (Lower Price Limit)
 
-**When:** Price drops to this level  
-**Action:** Execute payment to prevent paying even more crypto if price continues falling  
-**Example:** Set stop loss at $60,000. If BTC drops here, execute to pay 0.0167 BTC before it gets worse
+**Purpose:** Protect against falling prices  
+**When:** Price drops to/below this level  
+**Action:** Execute payment to prevent paying even more crypto  
+**Example:** Set stop loss at $60,000. If BTC drops here, execute at 0.0167 BTC before it gets worse
 
 ### Take Profit (Upper Price Limit)
 
-**When:** Price rises to this level  
-**Action:** Execute payment to pay minimal crypto at optimal rate  
+**Purpose:** Capture optimal rates  
+**When:** Price rises to/above this level  
+**Action:** Execute payment to pay minimal crypto  
+**Example:** Set take profit at $70,000. If BTC rises here, execute at 0.0143 BTC (saving 28% vs stop loss!)  
 **Example:** Set take profit at $75,000. If BTC reaches here, execute to pay only 0.0133 BTC
 
 ### Execution Window

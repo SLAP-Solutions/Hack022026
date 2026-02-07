@@ -19,22 +19,10 @@ import "@flarenetwork/flare-periphery-contracts/coston2/FtsoV2Interface.sol";
  * - If BTC = $70,000: Only pay 0.0143 BTC ($1,000 / $70k) ← BETTER!
  * 
  * EXECUTION LOGIC (Take Profit / Stop Loss):
-<<<<<<< HEAD
-<<<<<<< HEAD
- * - Upper Limit (Take Profit): When price reaches this HIGH, execute to pay MINIMAL crypto
- * - Lower Limit (Stop Loss): If price drops to this LOW, execute to prevent paying even MORE crypto
- * - Payment executes when: lowerLimit ≤ currentPrice ≤ upperLimit
-=======
-=======
->>>>>>> origin
  * - Stop Loss (Lower Limit): If price drops to or below this, execute to prevent paying even MORE crypto
  * - Take Profit (Upper Limit): When price reaches or exceeds this HIGH, execute to pay MINIMAL crypto
  * - Payment executes when: currentPrice ≤ stopLossPrice OR currentPrice ≥ takeProfitPrice
  * - Payment is PENDING when: stopLossPrice < currentPrice < takeProfitPrice
-<<<<<<< HEAD
->>>>>>> 8d7cf1a08f9d1701448dcf8f157eb834dc15bcc7
-=======
->>>>>>> origin
  */
 contract ClaimPayments {
     /// @notice Flare Time Series Oracle v2 interface
@@ -173,15 +161,7 @@ contract ClaimPayments {
      * 
      * Price Execution Logic:
      * - Queries Flare FTSO v2 for current crypto price
-<<<<<<< HEAD
-<<<<<<< HEAD
-     * - Checks if price is within [stopLossPrice, takeProfitPrice] range
-=======
      * - Executes if price hits stop loss (≤ lower limit) OR take profit (≥ upper limit)
->>>>>>> 8d7cf1a08f9d1701448dcf8f157eb834dc15bcc7
-=======
-     * - Executes if price hits stop loss (≤ lower limit) OR take profit (≥ upper limit)
->>>>>>> origin
      * - Calculates crypto amount needed: (usdAmount * 10^decimals) / currentPrice
      * - Pays receiver the calculated crypto amount
      * - Refunds excess collateral to payer
@@ -191,15 +171,7 @@ contract ClaimPayments {
      * Requirements:
      * - Payment must exist and not be executed
      * - Current time must be before expiry deadline
-<<<<<<< HEAD
-<<<<<<< HEAD
-     * - Current FTSO price must be within trigger range
-=======
      * - Current FTSO price must be at or beyond one of the trigger points
->>>>>>> 8d7cf1a08f9d1701448dcf8f157eb834dc15bcc7
-=======
-     * - Current FTSO price must be at or beyond one of the trigger points
->>>>>>> origin
      * - Collateral must be sufficient to cover calculated payment amount
      * 
      * Emits ClaimPaymentExecuted event with execution details
@@ -215,22 +187,6 @@ contract ClaimPayments {
         (uint256 currentPrice, int8 decimals, uint64 timestamp) = 
             ftsoV2.getFeedById(payment.cryptoFeedId);
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-        // Verify price is within execution range
-        require(
-            currentPrice >= payment.stopLossPrice && 
-            currentPrice <= payment.takeProfitPrice,
-            "ClaimPayments: Price outside trigger range"
-        );
-
-        // Calculate crypto amount based on current oracle price
-        // Formula: cryptoAmount = (usdAmountInCents * 10^decimals) / currentPrice
-        // Example: ($1000 * 100 cents * 10^2 decimals) / 7000000 = 0.0143 BTC
-        uint256 paymentAmount = (payment.usdAmount * (10 ** uint256(int256(decimals)))) / currentPrice;
-=======
-=======
->>>>>>> origin
         // Verify price has hit a trigger point
         // Execute if: price dropped to/below stop loss OR price reached/exceeded take profit
         require(
@@ -239,14 +195,18 @@ contract ClaimPayments {
             "ClaimPayments: Price not at trigger point (still pending)"
         );
 
-        // Calculate crypto amount based on current oracle price
+        // Calculate crypto amount based on current oracle price for the specified feed
         // Formula: cryptoAmount = (usdAmountInCents * 10^18 Wei * 10^decimals) / (currentPrice * 100)
-        // Example with $0.32 @ $2058.44 ETH: (32 * 10^18 * 10^3) / (2058440 * 100) = 0.000155494 ETH
+        // Example with $10 @ $2058.44 ETH: (1000 * 10^18 * 10^3) / (2058440 * 100) = 0.00486 ETH
+        // 
+        // DEMO MODE: We calculate the amount in the feed currency (e.g., ETH), but pay that
+        // same numeric value in FLR (native token). This allows us to:
+        // - Use real ETH/USD prices from FTSO
+        // - Calculate real savings/costs
+        // - Actually execute payments on Coston2 testnet
+        // 
+        // Example: If calculation shows 0.05 ETH, we send 0.05 FLR
         uint256 paymentAmount = (payment.usdAmount * 1e18 * (10 ** uint256(int256(decimals)))) / (currentPrice * 100);
-<<<<<<< HEAD
->>>>>>> 8d7cf1a08f9d1701448dcf8f157eb834dc15bcc7
-=======
->>>>>>> origin
 
         require(paymentAmount <= payment.collateralAmount, "ClaimPayments: Insufficient collateral");
 
@@ -256,7 +216,7 @@ contract ClaimPayments {
         payment.executedPrice = currentPrice;
         payment.paidAmount = paymentAmount;
 
-        // Transfer calculated amount to receiver
+        // Transfer calculated amount to receiver (in FLR, but amount calculated from feed price)
         (bool paymentSuccess, ) = payable(payment.receiver).call{value: paymentAmount}("");
         require(paymentSuccess, "ClaimPayments: Payment transfer failed");
 
@@ -269,6 +229,99 @@ contract ClaimPayments {
 
         emit ClaimPaymentExecuted(
             _paymentId,
+            msg.sender,
+            currentPrice,
+            paymentAmount,
+            excessCollateral,
+            timestamp
+        );
+    }
+
+    /**
+     * @notice Creates and immediately executes a payment in a single transaction
+     * @dev Combines createClaimPayment + executeClaimPayment for instant payments
+     * 
+     * This function is useful when:
+     * - You want instant payment without waiting for price triggers
+     * - Current price is acceptable for immediate execution
+     * - You want to minimize transactions and gas costs
+     * 
+     * @param _receiver Address that will receive the payment
+     * @param _usdAmount USD value to pay in cents (e.g., $1000 = 100000)
+     * @param _cryptoFeedId FTSO feed ID for payment crypto
+     * 
+     * @return paymentId The unique identifier for the created and executed payment
+     * 
+     * Requirements:
+     * - Receiver address must be valid (non-zero)
+     * - USD amount must be greater than zero
+     * - Must send sufficient collateral (msg.value) to cover payment amount
+     * 
+     * Emits ClaimPaymentCreated and ClaimPaymentExecuted events
+     */
+    function createAndExecutePayment(
+        address _receiver,
+        uint256 _usdAmount,
+        bytes21 _cryptoFeedId
+    ) external payable returns (uint256 paymentId) {
+        require(_receiver != address(0), "ClaimPayments: Invalid receiver address");
+        require(_usdAmount > 0, "ClaimPayments: USD amount must be positive");
+        require(msg.value > 0, "ClaimPayments: Must provide collateral");
+
+        // Query current price from FTSO
+        (uint256 currentPrice, int8 decimals, uint64 timestamp) = 
+            ftsoV2.getFeedById(_cryptoFeedId);
+
+        // Calculate payment amount needed at current price
+        uint256 paymentAmount = (_usdAmount * 1e18 * (10 ** uint256(int256(decimals)))) / (currentPrice * 100);
+
+        require(paymentAmount <= msg.value, "ClaimPayments: Insufficient collateral");
+
+        // Create payment record with instant execution
+        paymentId = paymentCounter++;
+        uint256 expiryTimestamp = block.timestamp + 1 days; // Expires in 1 day (already executed)
+
+        claimPayments[paymentId] = ClaimPayment({
+            id: paymentId,
+            payer: msg.sender,
+            receiver: _receiver,
+            usdAmount: _usdAmount,
+            cryptoFeedId: _cryptoFeedId,
+            stopLossPrice: currentPrice, // Set to current price (already executed)
+            takeProfitPrice: currentPrice, // Set to current price (already executed)
+            collateralAmount: msg.value,
+            createdAt: block.timestamp,
+            expiresAt: expiryTimestamp,
+            executed: true, // Mark as executed immediately
+            executedAt: block.timestamp,
+            executedPrice: currentPrice,
+            paidAmount: paymentAmount
+        });
+
+        // Transfer payment to receiver
+        (bool paymentSuccess, ) = payable(_receiver).call{value: paymentAmount}("");
+        require(paymentSuccess, "ClaimPayments: Payment transfer failed");
+
+        // Refund excess collateral to payer
+        uint256 excessCollateral = msg.value - paymentAmount;
+        if (excessCollateral > 0) {
+            (bool refundSuccess, ) = payable(msg.sender).call{value: excessCollateral}("");
+            require(refundSuccess, "ClaimPayments: Refund transfer failed");
+        }
+
+        emit ClaimPaymentCreated(
+            paymentId,
+            msg.sender,
+            _receiver,
+            _usdAmount,
+            _cryptoFeedId,
+            currentPrice, // stopLossPrice = currentPrice
+            currentPrice, // takeProfitPrice = currentPrice
+            expiryTimestamp
+        );
+
+        emit ClaimPaymentExecuted(
+            paymentId,
             msg.sender,
             currentPrice,
             paymentAmount,
@@ -368,14 +421,40 @@ contract ClaimPayments {
         ClaimPayment memory payment = claimPayments[_paymentId];
         require(payment.collateralAmount > 0, "ClaimPayments: Payment does not exist");
         
-<<<<<<< HEAD
-<<<<<<< HEAD
-        estimatedAmount = (payment.usdAmount * (10 ** uint256(int256(_decimals)))) / _estimatedPrice;
-=======
         estimatedAmount = (payment.usdAmount * 1e18 * (10 ** uint256(int256(_decimals)))) / (_estimatedPrice * 100);
->>>>>>> 8d7cf1a08f9d1701448dcf8f157eb834dc15bcc7
-=======
-        estimatedAmount = (payment.usdAmount * 1e18 * (10 ** uint256(int256(_decimals)))) / (_estimatedPrice * 100);
->>>>>>> origin
+    }
+
+    /**
+     * @notice Calculates recommended collateral for a new payment
+     * @dev Uses stop loss price as worst-case scenario and applies collateral ratio buffer
+     * 
+     * Formula: collateral = (usdAmount / stopLossPrice) * collateralRatio
+     * 
+     * Example with $1000 payment:
+     * - Stop loss: $0.025/FLR (worst case price)
+     * - Worst case crypto needed: $1000 / $0.025 = 40,000 FLR
+     * - With 150% buffer: 40,000 * 1.5 = 60,000 FLR collateral
+     * 
+     * @param _usdAmount USD value to pay in cents (e.g., $1000 = 100000)
+     * @param _stopLossPrice Lower price limit (worst-case price in feed decimals)
+     * @param _decimals Number of decimal places in the price feed
+     * @param _collateralRatioPercent Collateral ratio as percentage (150 = 150%)
+     * @return requiredCollateral Minimum collateral in native token Wei
+     */
+    function calculateRequiredCollateral(
+        uint256 _usdAmount,
+        uint256 _stopLossPrice,
+        int8 _decimals,
+        uint256 _collateralRatioPercent
+    ) external pure returns (uint256 requiredCollateral) {
+        require(_usdAmount > 0, "ClaimPayments: USD amount must be positive");
+        require(_stopLossPrice > 0, "ClaimPayments: Stop loss price must be positive");
+        require(_collateralRatioPercent >= 100, "ClaimPayments: Ratio must be >= 100%");
+        
+        // Calculate max crypto needed at stop loss (worst case)
+        uint256 maxCryptoNeeded = (_usdAmount * 1e18 * (10 ** uint256(int256(_decimals)))) / (_stopLossPrice * 100);
+        
+        // Apply collateral ratio buffer
+        requiredCollateral = (maxCryptoNeeded * _collateralRatioPercent) / 100;
     }
 }

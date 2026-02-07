@@ -6,15 +6,21 @@ import { useWallet } from "./useWallet";
 import { CONTRACT_ADDRESS, FEED_IDS } from "../lib/contract/constants";
 import ABI from "../lib/contract/abi.json";
 
-export interface Claim {
-    id: string;
-    beneficiary: string;
-    payoutAmount: string;
-    feedId: string;
-    triggerPrice: string;
-    isPriceAbove: boolean;
+export interface ClaimPayment {
+    id: number;
+    payer: string;
+    receiver: string;
+    usdAmount: number;
+    cryptoFeedId: string;
+    stopLossPrice: bigint;
+    takeProfitPrice: bigint;
+    collateralAmount: bigint;
     createdAt: number;
+    expiresAt: number;
     executed: boolean;
+    executedAt: number;
+    executedPrice: bigint;
+    paidAmount: bigint;
 }
 
 export function useContract() {
@@ -28,11 +34,14 @@ export function useContract() {
         return new Contract(CONTRACT_ADDRESS, ABI, signer);
     };
 
-    const createClaim = async (
+    const createClaimPayment = async (
+        receiver: string,
+        usdAmountCents: number,
         feedSymbol: keyof typeof FEED_IDS,
-        triggerPrice: string,
-        isPriceAbove: boolean,
-        payoutAmount: string
+        stopLossPrice: bigint,
+        takeProfitPrice: bigint,
+        expiryDays: number,
+        collateralEth: string
     ) => {
         try {
             setIsLoading(true);
@@ -40,17 +49,20 @@ export function useContract() {
 
             const contract = await getContract();
             const feedId = FEED_IDS[feedSymbol];
+            const collateralWei = parseEther(collateralEth);
 
-            // Convert trigger price to wei (assuming 5 decimals for FTSO feeds)
-            const triggerPriceWei = parseEther(triggerPrice);
-            const payoutWei = parseEther(payoutAmount);
-
-            const tx = await contract.createClaim(feedId, triggerPriceWei, isPriceAbove, {
-                value: payoutWei,
-            });
+            const tx = await contract.createClaimPayment(
+                receiver,
+                usdAmountCents,
+                feedId,
+                stopLossPrice,
+                takeProfitPrice,
+                expiryDays,
+                { value: collateralWei }
+            );
 
             const receipt = await tx.wait();
-            console.log("Claim created:", receipt);
+            console.log("Payment created:", receipt);
 
             return tx.hash;
         } catch (err: any) {
@@ -62,16 +74,16 @@ export function useContract() {
         }
     };
 
-    const executeClaim = async (claimId: string) => {
+    const executeClaimPayment = async (paymentId: number) => {
         try {
             setIsLoading(true);
             setError(null);
 
             const contract = await getContract();
-            const tx = await contract.executeClaim(claimId);
+            const tx = await contract.executeClaimPayment(paymentId);
             const receipt = await tx.wait();
 
-            console.log("Claim executed:", receipt);
+            console.log("Payment executed:", receipt);
             return tx.hash;
         } catch (err: any) {
             const errorMessage = err.reason || err.message || "Unknown error";
@@ -82,30 +94,43 @@ export function useContract() {
         }
     };
 
-    const getClaim = async (claimId: string): Promise<Claim> => {
+    const getClaimPayment = async (paymentId: number): Promise<ClaimPayment> => {
         const contract = await getContract();
-        const claim = await contract.getClaim(claimId);
+        const payment = await contract.getClaimPayment(paymentId);
 
         return {
-            id: claim.id.toString(),
-            beneficiary: claim.beneficiary,
-            payoutAmount: formatEther(claim.payoutAmount),
-            feedId: claim.feedId,
-            triggerPrice: formatEther(claim.triggerPrice),
-            isPriceAbove: claim.isPriceAbove,
-            createdAt: Number(claim.createdAt),
-            executed: claim.executed,
+            id: Number(payment.id),
+            payer: payment.payer,
+            receiver: payment.receiver,
+            usdAmount: Number(payment.usdAmount),
+            cryptoFeedId: payment.cryptoFeedId,
+            stopLossPrice: payment.stopLossPrice,
+            takeProfitPrice: payment.takeProfitPrice,
+            collateralAmount: payment.collateralAmount,
+            createdAt: Number(payment.createdAt),
+            expiresAt: Number(payment.expiresAt),
+            executed: payment.executed,
+            executedAt: Number(payment.executedAt),
+            executedPrice: payment.executedPrice,
+            paidAmount: payment.paidAmount,
         };
+    };
+
+    const getTotalPayments = async (): Promise<number> => {
+        const contract = await getContract();
+        const total = await contract.getTotalPayments();
+        return Number(total);
     };
 
     const getCurrentPrice = async (feedSymbol: keyof typeof FEED_IDS) => {
         try {
             const contract = await getContract();
             const feedId = FEED_IDS[feedSymbol];
-            const [price, decimals, timestamp] = await contract.getCurrentPrice(feedId);
+            // Use staticCall to avoid creating an unnecessary transaction (read-only operation)
+            const [price, decimals, timestamp] = await contract.getCurrentPrice.staticCall(feedId);
 
             return {
-                price: formatEther(price),
+                price: Number(price),
                 decimals: Number(decimals),
                 timestamp: Number(timestamp),
             };
@@ -115,11 +140,52 @@ export function useContract() {
         }
     };
 
+    /**
+     * Creates and executes a payment instantly in a single transaction
+     * Use this for immediate payments without price trigger conditions
+     */
+    const createInstantPayment = async (
+        receiverAddress: string,
+        usdAmountCents: number,
+        feedSymbol: keyof typeof FEED_IDS,
+        collateralEth: string
+    ) => {
+        try {
+            setIsLoading(true);
+            setError(null);
+
+            const contract = await getContract();
+            const feedId = FEED_IDS[feedSymbol];
+            const collateralWei = parseEther(collateralEth);
+
+            const tx = await contract.createAndExecutePayment(
+                receiverAddress,
+                usdAmountCents,
+                feedId,
+                { value: collateralWei }
+            );
+
+            console.log("💸 Instant payment transaction sent:", tx.hash);
+            const receipt = await tx.wait();
+            console.log("✅ Instant payment confirmed:", receipt);
+
+            return tx.hash;
+        } catch (err: any) {
+            const errorMessage = err.reason || err.message || "Unknown error";
+            setError(errorMessage);
+            throw new Error(errorMessage);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
     return {
-        createClaim,
-        executeClaim,
-        getClaim,
+        createClaimPayment,
+        executeClaimPayment,
+        getClaimPayment,
+        getTotalPayments,
         getCurrentPrice,
+        createInstantPayment,
         isLoading,
         error,
     };
