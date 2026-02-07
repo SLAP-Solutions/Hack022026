@@ -11,7 +11,7 @@ namespace agent_api.Controllers
     {
         private AgentOrchestrator _orchestrator;
 
-        [HttpGet("workflows/run/invoice")]
+        [HttpGet("workflows/invoice/run")]
         public async Task<string> RunInvoiceWorkflow([FromBody] IFormFile file)
         {
             var response = string.Empty;
