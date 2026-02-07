@@ -9,11 +9,11 @@ import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 
 const statusConfig = {
-    pending: "bg-amber-100 text-amber-800 border-amber-300 hover:bg-amber-200",
-    processing: "bg-blue-100 text-blue-800 border-blue-300 hover:bg-blue-200",
-    approved: "bg-green-100 text-green-800 border-green-300 hover:bg-green-200",
-    settled: "bg-emerald-100 text-emerald-800 border-emerald-300 hover:bg-emerald-200",
-    rejected: "bg-red-100 text-red-800 border-red-300 hover:bg-red-200",
+    pending: "bg-primary/10 text-primary border-primary/30 hover:bg-primary/20",
+    processing: "bg-primary/20 text-primary border-primary/40 hover:bg-primary/30",
+    approved: "bg-primary/30 text-primary border-primary/50 hover:bg-primary/40",
+    settled: "bg-primary/40 text-primary border-primary/60 hover:bg-primary/50",
+    rejected: "bg-primary/15 text-primary border-primary/35 hover:bg-primary/25",
 };
 
 export default function ClaimsPage() {
@@ -37,35 +37,40 @@ export default function ClaimsPage() {
                     </p>
                 </div>
 
-                {/* Filter Buttons */}
-                <div className="flex gap-2 flex-wrap">
-                    {["all", "pending", "processing", "approved", "settled", "rejected"].map((status) => {
-                        const activeStyle = status === "all"
-                            ? "bg-primary text-primary-foreground hover:bg-primary/90"
-                            : statusConfig[status as keyof typeof statusConfig];
+                {/* Filter Buttons and Prices Row */}
+                <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                    {/* Filter Buttons */}
+                    <div className="flex gap-2 flex-nowrap overflow-x-auto pb-2">
+                        {["all", "pending", "processing", "approved", "settled", "rejected"].map((status) => {
+                            const activeStyle = status === "all"
+                                ? "bg-primary text-primary-foreground hover:bg-primary/90"
+                                : statusConfig[status as keyof typeof statusConfig];
 
-                        return (
-                            <Button
-                                key={status}
-                                onClick={() => setFilter(status)}
-                                variant={filter === status ? "default" : "outline"}
-                                size="sm"
-                                className={cn(
-                                    "capitalize",
-                                    filter === status
-                                        ? cn(activeStyle, "border-transparent shadow-sm")
-                                        : "hover:bg-muted"
-                                )}
-                            >
-                                {status}
-                            </Button>
-                        );
-                    })}
+                            return (
+                                <Button
+                                    key={status}
+                                    onClick={() => setFilter(status)}
+                                    variant={filter === status ? "default" : "outline"}
+                                    size="sm"
+                                    className={cn(
+                                        "capitalize whitespace-nowrap",
+                                        filter === status
+                                            ? cn(activeStyle, "border-transparent shadow-sm")
+                                            : "hover:bg-muted"
+                                    )}
+                                >
+                                    {status}
+                                </Button>
+                            );
+                        })}
+                    </div>
+
+                    {/* Price Dashboard - Same Row */}
+                    <div className="shrink-0">
+                        <PriceDashboard />
+                    </div>
                 </div>
             </div>
-
-            {/* Price Dashboard */}
-            <PriceDashboard />
 
             {/* Claims Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
