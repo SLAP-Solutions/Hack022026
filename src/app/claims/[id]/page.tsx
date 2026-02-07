@@ -42,21 +42,19 @@ export default function ClaimDetailPage() {
 
     if (!claim) {
         return (
-            <div className="min-h-screen pt-24 p-8">
-                <div className="max-w-4xl mx-auto">
-                    <Card>
-                        <CardContent className="pt-16 pb-16 text-center">
-                            <h1 className="text-4xl font-bold mb-4">Claim Not Found</h1>
-                            <p className="text-muted-foreground mb-8">
-                                The claim you're looking for doesn't exist.
-                            </p>
-                            <Button onClick={() => router.push("/claims")}>
-                                <ArrowLeft className="w-4 h-4 mr-2" />
-                                Back to Claims
-                            </Button>
-                        </CardContent>
-                    </Card>
-                </div>
+            <div className="max-w-4xl mx-auto">
+                <Card>
+                    <CardContent className="pt-16 pb-16 text-center">
+                        <h1 className="text-4xl font-bold mb-4">Claim Not Found</h1>
+                        <p className="text-muted-foreground mb-8">
+                            The claim you're looking for doesn't exist.
+                        </p>
+                        <Button onClick={() => router.push("/claims")}>
+                            <ArrowLeft className="w-4 h-4 mr-2" />
+                            Back to Claims
+                        </Button>
+                    </CardContent>
+                </Card>
             </div>
         );
     }
@@ -64,8 +62,7 @@ export default function ClaimDetailPage() {
     const statusInfo = statusConfig[claim.status as keyof typeof statusConfig];
 
     return (
-        <div className="min-h-screen bg-slate-50 dark:bg-slate-950 pt-24 p-8">
-            <div className="max-w-7xl mx-auto space-y-6">
+        <div className="max-w-7xl mx-auto space-y-6">
                 {/* Back Button */}
                 <Button
                     variant="ghost"
@@ -353,14 +350,13 @@ export default function ClaimDetailPage() {
                     </CardContent>
                 </Card>
 
-                {/* Modals */}
-                <AddPaymentModal />
-                <ClaimRiskModal
-                    open={isRiskModalOpen}
-                    onOpenChange={setIsRiskModalOpen}
-                    claim={claim}
-                />
-            </div>
+            {/* Modals */}
+            <AddPaymentModal />
+            <ClaimRiskModal
+                open={isRiskModalOpen}
+                onOpenChange={setIsRiskModalOpen}
+                claim={claim}
+            />
         </div>
     );
 }
