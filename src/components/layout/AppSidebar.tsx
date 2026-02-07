@@ -3,7 +3,7 @@
 import Link from "next/link"
 import Image from "next/image"
 import { usePathname } from "next/navigation"
-import { Home, FileText, TrendingUp, DollarSign, Users } from "lucide-react"
+import { Home, FileText, TrendingUp, DollarSign, Users, Bot } from "lucide-react"
 import {
   Sidebar,
   SidebarContent,
@@ -40,6 +40,11 @@ const menuItems = [
     title: "Contacts",
     href: "/contacts",
     icon: Users,
+  },
+  {
+    title: "Agents",
+    href: "/agents",
+    icon: Bot,
   },
 ]
 
@@ -92,7 +97,6 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
         <SidebarGroup className="mt-auto group-data-[collapsible=icon]:hidden">
-          <SidebarGroupLabel>Market Prices</SidebarGroupLabel>
           <SidebarGroupContent>
             <PriceDashboard />
           </SidebarGroupContent>

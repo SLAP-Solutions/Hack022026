@@ -43,14 +43,14 @@ export default function PaymentsPage() {
     }
 
     return (
-        <div className="flex h-full -m-6">
+        <div className="flex h-full">
             <div className="flex-1 flex flex-col overflow-hidden">
                 <PageHeader title="Payments">
                     <div className="text-sm text-muted-foreground font-mono bg-muted px-3 py-1.5 rounded-md">
                         {address?.slice(0, 6)}...{address?.slice(-4)}
                     </div>
                     {!sidebarOpen && (
-                        <Button 
+                        <Button
                             onClick={() => setSidebarOpen(true)}
                             className="bg-primary text-primary-foreground hover:bg-primary/90"
                             size="sm"
@@ -119,7 +119,7 @@ export default function PaymentsPage() {
                         )}
 
                         {activeTab === "transactions" && (
-                            <TransactionHistory 
+                            <TransactionHistory
                                 transactions={transactions}
                                 loading={txLoading}
                                 error={txError}
@@ -141,8 +141,8 @@ export default function PaymentsPage() {
                             <h3 className="font-semibold font-serif">Create Payment</h3>
                             <p className="text-xs text-muted-foreground">Set up a new blockchain payment</p>
                         </div>
-                        <Button 
-                            variant="ghost" 
+                        <Button
+                            variant="ghost"
                             size="icon"
                             className="h-8 w-8"
                             onClick={() => setSidebarOpen(false)}
@@ -150,7 +150,7 @@ export default function PaymentsPage() {
                             <X className="w-4 h-4" />
                         </Button>
                     </div>
-                    
+
                     {/* Sidebar Content */}
                     <div className="flex-1 overflow-y-auto p-4">
                         <CreatePaymentForm onSuccess={() => setSidebarOpen(false)} />

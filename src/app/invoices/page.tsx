@@ -42,7 +42,7 @@ export default function InvoicesPage() {
     }
 
     return (
-        <div className="flex flex-col h-full -m-6">
+        <div className="flex flex-col h-full">
             <PageHeader title="Invoices">
                 <Button onClick={() => setIsCreateOpen(true)} className="bg-primary text-primary-foreground hover:bg-primary/90" size="sm">
                     <Plus className="mr-2 h-4 w-4" />
@@ -83,45 +83,45 @@ export default function InvoicesPage() {
             <div className="flex-1 overflow-auto p-6">
                 <div className="max-w-7xl mx-auto space-y-6">
 
-            {/* Claims Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {filteredClaims.map((claim) => (
-                    <InvoiceCard
-                        key={claim.id}
-                        id={claim.id}
-                        title={claim.title}
-                        description={claim.description}
-                        claimantName={claim.claimantName}
-                        type={claim.type}
-                        status={claim.status as any}
-                        totalCost={claim.payments?.reduce((acc: number, p: any) => acc + Number(p.usdAmount), 0) || 0}
-                        dateCreated={claim.dateCreated as string}
-                        dateSettled={claim.dateSettled as string}
-                        payments={claim.payments as any}
-                        onClick={() => router.push(`/invoices/${claim.id}`)}
-                    />
-                ))}
-            </div>
-
-            {/* Empty State */}
-            {
-                !isLoading && filteredClaims.length === 0 && (
-                    <div className="text-center py-16">
-                        <div className="text-6xl mb-4">📋</div>
-                        <h3 className="text-2xl font-bold mb-2">
-                            No invoices found
-                        </h3>
-                        <p className="text-muted-foreground">
-                            Try adjusting your filters to see more results or create a new invoice.
-                        </p>
-                        <Button onClick={() => setIsCreateOpen(true)} className="mt-4" variant="outline">
-                            Create New Invoice
-                        </Button>
+                    {/* Claims Grid */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {filteredClaims.map((claim) => (
+                            <InvoiceCard
+                                key={claim.id}
+                                id={claim.id}
+                                title={claim.title}
+                                description={claim.description}
+                                claimantName={claim.claimantName}
+                                type={claim.type}
+                                status={claim.status as any}
+                                totalCost={claim.payments?.reduce((acc: number, p: any) => acc + Number(p.usdAmount), 0) || 0}
+                                dateCreated={claim.dateCreated as string}
+                                dateSettled={claim.dateSettled as string}
+                                payments={claim.payments as any}
+                                onClick={() => router.push(`/invoices/${claim.id}`)}
+                            />
+                        ))}
                     </div>
-                )
-            }
 
-                <CreateInvoiceModal isOpen={isCreateOpen} onClose={() => setIsCreateOpen(false)} />
+                    {/* Empty State */}
+                    {
+                        !isLoading && filteredClaims.length === 0 && (
+                            <div className="text-center py-16">
+                                <div className="text-6xl mb-4">📋</div>
+                                <h3 className="text-2xl font-bold mb-2">
+                                    No invoices found
+                                </h3>
+                                <p className="text-muted-foreground">
+                                    Try adjusting your filters to see more results or create a new invoice.
+                                </p>
+                                <Button onClick={() => setIsCreateOpen(true)} className="mt-4" variant="outline">
+                                    Create New Invoice
+                                </Button>
+                            </div>
+                        )
+                    }
+
+                    <CreateInvoiceModal isOpen={isCreateOpen} onClose={() => setIsCreateOpen(false)} />
                 </div>
             </div>
         </div>

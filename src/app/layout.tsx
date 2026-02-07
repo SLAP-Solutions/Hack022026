@@ -40,7 +40,7 @@ export default function RootLayout({
             <SidebarProvider>
               <AppSidebar />
               <SidebarInset className="p-4 pl-0 h-screen overflow-hidden bg-sidebar">
-                <main className="bg-white dark:bg-slate-950 rounded-xl border border-slate-200 dark:border-slate-800 h-full overflow-auto p-6">
+                <main className="bg-white dark:bg-slate-950 rounded-xl border border-slate-200 dark:border-slate-800 h-full overflow-auto">
                   {children}
                 </main>
               </SidebarInset>
