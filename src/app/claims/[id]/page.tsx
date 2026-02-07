@@ -170,65 +170,65 @@ export default function ClaimDetailPage() {
                     Back to Claims
                 </Button>
 
-                {/* Claim Header */}
-                <Card className="mb-6">
-                    <CardHeader>
-                        <div className="flex items-start justify-between">
-                            <div>
-                                <div className="text-sm font-mono text-slate-500 dark:text-slate-400 mb-2">
-                                    {claim.id}
-                                </div>
-                                <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 via-blue-700 to-blue-800 bg-clip-text text-transparent mb-2">
-                                    {claim.title}
-                                </h1>
-                            </div>
-                            <Badge variant="outline" className={`${statusColors[claim.status]} text-sm px-4 py-2`}>
-                                {claim.status.toUpperCase()}
-                            </Badge>
-                        </div>
-                    </CardHeader>
-                </Card>
-
-                {/* Two Column Layout */}
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    {/* Left Column - Claim Details */}
-                    <div className="lg:col-span-2 space-y-6">
-                        {/* Claim Details */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            {/* Amount Card */}
-                            <Card>
-                                <CardHeader>
-                                    <div className="flex items-center gap-2 text-slate-600 dark:text-slate-400">
-                                        <DollarSign className="w-5 h-5" />
-                                        <h3 className="font-semibold">Claim Amount</h3>
+                {/* Header Grid */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                    {/* Claim Title & Status */}
+                    <Card className="h-full">
+                        <CardHeader>
+                            <div className="flex items-start justify-between">
+                                <div>
+                                    <div className="text-sm font-mono text-slate-500 dark:text-slate-400 mb-2">
+                                        {claim.id}
                                     </div>
-                                </CardHeader>
-                                <CardContent>
-                                    <div className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-blue-700 bg-clip-text text-transparent">
+                                    <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 via-blue-700 to-blue-800 bg-clip-text text-transparent mb-2">
+                                        {claim.title}
+                                    </h1>
+                                </div>
+                                <Badge variant="outline" className={`${statusColors[claim.status]} text-sm px-4 py-2`}>
+                                    {claim.status.toUpperCase()}
+                                </Badge>
+                            </div>
+                        </CardHeader>
+                    </Card>
+
+                    {/* Combined Amount and Date Card */}
+                    <Card className="h-full">
+                        <CardContent className="p-6 h-full flex flex-col justify-center">
+                            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+                                <div className="space-y-1">
+                                    <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400 mb-1">
+                                        <DollarSign className="w-3.5 h-3.5" />
+                                        <span className="text-xs font-medium uppercase tracking-wider">Claim Amount</span>
+                                    </div>
+                                    <div className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-blue-700 bg-clip-text text-transparent">
                                         £{claim.amount.toFixed(2)}
                                     </div>
-                                </CardContent>
-                            </Card>
+                                </div>
 
-                            {/* Date Card */}
-                            <Card>
-                                <CardHeader>
-                                    <div className="flex items-center gap-2 text-slate-600 dark:text-slate-400">
-                                        <Calendar className="w-5 h-5" />
-                                        <h3 className="font-semibold">Claim Date</h3>
+                                <div className="h-px md:h-12 w-full md:w-px bg-slate-100 dark:bg-slate-800" />
+
+                                <div className="space-y-1">
+                                    <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400 mb-1">
+                                        <Calendar className="w-3.5 h-3.5" />
+                                        <span className="text-xs font-medium uppercase tracking-wider">Claim Date</span>
                                     </div>
-                                </CardHeader>
-                                <CardContent>
-                                    <div className="text-2xl font-bold text-slate-900 dark:text-white">
+                                    <div className="text-xl font-semibold text-slate-900 dark:text-white">
                                         {new Date(claim.date).toLocaleDateString('en-GB', {
                                             day: 'numeric',
                                             month: 'long',
                                             year: 'numeric'
                                         })}
                                     </div>
-                                </CardContent>
-                            </Card>
-                        </div>
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    {/* Left Column - Claim Details */}
+                    <div className="space-y-6">
+                        {/* Claim Details */}
 
                         {/* Description Card */}
                         <Card>
@@ -279,42 +279,50 @@ export default function ClaimDetailPage() {
                             </CardHeader>
                             <CardContent>
                                 {payments && payments.length > 0 ? (
-                                    <Table>
-                                        <TableHeader>
-                                            <TableRow>
-                                                <TableHead>Date</TableHead>
-                                                <TableHead>Reference</TableHead>
-                                                <TableHead>Method</TableHead>
-                                                <TableHead className="text-right">Amount</TableHead>
-                                                <TableHead className="text-right">Status</TableHead>
-                                            </TableRow>
-                                        </TableHeader>
-                                        <TableBody>
-                                            {payments.map((payment) => (
-                                                <TableRow key={payment.id}>
-                                                    <TableCell className="font-medium">
-                                                        {new Date(payment.date).toLocaleDateString('en-GB', {
-                                                            day: 'numeric',
-                                                            month: 'short',
-                                                            year: 'numeric'
-                                                        })}
-                                                    </TableCell>
-                                                    <TableCell className="font-mono text-sm text-slate-600 dark:text-slate-400">
-                                                        {payment.reference}
-                                                    </TableCell>
-                                                    <TableCell>{payment.method}</TableCell>
-                                                    <TableCell className="text-right font-semibold">
-                                                        £{payment.amount.toFixed(2)}
-                                                    </TableCell>
-                                                    <TableCell className="text-right">
-                                                        <span className={`font-medium ${paymentStatusColors[payment.status]}`}>
+                                    <div className="space-y-3">
+                                        {payments.map((payment) => (
+                                            <Card key={payment.id} className="hover:shadow-md transition-shadow">
+                                                <CardContent className="p-4">
+                                                    <div className="flex items-center justify-between mb-3">
+                                                        <div className="flex items-center gap-2">
+                                                            <Receipt className="w-4 h-4 text-slate-500" />
+                                                            <span className="font-mono text-sm text-slate-600 dark:text-slate-400">
+                                                                {payment.reference}
+                                                            </span>
+                                                        </div>
+                                                        <span className={`font-medium text-sm ${paymentStatusColors[payment.status]}`}>
                                                             {payment.status.charAt(0).toUpperCase() + payment.status.slice(1)}
                                                         </span>
-                                                    </TableCell>
-                                                </TableRow>
-                                            ))}
-                                        </TableBody>
-                                    </Table>
+                                                    </div>
+
+                                                    <div className="grid grid-cols-2 gap-4">
+                                                        <div>
+                                                            <div className="text-xs text-slate-500 dark:text-slate-400 mb-1">Amount</div>
+                                                            <div className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-blue-700 bg-clip-text text-transparent">
+                                                                £{payment.amount.toFixed(2)}
+                                                            </div>
+                                                        </div>
+                                                        <div>
+                                                            <div className="text-xs text-slate-500 dark:text-slate-400 mb-1">Method</div>
+                                                            <div className="text-sm font-medium text-slate-900 dark:text-white">
+                                                                {payment.method}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="mt-3 pt-3 border-t border-slate-200 dark:border-slate-700">
+                                                        <div className="text-xs text-slate-500 dark:text-slate-400">
+                                                            {new Date(payment.date).toLocaleDateString('en-GB', {
+                                                                day: 'numeric',
+                                                                month: 'long',
+                                                                year: 'numeric'
+                                                            })}
+                                                        </div>
+                                                    </div>
+                                                </CardContent>
+                                            </Card>
+                                        ))}
+                                    </div>
                                 ) : (
                                     <div className="text-center py-8 text-slate-500 dark:text-slate-400">
                                         <Receipt className="w-12 h-12 mx-auto mb-2 opacity-50" />

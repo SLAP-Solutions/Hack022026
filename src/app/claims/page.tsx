@@ -58,13 +58,19 @@ export default function ClaimsPage() {
                 </TableHeader>
                 <TableBody>
                     {filteredClaims.map((claim) => (
-                        <TableRow key={claim.id}>
-                            <TableCell>{claim.title}</TableCell>
-                            <TableCell>{claim.description}</TableCell>
-                            <TableCell>{claim.amount}</TableCell>
-                            <TableCell>{claim.status}</TableCell>
-                            <TableCell>{claim.date}</TableCell>
-                            <TableCell>{claim.category}</TableCell>
+                        <TableRow key={claim.id} className="cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-900">
+                            <Link href={`/claims/${claim.id}`} className="contents">
+                                <TableCell>{claim.title}</TableCell>
+                                <TableCell>{claim.description}</TableCell>
+                                <TableCell>£{claim.amount.toFixed(2)}</TableCell>
+                                <TableCell>
+                                    <Badge variant="outline" className={statusColors[claim.status as keyof typeof statusColors]}>
+                                        {claim.status.toUpperCase()}
+                                    </Badge>
+                                </TableCell>
+                                <TableCell>{new Date(claim.date).toLocaleDateString('en-GB')}</TableCell>
+                                <TableCell>{claim.category}</TableCell>
+                            </Link>
                         </TableRow>
                     ))}
                 </TableBody>
