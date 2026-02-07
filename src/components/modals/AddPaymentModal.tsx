@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { usePaymentModal } from "@/stores/usePaymentModal";
+import { useClaimsStore } from "@/stores/useClaimsStore";
 import {
     Dialog,
     DialogContent,
@@ -21,185 +22,179 @@ import {
     SelectValue,
 } from "@/components/ui/select";
 
-interface AddPaymentModalProps {
-    onPaymentAdded?: (payment: any) => void;
-}
-
-export function AddPaymentModal({ onPaymentAdded }: AddPaymentModalProps) {
+export function AddPaymentModal() {
     const { isOpen, claimId, closeModal } = usePaymentModal();
-    const [amount, setAmount] = useState("");
-    const [method, setMethod] = useState("");
-    const [reference, setReference] = useState("");
-    const [lowerBound, setLowerBound] = useState("");
-    const [upperBound, setUpperBound] = useState("");
+    const { addPayment } = useClaimsStore();
+
+    // Form State
+    const [receiver, setReceiver] = useState("");
+    const [usdAmount, setUsdAmount] = useState("");
+    const [cryptoFeedId, setCryptoFeedId] = useState("");
+    const [stopLoss, setStopLoss] = useState("");
+    const [takeProfit, setTakeProfit] = useState("");
+    const [collateral, setCollateral] = useState("");
+    const [durationDays, setDurationDays] = useState("30");
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
 
-        // Validate form
-        if (!amount || !method || !reference || !lowerBound || !upperBound) {
-            alert("Please fill in all fields");
-            return;
-        }
+        if (!claimId) return;
 
-        // Validate bounds
-        const lower = parseFloat(lowerBound);
-        const upper = parseFloat(upperBound);
-        const amt = parseFloat(amount);
-
-        if (lower > upper) {
-            alert("Lower bound must be less than or equal to upper bound");
-            return;
-        }
-
-        if (amt < lower || amt > upper) {
-            alert("Amount must be between lower and upper bounds");
-            return;
-        }
-
-        // Create new payment
+        // Create new payment object matching the Payment interface
+        // Note: In a real app, this would be a blockchain transaction
+        // Here we simulate the creation of a Payment struct
         const newPayment = {
-            id: `PAY-${claimId}-${String(Math.floor(Math.random() * 100)).padStart(2, '0')}`,
-            date: new Date().toISOString().split('T')[0],
-            amount: parseFloat(amount),
-            method,
-            status: "completed" as const,
-            reference,
-            lowerBound: parseFloat(lowerBound),
-            upperBound: parseFloat(upperBound)
+            id: BigInt(Date.now()), // Mock ID
+            payer: "0x123...MockPayer",
+            receiver: receiver || "0x...",
+            usdAmount: BigInt(Math.floor(parseFloat(usdAmount) * 100)), // Convert to cents
+            cryptoFeedId: cryptoFeedId || "0x...",
+            stopLossPrice: BigInt(Math.floor(parseFloat(stopLoss) * 100)),
+            takeProfitPrice: BigInt(Math.floor(parseFloat(takeProfit) * 100)),
+            collateralAmount: BigInt(parseFloat(collateral || "0") * 1e18), // Mock FLR conversion
+            createdAt: BigInt(Math.floor(Date.now() / 1000)),
+            expiresAt: BigInt(Math.floor(Date.now() / 1000) + (parseInt(durationDays) * 86400)),
+            executed: false,
+            executedAt: BigInt(0),
+            executedPrice: BigInt(0),
+            paidAmount: BigInt(0)
         };
 
-        console.log("New payment created:", newPayment);
+        // Add to store
+        // @ts-ignore - JSON serialization of BigInt needs handling in real app, but for UI mock it's fine
+        addPayment(claimId, newPayment);
 
-        // Call callback if provided
-        if (onPaymentAdded) {
-            onPaymentAdded(newPayment);
-        }
-
-        // Reset form
-        setAmount("");
-        setMethod("");
-        setReference("");
-        setLowerBound("");
-        setUpperBound("");
-
-        // Close modal
-        closeModal();
-
-        // Show success message
-        alert("Payment added successfully!");
+        // Reset and close
+        handleClose();
     };
 
     const handleClose = () => {
-        // Reset form
-        setAmount("");
-        setMethod("");
-        setReference("");
-        setLowerBound("");
-        setUpperBound("");
+        setReceiver("");
+        setUsdAmount("");
+        setCryptoFeedId("");
+        setStopLoss("");
+        setTakeProfit("");
+        setCollateral("");
+        setDurationDays("30");
         closeModal();
     };
 
     return (
         <Dialog open={isOpen} onOpenChange={handleClose}>
-            <DialogContent className="sm:max-w-[425px]">
+            <DialogContent className="sm:max-w-[500px]">
                 <DialogHeader>
                     <DialogTitle className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-blue-700 bg-clip-text text-transparent">
-                        Add Payment
+                        Create Payment Order
                     </DialogTitle>
                     <DialogDescription>
-                        Record a new payment for this claim.
+                        Configure parameters for the conditional payment.
                     </DialogDescription>
                 </DialogHeader>
                 <form onSubmit={handleSubmit}>
                     <div className="grid gap-4 py-4">
-                        {/* Amount Field */}
                         <div className="grid gap-2">
-                            <Label htmlFor="payment-amount">Amount (£)</Label>
+                            <Label htmlFor="receiver">Receiver Address</Label>
                             <Input
-                                id="payment-amount"
-                                type="number"
-                                step="0.01"
-                                min="0"
-                                placeholder="0.00"
-                                value={amount}
-                                onChange={(e) => setAmount(e.target.value)}
+                                id="receiver"
+                                placeholder="0x..."
+                                value={receiver}
+                                onChange={(e) => setReceiver(e.target.value)}
                                 required
                             />
                         </div>
 
-                        {/* Payment Method Field */}
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="grid gap-2">
+                                <Label htmlFor="amount">Amount (USD)</Label>
+                                <Input
+                                    id="amount"
+                                    type="number"
+                                    step="0.01"
+                                    placeholder="1000.00"
+                                    value={usdAmount}
+                                    onChange={(e) => setUsdAmount(e.target.value)}
+                                    required
+                                />
+                            </div>
+                            <div className="grid gap-2">
+                                <Label htmlFor="collateral">Collateral (FLR)</Label>
+                                <Input
+                                    id="collateral"
+                                    type="number"
+                                    step="0.1"
+                                    placeholder="500"
+                                    value={collateral}
+                                    onChange={(e) => setCollateral(e.target.value)}
+                                    required
+                                />
+                            </div>
+                        </div>
+
                         <div className="grid gap-2">
-                            <Label htmlFor="payment-method">Payment Method</Label>
-                            <Select value={method} onValueChange={setMethod} required>
+                            <Label htmlFor="feed">Crypto Feed ID (FTSO)</Label>
+                            <Select value={cryptoFeedId} onValueChange={setCryptoFeedId}>
                                 <SelectTrigger>
-                                    <SelectValue placeholder="Select payment method" />
+                                    <SelectValue placeholder="Select asset feed" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="Bank Transfer">Bank Transfer</SelectItem>
-                                    <SelectItem value="Credit Card">Credit Card</SelectItem>
-                                    <SelectItem value="PayPal">PayPal</SelectItem>
-                                    <SelectItem value="Debit Card">Debit Card</SelectItem>
-                                    <SelectItem value="Cash">Cash</SelectItem>
+                                    <SelectItem value="0x01...">BTC/USD</SelectItem>
+                                    <SelectItem value="0x02...">ETH/USD</SelectItem>
+                                    <SelectItem value="0x03...">FLR/USD</SelectItem>
                                 </SelectContent>
                             </Select>
                         </div>
 
-                        {/* Reference Field */}
-                        <div className="grid gap-2">
-                            <Label htmlFor="payment-reference">Transaction Reference</Label>
-                            <Input
-                                id="payment-reference"
-                                placeholder="e.g., TXN-20260207-001"
-                                value={reference}
-                                onChange={(e) => setReference(e.target.value)}
-                                required
-                            />
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="grid gap-2">
+                                <Label htmlFor="stopLoss">Stop Loss (USD)</Label>
+                                <Input
+                                    id="stopLoss"
+                                    type="number"
+                                    step="0.01"
+                                    placeholder="Min Price"
+                                    value={stopLoss}
+                                    onChange={(e) => setStopLoss(e.target.value)}
+                                    required
+                                />
+                            </div>
+                            <div className="grid gap-2">
+                                <Label htmlFor="takeProfit">Take Profit (USD)</Label>
+                                <Input
+                                    id="takeProfit"
+                                    type="number"
+                                    step="0.01"
+                                    placeholder="Max Price"
+                                    value={takeProfit}
+                                    onChange={(e) => setTakeProfit(e.target.value)}
+                                    required
+                                />
+                            </div>
                         </div>
 
-                        {/* Lower Bound Field */}
                         <div className="grid gap-2">
-                            <Label htmlFor="lower-bound">Lower Bound (£)</Label>
-                            <Input
-                                id="lower-bound"
-                                type="number"
-                                step="0.01"
-                                min="0"
-                                placeholder="0.00"
-                                value={lowerBound}
-                                onChange={(e) => setLowerBound(e.target.value)}
-                                required
-                            />
-                        </div>
-
-                        {/* Upper Bound Field */}
-                        <div className="grid gap-2">
-                            <Label htmlFor="upper-bound">Upper Bound (£)</Label>
-                            <Input
-                                id="upper-bound"
-                                type="number"
-                                step="0.01"
-                                min="0"
-                                placeholder="0.00"
-                                value={upperBound}
-                                onChange={(e) => setUpperBound(e.target.value)}
-                                required
-                            />
+                            <Label htmlFor="duration">Valid For (Days)</Label>
+                            <Select value={durationDays} onValueChange={setDurationDays}>
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Validity period" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="7">7 Days</SelectItem>
+                                    <SelectItem value="15">15 Days</SelectItem>
+                                    <SelectItem value="30">30 Days</SelectItem>
+                                    <SelectItem value="90">90 Days</SelectItem>
+                                </SelectContent>
+                            </Select>
                         </div>
                     </div>
                     <DialogFooter>
-                        <Button
-                            type="button"
-                            variant="outline"
-                            onClick={handleClose}
-                        >
+                        <Button type="button" variant="outline" onClick={handleClose}>
                             Cancel
                         </Button>
                         <Button
                             type="submit"
                             className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800"
                         >
-                            Add Payment
+                            Create Order
                         </Button>
                     </DialogFooter>
                 </form>

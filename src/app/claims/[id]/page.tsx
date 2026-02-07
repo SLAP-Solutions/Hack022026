@@ -5,9 +5,11 @@ import { useParams, useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Calendar, DollarSign, Tag, Receipt, User, Building } from "lucide-react";
-import claimsData from "@/data/claims.json";
-import { Claim } from "@/types/claim";
+import { ArrowLeft, Calendar, DollarSign, Tag, Receipt, User, Building, Plus } from "lucide-react";
+import { usePaymentModal } from "@/stores/usePaymentModal";
+import { AddPaymentModal } from "@/components/modals/AddPaymentModal";
+import { useClaimsStore } from "@/stores/useClaimsStore";
+import { Slider } from "@/components/ui/slider";
 import { cn } from "@/lib/utils";
 
 const statusConfig = {
@@ -28,8 +30,10 @@ export default function ClaimDetailPage() {
     const params = useParams();
     const router = useRouter();
     const claimId = params.id as string;
+    const { getClaim } = useClaimsStore();
+    const { openModal } = usePaymentModal();
 
-    const claim = claimsData.find(c => c.id === claimId) as Claim | undefined;
+    const claim = getClaim(claimId);
 
     if (!claim) {
         return (
@@ -164,25 +168,39 @@ export default function ClaimDetailPage() {
                                 <h3 className="text-xl font-semibold">Payments</h3>
                                 <Badge variant="secondary">{claim.payments.length}</Badge>
                             </div>
+                            <Button
+                                onClick={() => openModal(claim.id)}
+                                size="sm"
+                                className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800"
+                            >
+                                <Plus className="w-4 h-4 mr-2" />
+                                Add Payment
+                            </Button>
                         </div>
                     </CardHeader>
                     <CardContent>
                         {claim.payments && claim.payments.length > 0 ? (
                             <div className="space-y-3">
                                 {claim.payments.map((payment: any) => {
-                                    const paymentStatus = paymentStatusConfig[payment.status as keyof typeof paymentStatusConfig];
+                                    const paymentStatus = paymentStatusConfig[(payment.status || "pending") as keyof typeof paymentStatusConfig];
+
+                                    // Calculate display values
+                                    const amount = Number(payment.usdAmount) / 100;
+                                    const lower = Number(payment.stopLossPrice) / 100;
+                                    const upper = Number(payment.takeProfitPrice) / 100;
+
                                     return (
-                                        <Card key={payment.id} className="hover:shadow-md transition-shadow">
+                                        <Card key={payment.id.toString()} className="hover:shadow-md transition-shadow">
                                             <CardContent className="p-4">
                                                 <div className="flex items-center justify-between mb-3">
                                                     <div className="flex items-center gap-2">
                                                         <Receipt className="w-4 h-4 text-muted-foreground" />
                                                         <span className="font-mono text-sm text-muted-foreground">
-                                                            Payment #{payment.id}
+                                                            Payment #{payment.id.toString()}
                                                         </span>
                                                     </div>
-                                                    <Badge className={cn("text-xs border", paymentStatus.color)}>
-                                                        {paymentStatus.label}
+                                                    <Badge className={cn("text-xs border", paymentStatus?.color)}>
+                                                        {paymentStatus?.label || "Unknown"}
                                                     </Badge>
                                                 </div>
 
@@ -190,24 +208,47 @@ export default function ClaimDetailPage() {
                                                     <div>
                                                         <div className="text-xs text-muted-foreground mb-1">Amount</div>
                                                         <div className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-blue-700 bg-clip-text text-transparent">
-                                                            ${payment.usdAmount.toFixed(2)}
+                                                            ${amount.toFixed(2)}
                                                         </div>
                                                         <div className="text-xs text-muted-foreground mt-1">
-                                                            {payment.cryptoSymbol}
+                                                            Feed: {payment.cryptoFeedId?.slice(0, 8)}...
                                                         </div>
                                                     </div>
                                                     <div>
                                                         <div className="text-xs text-muted-foreground mb-1">Receiver</div>
                                                         <div className="text-sm font-mono">
-                                                            {payment.receiver.slice(0, 6)}...{payment.receiver.slice(-4)}
+                                                            {payment.receiver?.slice(0, 6)}...{payment.receiver?.slice(-4)}
                                                         </div>
                                                     </div>
                                                 </div>
 
-                                                {payment.executedAt && (
+                                                {/* Visual Slider */}
+                                                <div className="mt-4 pt-3 border-t">
+                                                    <div className="flex justify-between items-end mb-2">
+                                                        <div className="text-xs text-muted-foreground">
+                                                            Lower: <span className="font-mono font-medium">${lower.toFixed(2)}</span>
+                                                        </div>
+                                                        <div className="text-xs text-muted-foreground">
+                                                            Upper: <span className="font-mono font-medium">${upper.toFixed(2)}</span>
+                                                        </div>
+                                                    </div>
+                                                    <Slider
+                                                        value={[lower + (upper - lower) * 0.5]} // Setting fake "current" price for visualization
+                                                        max={upper}
+                                                        min={lower}
+                                                        step={0.01}
+                                                        disabled
+                                                        className="opacity-100"
+                                                        trackClassName="bg-gradient-to-r from-red-500 to-green-500"
+                                                        rangeClassName="opacity-0"
+                                                        thumbContent="Pending"
+                                                    />
+                                                </div>
+
+                                                {payment.executedAt > 0 && (
                                                     <div className="mt-3 pt-3 border-t">
                                                         <div className="text-xs text-muted-foreground">
-                                                            Executed: {new Date(payment.executedAt).toLocaleString()}
+                                                            Executed: {new Date(Number(payment.executedAt) * 1000).toLocaleString()}
                                                         </div>
                                                     </div>
                                                 )}
@@ -224,6 +265,9 @@ export default function ClaimDetailPage() {
                         )}
                     </CardContent>
                 </Card>
+
+                {/* Modals */}
+                <AddPaymentModal />
             </div>
         </div>
     );
