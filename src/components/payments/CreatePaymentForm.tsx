@@ -132,17 +132,6 @@ export function CreatePaymentForm() {
 
     return (
         <div className="space-y-4">
-            {/* Demo mode banner */}
-            <div className="bg-primary/10 border-l-4 border-primary p-4 rounded-r-md">
-                <div className="flex gap-3">
-                    <Info className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
-                    <p className="text-sm text-muted-foreground">
-                        <strong className="text-foreground">Demo Mode:</strong> Calculates {ticker} amount based on real {feed} price,
-                        but pays that same amount in FLR. This demonstrates USD-optimization using real oracle prices on Coston2 testnet.
-                    </p>
-                </div>
-            </div>
-
             {/* Mode selector */}
             <div className="flex gap-2 p-1 bg-muted rounded-lg">
                 <Button
@@ -151,7 +140,7 @@ export function CreatePaymentForm() {
                     onClick={() => setMode("trigger")}
                     className="flex-1"
                 >
-                    ⏳ Trigger-Based
+                    Trigger-Based
                 </Button>
                 <Button
                     type="button"
@@ -159,7 +148,7 @@ export function CreatePaymentForm() {
                     onClick={() => setMode("instant")}
                     className="flex-1"
                 >
-                    ⚡ Instant
+                    Instant
                 </Button>
             </div>
 
@@ -355,14 +344,14 @@ export function CreatePaymentForm() {
                     {isLoading
                         ? (mode === "instant" ? "Executing Payment..." : "Creating Payment...")
                         : (mode === "instant"
-                            ? `⚡ Pay ${requiredCollateralEth.substring(0, 8)} FLR Now`
-                            : `⏳ Lock ${requiredCollateralEth.substring(0, 8)} FLR Collateral`
+                            ? `Pay ${requiredCollateralEth.substring(0, 8)} FLR Now`
+                            : `Lock ${requiredCollateralEth.substring(0, 8)} FLR Collateral`
                         )
                     }
                 </Button>
 
                 <p className="text-xs text-muted-foreground text-center">
-                    Demo: Calculates ${usdAmount || '0'} USD as {ticker} amount, pays that amount in FLR. Unused collateral refunded.
+                    Unused collateral refunded.
                 </p>
             </form>
         </div>
