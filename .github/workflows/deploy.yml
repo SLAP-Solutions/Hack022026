@@ -113,13 +113,13 @@ jobs:
           ACR_USERNAME=$(az acr credential show --name ${{ needs.terraform-apply.outputs.acr_name }} --query "username" -o tsv)
           ACR_PASSWORD=$(az acr credential show --name ${{ needs.terraform-apply.outputs.acr_name }} --query "passwords[0].value" -o tsv)
           
-          # Delete existing container if it exists (for updates)
+          # Delete existing container if it exists
           az container delete \
             --resource-group ${{ needs.terraform-apply.outputs.rg_name }} \
             --name ${{ needs.terraform-apply.outputs.container_name }} \
             --yes 2>/dev/null || true
           
-          # Create container with minimal resources (GitHub Actions manages this resource)
+          # Create container with minimal resources
           az container create \
             --resource-group ${{ needs.terraform-apply.outputs.rg_name }} \
             --name ${{ needs.terraform-apply.outputs.container_name }} \
@@ -132,13 +132,9 @@ jobs:
             --registry-login-server ${{ needs.terraform-apply.outputs.acr_login_server }} \
             --registry-username "$ACR_USERNAME" \
             --registry-password "$ACR_PASSWORD" \
-            --secure-environment-variables \
-              PRIVATE_KEY=${{ secrets.KEEPER_PRIVATE_KEY }} \
-            --environment-variables \
-              RPC_URL="https://coston2-api.flare.network/ext/C/rpc" \
-              POLL_INTERVAL="15000" \
-              GAS_LIMIT="500000" \
-            --restart-policy Always
+            --restart-policy Always \
+            --environment-variables RPC_URL="https://coston2-api.flare.network/ext/C/rpc" POLL_INTERVAL="15000" GAS_LIMIT="500000" CONTRACT_ADDRESS="${{ secrets.CONTRACT_ADDRESS }}" \
+            --secure-environment-variables PRIVATE_KEY="${{ secrets.KEEPER_PRIVATE_KEY }}"
 
       - name: Verify Keeper Deployment
         run: |
