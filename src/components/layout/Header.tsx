@@ -11,10 +11,10 @@ export function Header() {
                 <div className="flex items-center gap-2">
                     <div className="flex items-center gap-2">
                         <Link href="/landing" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
-                            <Image 
-                                src="/logo.png" 
-                                alt="SLAPSure Logo" 
-                                width={120} 
+                            <Image
+                                src="/logo.png"
+                                alt="SLAPSure Logo"
+                                width={120}
                                 height={32}
                                 className="h-8 w-auto"
                                 priority
@@ -39,10 +39,6 @@ export function Header() {
                     <Link href="/payments" className="flex items-center gap-2 hover:text-primary transition-colors">
                         <DollarSign className="w-4 h-4" />
                         Payments
-                    </Link>
-                    <Link href="/prices" className="flex items-center gap-2 hover:text-primary transition-colors">
-                        <TrendingUp className="w-4 h-4" />
-                        Prices
                     </Link>
                 </nav>
 

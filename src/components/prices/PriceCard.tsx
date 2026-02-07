@@ -17,9 +17,9 @@ export function PriceCard({ symbol, price, timestamp, loading, error }: PriceCar
     };
 
     return (
-        <div className="flex items-baseline-last justify-center">
-            <p className="text-5xl font-medium text-gray-900">${price}</p>
-            <p className="text-2xl text-primary">{symbol.split("/")[0]}</p>
+        <div className="flex flex-col items-center justify-center gap-1">
+            <p className="text-4xl font-medium text-gray-900">${price}</p>
+            <p className="text-lg text-primary font-semibold">{symbol.split("/")[0]}</p>
         </div>
         // <div className="bg-white border-2 border-gray-200 rounded-xl p-6 hover:border-blue-400 transition-colors">
         //     <div className="flex items-center justify-between mb-4">
