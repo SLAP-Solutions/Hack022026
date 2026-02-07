@@ -1,4 +1,4 @@
-name: Build and Deploy Next.js to Azure
+name: Deploy Web App
 
 on:
   workflow_dispatch:
