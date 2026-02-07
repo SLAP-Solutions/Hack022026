@@ -3,7 +3,7 @@
 import Link from "next/link"
 import Image from "next/image"
 import { usePathname } from "next/navigation"
-import { Home, FileText, TrendingUp, DollarSign } from "lucide-react"
+import { Home, FileText, TrendingUp, DollarSign, Users } from "lucide-react"
 import {
   Sidebar,
   SidebarContent,
@@ -34,6 +34,11 @@ const menuItems = [
     title: "Payments",
     href: "/payments",
     icon: DollarSign,
+  },
+  {
+    title: "Contacts",
+    href: "/contacts",
+    icon: Users,
   },
 ]
 
