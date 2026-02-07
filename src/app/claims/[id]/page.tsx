@@ -37,6 +37,7 @@ export default function ClaimDetailPage() {
     const { openModal } = usePaymentModal();
     const { prices } = useFTSOPrices();
     const [isRiskModalOpen, setIsRiskModalOpen] = useState(false);
+    const { prices } = useFTSOPrices();
 
     const claim = getClaim(claimId);
 
@@ -108,7 +109,7 @@ export default function ClaimDetailPage() {
                                     <span className="text-xs font-medium uppercase tracking-wider">Total Cost</span>
                                 </div>
                                 <div className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-blue-700 bg-clip-text text-transparent">
-                                    ${claim.totalCost.toFixed(2)}
+                                    ${(claim.payments?.reduce((acc: number, payment: any) => acc + Number(payment.usdAmount), 0) || 0).toFixed(2)}
                                 </div>
                             </div>
                         </CardContent>
@@ -202,8 +203,8 @@ export default function ClaimDetailPage() {
 
                                     // Calculate display values
                                     const amount = Number(payment.usdAmount);
-                                    const lower = Number(payment.stopLossPrice) / 100;
-                                    const upper = Number(payment.takeProfitPrice) / 100;
+                                    const lower = Number(payment.stopLossPrice);
+                                    const upper = Number(payment.takeProfitPrice);
 
                                     return (
                                         <Card key={payment.id.toString()} className="hover:shadow-md transition-shadow">
@@ -277,7 +278,13 @@ export default function ClaimDetailPage() {
                                                         className="opacity-100"
                                                         trackClassName="bg-gradient-to-r from-red-500 to-green-500"
                                                         rangeClassName="opacity-0"
-                                                        thumbContent={`$${amount.toFixed(2)}`}
+                                                        thumbContent={(() => {
+                                                            const feedName = getFeedName(payment.cryptoFeedId);
+                                                            const priceData = prices[feedName];
+                                                            return priceData && !priceData.loading
+                                                                ? `$${parseFloat(priceData.price).toFixed(2)}`
+                                                                : "...";
+                                                        })()}
                                                     />
                                                 </div>
 

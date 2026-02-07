@@ -51,11 +51,10 @@ export function AddPaymentModal() {
             id: BigInt(Date.now()), // Mock ID
             payer: "0x123...MockPayer",
             receiver: receiver || "0x...",
-            description: description || "Payment",
-            usdAmount: parseFloat(usdAmount), // Store as decimal
+            usdAmount: BigInt(Math.floor(parseFloat(usdAmount))), // Raw amount
             cryptoFeedId: cryptoFeedId || "0x...",
-            stopLossPrice: BigInt(Math.floor(parseFloat(stopLoss) * 100)),
-            takeProfitPrice: BigInt(Math.floor(parseFloat(takeProfit) * 100)),
+            stopLossPrice: BigInt(Math.floor(parseFloat(stopLoss))),
+            takeProfitPrice: BigInt(Math.floor(parseFloat(takeProfit))),
             collateralAmount: BigInt(0), // Defaulting to 0 since removed from UI
             createdAt: BigInt(Math.floor(Date.now() / 1000)),
             expiresAt: BigInt(Math.floor(Date.now() / 1000) + (parseInt(durationDays) * 86400)),
