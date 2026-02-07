@@ -51,7 +51,7 @@ export function CreatePaymentForm() {
 
     // Calculate required collateral based on worst-case (stop loss price)
     const calculateRequiredCollateral = (stopLoss: bigint) => {
-        if (!usdAmount || stopLoss <= 0n) return 0;
+        if (!usdAmount || stopLoss <= BigInt(0)) return 0;
         
         const usdCents = parseFloat(usdAmount) * 100;
         const decimalsMultiplier = Math.pow(10, decimals);

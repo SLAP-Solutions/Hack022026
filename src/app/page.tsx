@@ -167,7 +167,5 @@ export default function Home() {
             </Button>
           </div>
         </div>
-      </main>
-    </div>
   );
 }
