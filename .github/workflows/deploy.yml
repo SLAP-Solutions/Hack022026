@@ -139,17 +139,36 @@ jobs:
       - name: Create deployment package
         run: |
           # Create deployment structure for standalone build
-          mkdir -p deploy/standalone
+          mkdir -p deploy
           
-          # Copy standalone server and dependencies
-          cp -r ${{ env.WORKING_DIR }}/.next/standalone/* deploy/standalone/
+          # Copy standalone server and dependencies to root of deploy
+          cp -r ${{ env.WORKING_DIR }}/.next/standalone/* deploy/
           
           # Copy static files to the correct location for standalone mode
-          mkdir -p deploy/standalone/.next
-          cp -r ${{ env.WORKING_DIR }}/.next/static deploy/standalone/.next/static
+          mkdir -p deploy/.next/static
+          cp -r ${{ env.WORKING_DIR }}/.next/static/* deploy/.next/static/
           
           # Copy public folder
-          cp -r ${{ env.WORKING_DIR }}/public deploy/standalone/public
+          cp -r ${{ env.WORKING_DIR }}/public deploy/public
+          
+          # Create startup script for Azure with proper port binding
+          cat > deploy/startup.sh << 'EOF'
+          #!/bin/sh
+          # Azure App Service startup script for Next.js standalone
+          
+          echo "Starting Next.js standalone server..."
+          echo "PORT: ${PORT:-8080}"
+          echo "NODE_ENV: ${NODE_ENV:-production}"
+          
+          # Set port from Azure environment or default to 8080
+          export PORT="${PORT:-8080}"
+          export HOSTNAME="${HOSTNAME:-0.0.0.0}"
+          
+          # Start the Next.js standalone server
+          node server.js
+          EOF
+          
+          chmod +x deploy/startup.sh
           
           # Create zip from the deploy directory
           cd deploy
@@ -160,10 +179,6 @@ jobs:
         with:
           app-name: ${{ steps.get-webapp.outputs.webapp_name }}
           package: ./deploy.zip
-
-      - name: Azure CLI - Restart Web App
-        run: |
-          az webapp restart --name ${{ steps.get-webapp.outputs.webapp_name }} --resource-group $(az webapp show --name ${{ steps.get-webapp.outputs.webapp_name }} --query resourceGroup -o tsv)
 
       - name: Health Check
         run: |

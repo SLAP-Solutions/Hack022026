@@ -54,8 +54,8 @@ resource "azurerm_linux_web_app" "webapp" {
       node_version = "20-lts"
     }
 
-    # Use standalone server from Next.js build
-    app_command_line = "node standalone/server.js"
+    # Use startup script that properly configures port binding
+    app_command_line = "bash startup.sh"
     
     # Health check configuration
     health_check_path                 = "/api/health"
@@ -69,10 +69,16 @@ resource "azurerm_linux_web_app" "webapp" {
     "SCM_DO_BUILD_DURING_DEPLOYMENT" = "false"
     "ENABLE_ORYX_BUILD" = "false"
     
+    # Port configuration for Next.js standalone server
     "PORT" = "8080"
     "WEBSITES_PORT" = "8080"
+    "HOSTNAME" = "0.0.0.0"
 
+    # Production environment
     "NODE_ENV" = "production"
+    
+    # Increase startup timeout tolerance
+    "WEBSITES_CONTAINER_START_TIME_LIMIT" = "600"
   }
 
   logs {
