@@ -21,6 +21,9 @@ const manrope = Manrope({
 export const metadata: Metadata = {
   title: "SLAPSure - Insurance Claims",
   description: "Automated insurance claims and payouts on Flare using FTSO",
+  icons: {
+    icon: "/favicon.png",
+  },
 };
 
 export default function RootLayout({
