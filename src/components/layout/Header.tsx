@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { ConnectWallet } from "../wallet/ConnectWallet";
-import { Home, FileText, TrendingUp } from "lucide-react";
+import { Home, FileText, TrendingUp, BarChart, DollarSign } from "lucide-react";
 
 export function Header() {
     return (
@@ -19,13 +19,21 @@ export function Header() {
                 </div>
 
                 <nav className="hidden md:flex items-center gap-6 text-sm font-medium text-muted-foreground absolute left-1/2 -translate-x-1/2">
-                    <Link href="/" className="flex items-center gap-2 hover:text-primary transition-colors">
+                    <Link href="/landing" className="flex items-center gap-2 hover:text-primary transition-colors">
                         <Home className="w-4 h-4" />
                         Home
+                    </Link>
+                    <Link href="/" className="flex items-center gap-2 hover:text-primary transition-colors">
+                        <BarChart className="w-4 h-4" />
+                        Dashboard
                     </Link>
                     <Link href="/claims" className="flex items-center gap-2 hover:text-primary transition-colors">
                         <FileText className="w-4 h-4" />
                         Claims
+                    </Link>
+                    <Link href="/payments" className="flex items-center gap-2 hover:text-primary transition-colors">
+                        <DollarSign className="w-4 h-4" />
+                        Payments
                     </Link>
                     <Link href="/prices" className="flex items-center gap-2 hover:text-primary transition-colors">
                         <TrendingUp className="w-4 h-4" />
