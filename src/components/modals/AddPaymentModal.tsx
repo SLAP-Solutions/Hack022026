@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { usePaymentModal } from "@/stores/usePaymentModal";
 import { useClaimsStore } from "@/stores/useClaimsStore";
+import { useFTSOPrices } from "@/hooks/useFTSOPrices";
 import { FEEDS } from "@/config/feeds";
 import {
     Dialog,
@@ -26,6 +27,7 @@ import {
 export function AddPaymentModal() {
     const { isOpen, claimId, closeModal } = usePaymentModal();
     const { addPayment } = useClaimsStore();
+    const { prices } = useFTSOPrices();
 
     // Form State
     const [receiver, setReceiver] = useState("");
@@ -122,18 +124,57 @@ export function AddPaymentModal() {
 
                         <div className="grid gap-2">
                             <Label htmlFor="feed">Crypto Feed ID (FTSO)</Label>
-                            <Select value={cryptoFeedId} onValueChange={setCryptoFeedId}>
-                                <SelectTrigger>
-                                    <SelectValue placeholder="Select asset feed" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {FEEDS.map((feed) => (
-                                        <SelectItem key={feed.id} value={feed.id}>
-                                            {feed.name}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
+                            <div className="flex items-center gap-3">
+                                <div className="flex-4">
+                                    <Select value={cryptoFeedId} onValueChange={setCryptoFeedId}>
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Select asset feed" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {FEEDS.map((feed) => (
+                                                <SelectItem key={feed.id} value={feed.id}>
+                                                    {feed.name}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                    {(() => {
+                                        if (!cryptoFeedId || !usdAmount) return null;
+                                        const feed = FEEDS.find((f) => f.id === cryptoFeedId);
+                                        if (!feed) return null;
+                                        const priceData = prices[feed.name];
+                                        const price = priceData ? parseFloat(priceData.price) : 0;
+                                        if (price <= 0) return null;
+                                        const amount = parseFloat(usdAmount) / price;
+                                        return (
+                                            <div className="flex mt-2">
+                                                <p className="text-sm text-muted-foreground">
+                                                    ≈ {amount.toFixed(6)} {feed.symbol}
+                                                </p>
+                                            </div>
+                                        );
+                                    })()}
+                                </div>
+                                {(() => {
+                                    if (!cryptoFeedId) return null;
+                                    const feed = FEEDS.find((f) => f.id === cryptoFeedId);
+                                    if (!feed) return null;
+                                    const priceData = prices[feed.name];
+                                    const price = priceData ? parseFloat(priceData.price) : 0;
+                                    if (price <= 0) return null;
+                                    return (
+                                        <div className="flex items-baseline-last gap-4">
+
+                                            <div className="text-4xl font-medium text-center whitespace-nowrap flex-3">
+                                                ${price.toFixed(2)}
+                                            </div>
+                                            <div>
+                                                <p className="text-sm text-muted-foreground">Current price</p>
+                                            </div>
+                                        </div>
+                                    );
+                                })()}
+                            </div>
                         </div>
 
                         <div className="grid grid-cols-2 gap-4">
