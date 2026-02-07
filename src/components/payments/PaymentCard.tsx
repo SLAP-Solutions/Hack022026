@@ -31,15 +31,31 @@ const FEED_ID_TO_SYMBOL: Record<string, string> = {
 };
 
 export function PaymentCard({ payment, onRefresh }: PaymentCardProps) {
-    const { executeClaimPayment, isLoading } = useContract();
+    const { executeClaimPayment, executePaymentEarly, isLoading } = useContract();
     const { contacts } = useContactsStore();
     const [isModalOpen, setIsModalOpen] = useState(false);
 
     const handleExecute = async (e: React.MouseEvent) => {
         e.stopPropagation(); // Prevent opening modal if clicking button inside interactive area
+        
+        // Determine if triggers are hit
+        const current = payment.currentPrice / Math.pow(10, 3);
+        const stopLoss = Number(payment.stopLossPrice) / Math.pow(10, 3);
+        const takeProfit = Number(payment.takeProfitPrice) / Math.pow(10, 3);
+        const stopLossHit = current > 0 && current <= stopLoss;
+        const takeProfitHit = current > 0 && current >= takeProfit;
+        const canExecute = !payment.executed && (stopLossHit || takeProfitHit);
+        
         try {
-            await executeClaimPayment(payment.id);
-            alert("Payment executed! Check transaction history.");
+            if (canExecute) {
+                // Triggers hit - normal execution
+                await executeClaimPayment(payment.id);
+                alert("Payment executed at trigger price! Check transaction history.");
+            } else {
+                // Early execution - bypass triggers
+                await executePaymentEarly(payment.id);
+                alert("Payment executed early! Check transaction history.");
+            }
             onRefresh?.();
         } catch (error: any) {
             console.error(error);
