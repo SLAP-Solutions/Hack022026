@@ -40,11 +40,11 @@ export default function PaymentsPage() {
         <div className="flex h-full -m-6">
             {/* Main Content */}
             <div className="flex-1 overflow-auto p-6">
-                <div className="max-w-5xl mx-auto space-y-6">
+                <div className="max-w-7xl space-y-6">
                     {/* Header */}
                     <div className="flex justify-between items-center">
                         <div>
-                            <h1 className="text-3xl font-bold font-serif">Payment Dashboard</h1>
+                            <h1 className="text-2xl font-bold font-serif">Payment Dashboard</h1>
                             <p className="text-muted-foreground mt-1">Create and manage blockchain payments</p>
                         </div>
                         <div className="flex items-center gap-3">
