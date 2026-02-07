@@ -1,5 +1,5 @@
 locals {
-  name = "hack"
+  name = "hack-dev"
 }
 
 resource "azurecaf_name" "cosmos_account" {
