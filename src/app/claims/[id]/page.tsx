@@ -88,7 +88,7 @@ export default function ClaimDetailPage() {
                                         {claim.status.toUpperCase()}
                                     </Badge>
                                 </div>
-                                <h1 className="text-4xl font-bold bg-gradient-to-r from-primary via-primary/90 to-primary/80 bg-clip-text text-transparent mb-2">
+                                <h1 className="text-4xl font-bold font-serif mb-2">
                                     {claim.title}
                                 </h1>
                                 <p className="text-muted-foreground">{claim.description}</p>

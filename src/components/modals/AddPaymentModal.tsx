@@ -91,7 +91,7 @@ export function AddPaymentModal() {
         <Dialog open={isOpen} onOpenChange={handleClose}>
             <DialogContent className="sm:max-w-[500px]">
                 <DialogHeader>
-                    <DialogTitle className="text-2xl font-bold bg-gradient-to-r from-primary to-primary/90 bg-clip-text text-transparent">
+                    <DialogTitle className="text-2xl font-bold font-serif">
                         Create Payment Order
                     </DialogTitle>
                     <DialogDescription>
