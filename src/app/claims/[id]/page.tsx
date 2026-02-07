@@ -5,9 +5,10 @@ import { useParams, useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Calendar, DollarSign, Tag, Receipt, User, Building, Plus } from "lucide-react";
+import { ArrowLeft, Calendar, DollarSign, Tag, Receipt, User, Building, Plus, ShieldAlert } from "lucide-react";
 import { usePaymentModal } from "@/stores/usePaymentModal";
 import { AddPaymentModal } from "@/components/modals/AddPaymentModal";
+import { ClaimRiskModal } from "@/components/modals/ClaimRiskModal";
 import { useClaimsStore } from "@/stores/useClaimsStore";
 import { Slider } from "@/components/ui/slider";
 import { cn } from "@/lib/utils";
@@ -33,6 +34,7 @@ export default function ClaimDetailPage() {
     const claimId = params.id as string;
     const { getClaim } = useClaimsStore();
     const { openModal } = usePaymentModal();
+    const [isRiskModalOpen, setIsRiskModalOpen] = useState(false);
 
     const claim = getClaim(claimId);
 
@@ -169,14 +171,25 @@ export default function ClaimDetailPage() {
                                 <h3 className="text-xl font-semibold">Payments</h3>
                                 <Badge variant="secondary">{claim.payments.length}</Badge>
                             </div>
-                            <Button
-                                onClick={() => openModal(claim.id)}
-                                size="sm"
-                                className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800"
-                            >
-                                <Plus className="w-4 h-4 mr-2" />
-                                Add Payment
-                            </Button>
+                            <div className="flex gap-2">
+                                <Button
+                                    variant="outline"
+                                    onClick={() => setIsRiskModalOpen(true)}
+                                    size="sm"
+                                    className="text-muted-foreground hover:text-primary"
+                                >
+                                    <ShieldAlert className="w-4 h-4 mr-2" />
+                                    View Risk Exposure
+                                </Button>
+                                <Button
+                                    onClick={() => openModal(claim.id)}
+                                    size="sm"
+                                    className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800"
+                                >
+                                    <Plus className="w-4 h-4 mr-2" />
+                                    Add Payment
+                                </Button>
+                            </div>
                         </div>
                     </CardHeader>
                     <CardContent>
@@ -204,6 +217,19 @@ export default function ClaimDetailPage() {
                                                         {paymentStatus?.label || "Unknown"}
                                                     </Badge>
                                                 </div>
+
+                                                {payment.status === 'pending' && payment.expiresAt && (
+                                                    <div className="mb-4 p-2 bg-blue-50 dark:bg-blue-950/30 rounded border border-blue-100 dark:border-blue-900">
+                                                        <div className="flex justify-between items-baseline">
+                                                            <span className="text-sm font-semibold text-blue-700 dark:text-blue-400">
+                                                                {Math.ceil((new Date(payment.expiresAt).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))} Days Remaining
+                                                            </span>
+                                                            <span className="text-xs text-muted-foreground">
+                                                                Window ends: {new Date(payment.expiresAt).toLocaleDateString()}
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                )}
 
                                                 <div className="grid grid-cols-2 gap-4">
 
@@ -270,6 +296,11 @@ export default function ClaimDetailPage() {
 
                 {/* Modals */}
                 <AddPaymentModal />
+                <ClaimRiskModal
+                    open={isRiskModalOpen}
+                    onOpenChange={setIsRiskModalOpen}
+                    claim={claim}
+                />
             </div>
         </div>
     );

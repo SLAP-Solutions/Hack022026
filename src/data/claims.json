@@ -40,7 +40,8 @@
                 "takeProfitPrice": 143000,
                 "cryptoSymbol": "BTC",
                 "status": "pending",
-                "executedAt": null
+                "executedAt": null,
+                "expiresAt": "2026-03-06"
             }
         ]
     },
