@@ -52,7 +52,7 @@ export function AddPaymentModal() {
             payer: "0x123...MockPayer",
             receiver: receiver || "0x...",
             description: description || "Payment",
-            usdAmount: BigInt(Math.floor(parseFloat(usdAmount) * 100)), // Convert to cents
+            usdAmount: parseFloat(usdAmount), // Store as decimal
             cryptoFeedId: cryptoFeedId || "0x...",
             stopLossPrice: BigInt(Math.floor(parseFloat(stopLoss) * 100)),
             takeProfitPrice: BigInt(Math.floor(parseFloat(takeProfit) * 100)),
@@ -62,7 +62,15 @@ export function AddPaymentModal() {
             executed: false,
             executedAt: BigInt(0),
             executedPrice: BigInt(0),
-            paidAmount: BigInt(0)
+            paidAmount: BigInt(0),
+            originalAmount: (() => {
+                if (!cryptoFeedId || !usdAmount) return 0;
+                const feed = FEEDS.find((f) => f.id === cryptoFeedId);
+                if (!feed) return 0;
+                const priceData = prices[feed.name];
+                const price = priceData ? parseFloat(priceData.price) : 0;
+                return price > 0 ? parseFloat(usdAmount) / price : 0;
+            })()
         };
 
         // Add to store

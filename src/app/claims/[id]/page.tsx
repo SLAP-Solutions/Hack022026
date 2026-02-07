@@ -5,7 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Calendar, DollarSign, Tag, Receipt, User, Building, Plus, ShieldAlert } from "lucide-react";
+import { ArrowLeft, Calendar, DollarSign, Tag, Receipt, User, Building, Plus, ShieldAlert, CreditCard } from "lucide-react";
 import { usePaymentModal } from "@/stores/usePaymentModal";
 import { AddPaymentModal } from "@/components/modals/AddPaymentModal";
 import { ClaimRiskModal } from "@/components/modals/ClaimRiskModal";
@@ -13,6 +13,7 @@ import { useClaimsStore } from "@/stores/useClaimsStore";
 import { Slider } from "@/components/ui/slider";
 import { cn } from "@/lib/utils";
 import { getFeedName, getFeedSymbol } from "@/config/feeds";
+import { useFTSOPrices } from "@/hooks/useFTSOPrices";
 
 const statusConfig = {
     pending: { color: "bg-amber-100 text-amber-800 border-amber-300" },
@@ -32,8 +33,9 @@ export default function ClaimDetailPage() {
     const params = useParams();
     const router = useRouter();
     const claimId = params.id as string;
-    const { getClaim } = useClaimsStore();
+    const { getClaim, updatePaymentStatus } = useClaimsStore();
     const { openModal } = usePaymentModal();
+    const { prices } = useFTSOPrices();
     const [isRiskModalOpen, setIsRiskModalOpen] = useState(false);
 
     const claim = getClaim(claimId);
@@ -199,7 +201,7 @@ export default function ClaimDetailPage() {
                                     const paymentStatus = paymentStatusConfig[(payment.status || "pending") as keyof typeof paymentStatusConfig];
 
                                     // Calculate display values
-                                    const amount = Number(payment.usdAmount) / 100;
+                                    const amount = Number(payment.usdAmount);
                                     const lower = Number(payment.stopLossPrice) / 100;
                                     const upper = Number(payment.takeProfitPrice) / 100;
 
@@ -278,6 +280,61 @@ export default function ClaimDetailPage() {
                                                         thumbContent={`$${amount.toFixed(2)}`}
                                                     />
                                                 </div>
+
+                                                {payment.status === 'pending' && (
+                                                    <div className="mt-4 flex items-center gap-3">
+                                                        <Button
+                                                            size="sm"
+                                                            className="flex-1 bg-green-600 hover:bg-green-700 text-white"
+                                                            onClick={() => updatePaymentStatus(claim.id, payment.id, 'executed')}
+                                                        >
+                                                            <CreditCard className="w-4 h-4 mr-2" />
+                                                            Pay Now
+                                                        </Button>
+
+                                                        {(() => {
+                                                            if (!payment.originalAmount) return null;
+
+                                                            const feedName = getFeedName(payment.cryptoFeedId);
+                                                            const feedSymbol = getFeedSymbol(payment.cryptoFeedId);
+                                                            const currentPriceData = prices[feedName];
+
+                                                            if (!currentPriceData) return null;
+
+                                                            const currentPrice = parseFloat(currentPriceData.price);
+                                                            if (!currentPrice) return null;
+
+                                                            const currentCryptoAmount = amount / currentPrice;
+                                                            const diff = payment.originalAmount - currentCryptoAmount;
+                                                            const isSaving = diff > 0;
+                                                            const percentDiff = (Math.abs(diff) / payment.originalAmount) * 100;
+
+                                                            // Removed absolute threshold, just check for non-zero to show even small diffs
+                                                            if (Math.abs(diff) === 0) return null;
+
+                                                            return (
+                                                                <div className={cn(
+                                                                    "text-xs px-3 py-1.5 rounded-md font-medium flex flex-col items-end leading-tight min-w-[120px]",
+                                                                    isSaving
+                                                                        ? "text-green-700 bg-green-50 dark:bg-green-900/20 dark:text-green-400 border border-green-200 dark:border-green-800"
+                                                                        : "text-red-700 bg-red-50 dark:bg-red-900/20 dark:text-red-400 border border-red-200 dark:border-red-800"
+                                                                )}>
+                                                                    {isSaving ? (
+                                                                        <>
+                                                                            <span className="font-bold">Save {diff.toFixed(4)} {feedSymbol}</span>
+                                                                            <span className="text-[10px] opacity-80">({percentDiff.toFixed(1)}%)</span>
+                                                                        </>
+                                                                    ) : (
+                                                                        <>
+                                                                            <span className="font-bold">+{Math.abs(diff).toFixed(4)} {feedSymbol}</span>
+                                                                            <span className="text-[10px] opacity-80">({percentDiff.toFixed(1)}%)</span>
+                                                                        </>
+                                                                    )}
+                                                                </div>
+                                                            );
+                                                        })()}
+                                                    </div>
+                                                )}
 
                                                 {payment.executedAt > 0 && (
                                                     <div className="mt-3 pt-3 border-t">
