@@ -25,13 +25,12 @@ function getContainer(containerName: string): Container {
 
 const containerConfig = {
   claims: {
-    partitionKey: "Id",
+    partitionKey: "id",
   },
   payments: {
-    partitionKey: "ClaimId",
+    partitionKey: "claimId",
   },
   contacts: {
-    container: database.container("contacts"),
     partitionKey: "id",
   },
 } as const;
@@ -73,21 +72,21 @@ export async function query(
 }
 
 export async function update(
-  containerName: keyof typeof containers,
+  containerName: ContainerName,
   id: string,
   partitionKeyValue: string,
   item: Record<string, unknown>
 ) {
-  const { container } = containers[containerName];
+  const container = getContainer(containerName);
   const { resource } = await container.item(id, partitionKeyValue).replace(item);
   return resource;
 }
-
+    
 export async function deleteItem(
-  containerName: keyof typeof containers,
+  containerName: ContainerName,
   id: string,
   partitionKeyValue: string
 ) {
-  const { container } = containers[containerName];
+  const container = getContainer(containerName);
   await container.item(id, partitionKeyValue).delete();
 }
