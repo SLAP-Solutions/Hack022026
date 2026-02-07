@@ -100,7 +100,10 @@ export function ClaimCard(props: ClaimCardProps) {
                 <>
                     <CardContent className="pt-0">
                         <button
-                            onClick={() => setIsExpanded(!isExpanded)}
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                setIsExpanded(!isExpanded);
+                            }}
                             className="w-full flex items-center justify-between p-3 rounded-lg hover:bg-muted/50 transition-colors"
                         >
                             <span className="text-sm font-medium">

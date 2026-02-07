@@ -22,7 +22,7 @@ export default function ClaimsPage() {
                 <div className="flex flex-col gap-4">
                     <div>
                         <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 via-blue-700 to-blue-800 bg-clip-text text-transparent">
-                            Claims Dashboard
+                            Claims
                         </h1>
                         <p className="text-muted-foreground mt-2">
                             Manage and track all insurance claims
