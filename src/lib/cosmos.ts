@@ -1,19 +1,33 @@
-import { CosmosClient, SqlQuerySpec } from "@azure/cosmos";
+import { CosmosClient, Container, SqlQuerySpec } from "@azure/cosmos";
 
-const endpoint = process.env.COSMOSDB_ENDPOINT!;
-const key = process.env.COSMOSDB_KEY!;
 const databaseId = "hack";
 
-const client = new CosmosClient({ endpoint, key });
-const database = client.database(databaseId);
+// Lazy initialization to avoid build-time errors when env vars are not available
+let client: CosmosClient | null = null;
 
-export const containers = {
+function getClient(): CosmosClient {
+  if (!client) {
+    const endpoint = process.env.COSMOSDB_ENDPOINT;
+    const key = process.env.COSMOSDB_KEY;
+    
+    if (!endpoint || !key) {
+      throw new Error("COSMOSDB_ENDPOINT and COSMOSDB_KEY environment variables are required");
+    }
+    
+    client = new CosmosClient({ endpoint, key });
+  }
+  return client;
+}
+
+function getContainer(containerName: string): Container {
+  return getClient().database(databaseId).container(containerName);
+}
+
+const containerConfig = {
   claims: {
-    container: database.container("claims"),
     partitionKey: "Id",
   },
   payments: {
-    container: database.container("payments"),
     partitionKey: "ClaimId",
   },
   contacts: {
@@ -22,36 +36,38 @@ export const containers = {
   },
 } as const;
 
-export async function getAll(containerName: keyof typeof containers) {
-  const { container } = containers[containerName];
+type ContainerName = keyof typeof containerConfig;
+
+export async function getAll(containerName: ContainerName) {
+  const container = getContainer(containerName);
   const { resources } = await container.items.readAll().fetchAll();
   return resources;
 }
 
 export async function getById(
-  containerName: keyof typeof containers,
+  containerName: ContainerName,
   id: string,
   partitionKeyValue: string
 ) {
-  const { container } = containers[containerName];
+  const container = getContainer(containerName);
   const { resource } = await container.item(id, partitionKeyValue).read();
   return resource;
 }
 
 export async function create(
-  containerName: keyof typeof containers,
+  containerName: ContainerName,
   item: Record<string, unknown>
 ) {
-  const { container } = containers[containerName];
+  const container = getContainer(containerName);
   const { resource } = await container.items.create(item);
   return resource;
 }
 
 export async function query(
-  containerName: keyof typeof containers,
+  containerName: ContainerName,
   querySpec: SqlQuerySpec
 ) {
-  const { container } = containers[containerName];
+  const container = getContainer(containerName);
   const { resources } = await container.items.query(querySpec).fetchAll();
   return resources;
 }
