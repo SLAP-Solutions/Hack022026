@@ -78,9 +78,6 @@ jobs:
       - name: Build Next.js app
         working-directory: ${{ env.WORKING_DIR }}
         run: npm run build
-        env:
-          COSMOSDB_ENDPOINT: ${{ secrets.COSMOSDB_ENDPOINT }}
-          COSMOSDB_KEY: ${{ secrets.COSMOSDB_KEY }}
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
