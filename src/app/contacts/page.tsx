@@ -1,13 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useContactsStore } from "@/stores/useContactsStore";
 import { useContactModal } from "@/stores/useContactModal";
 import { ContactModal } from "@/components/modals/ContactModal";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Plus, Search, Edit, Trash2, User } from "lucide-react";
+import { Plus, Search, Edit, Trash2, User, Loader2 } from "lucide-react";
 import {
     AlertDialog,
     AlertDialogAction,
@@ -20,11 +20,15 @@ import {
 } from "@/components/ui/alert-dialog";
 
 export default function ContactsPage() {
-    const { contacts, deleteContact } = useContactsStore();
+    const { contacts, isLoading, fetchContacts, deleteContact } = useContactsStore();
     const { openModal } = useContactModal();
     const [searchQuery, setSearchQuery] = useState("");
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
     const [contactToDelete, setContactToDelete] = useState<string | null>(null);
+
+    useEffect(() => {
+        fetchContacts();
+    }, [fetchContacts]);
 
     const filteredContacts = contacts.filter((contact) =>
         contact.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -83,8 +87,15 @@ export default function ContactsPage() {
                 </div>
             </div>
 
+            {/* Loading State */}
+            {isLoading && (
+                <div className="flex justify-center items-center py-16">
+                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                </div>
+            )}
+
             {/* Contacts Grid */}
-            {filteredContacts.length > 0 ? (
+            {!isLoading && filteredContacts.length > 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {filteredContacts.map((contact) => (
                         <Card key={contact.id} className="hover:shadow-lg transition-shadow">
