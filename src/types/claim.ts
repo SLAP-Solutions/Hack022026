@@ -7,7 +7,6 @@ export interface Claim {
     id: string;
     title: string;
     description: string;
-    claimantName: string;
     type: string;         // e.g., "Auto", "Health", "Property"
     walletId?: string;    // The wallet ID this claim belongs to
     status: ClaimStatus;
@@ -38,7 +37,6 @@ export interface ClaimDisplay extends Omit<Claim, 'dateCreated' | 'dateSettled' 
 export interface CreateClaimInput {
     title: string;
     description: string;
-    claimantName: string;
     type: string;
     walletId: string;
 }
@@ -49,7 +47,6 @@ export interface CreateClaimInput {
 export interface ClaimSummary {
     id: string;
     title: string;
-    claimantName: string;
     status: ClaimStatus;
     totalCost: number;
     dateCreated: string;

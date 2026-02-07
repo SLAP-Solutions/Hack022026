@@ -78,7 +78,8 @@ namespace agent_api.Agents
             {agentList}
 
             Routing Guidelines:
-            - Invoices, financial documents→ invoiceinterpreter
+            - Uploaded documents, images, PDFs, extracting data from documents → documentanalysis
+            - Querying existing claims/invoices in the system, claim status → invoiceinterpreter
             - Contacts, policyholders, claimants, adding/updating people → contactmanager
             - Payments, payment status, payment history, financial transactions, creating payments for invoices → paymentcreator
 

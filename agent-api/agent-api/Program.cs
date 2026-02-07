@@ -37,7 +37,10 @@ if (app.Environment.IsDevelopment())
 // Enable CORS
 app.UseCors("NextJsFrontend");
 
-app.UseHttpsRedirection();
+if (!app.Environment.IsDevelopment())
+{
+    app.UseHttpsRedirection();
+}
 
 app.UseAuthorization();
 
