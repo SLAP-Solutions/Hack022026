@@ -80,11 +80,11 @@ const statusColors = {
 };
 
 const categoryGradients = {
-    Healthcare: "from-red-400/10 via-red-500/10 to-red-600/10",
+    Healthcare: "from-blue-400/10 via-blue-500/10 to-blue-600/10",
     Technology: "from-slate-400/10 via-slate-500/10 to-slate-600/10",
-    Travel: "from-red-300/10 via-red-400/10 to-red-500/10",
+    Travel: "from-blue-300/10 via-blue-400/10 to-blue-500/10",
     Education: "from-slate-300/10 via-slate-400/10 to-slate-500/10",
-    Office: "from-red-500/10 via-red-600/10 to-red-700/10"
+    Office: "from-blue-500/10 via-blue-600/10 to-blue-700/10"
 };
 
 export default function ClaimsPage() {
@@ -101,7 +101,7 @@ export default function ClaimsPage() {
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
                     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                         <div>
-                            <h1 className="text-4xl font-bold bg-gradient-to-r from-red-600 via-red-700 to-red-800 bg-clip-text text-transparent">
+                            <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 via-blue-700 to-blue-800 bg-clip-text text-transparent">
                                 Claims
                             </h1>
                             <p className="text-slate-600 dark:text-slate-400 mt-1">
@@ -116,7 +116,7 @@ export default function ClaimsPage() {
                                     key={status}
                                     onClick={() => setFilter(status)}
                                     variant={filter === status ? "default" : "outline"}
-                                    className={filter === status ? "bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 shadow-lg shadow-red-500/50" : "hover:bg-red-50 dark:hover:bg-slate-700"}
+                                    className={filter === status ? "bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 shadow-lg shadow-blue-500/50" : "hover:bg-blue-50 dark:hover:bg-slate-700"}
                                 >
                                     {status.charAt(0).toUpperCase() + status.slice(1)}
                                 </Button>
@@ -131,10 +131,10 @@ export default function ClaimsPage() {
                 {/* Stats Overview */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
                     {[
-                        { label: "Total Claims", value: sampleClaims.length, color: "from-red-600 to-red-700" },
+                        { label: "Total Claims", value: sampleClaims.length, color: "from-blue-600 to-blue-700" },
                         { label: "Pending", value: sampleClaims.filter(c => c.status === "pending").length, color: "from-amber-500 to-yellow-500" },
                         { label: "Approved", value: sampleClaims.filter(c => c.status === "approved").length, color: "from-emerald-500 to-green-500" },
-                        { label: "Total Amount", value: `£${sampleClaims.reduce((sum, c) => sum + c.amount, 0).toLocaleString()}`, color: "from-red-700 to-red-800" }
+                        { label: "Total Amount", value: `£${sampleClaims.reduce((sum, c) => sum + c.amount, 0).toLocaleString()}`, color: "from-blue-700 to-blue-800" }
                     ].map((stat, idx) => (
                         <Card key={idx} className="hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
                             <CardContent className="pt-6">
@@ -169,7 +169,7 @@ export default function ClaimsPage() {
                                         <div className="text-sm font-mono text-slate-500 dark:text-slate-400 mb-1">
                                             {claim.id}
                                         </div>
-                                        <h3 className="text-xl font-bold text-slate-900 dark:text-white group-hover:text-red-600 dark:group-hover:text-red-400 transition-colors">
+                                        <h3 className="text-xl font-bold text-slate-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
                                             {claim.title}
                                         </h3>
                                     </div>
@@ -187,7 +187,7 @@ export default function ClaimsPage() {
 
                             <CardFooter className="relative flex items-center justify-between">
                                 <div>
-                                    <div className="text-2xl font-bold bg-gradient-to-r from-red-600 to-red-700 bg-clip-text text-transparent">
+                                    <div className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-blue-700 bg-clip-text text-transparent">
                                         £{claim.amount.toFixed(2)}
                                     </div>
                                     <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">
@@ -204,7 +204,7 @@ export default function ClaimsPage() {
                             </CardFooter>
 
                             {/* Hover Effect Border */}
-                            <div className="absolute inset-0 rounded-lg border-2 border-transparent group-hover:border-red-500/50 transition-all duration-500" />
+                            <div className="absolute inset-0 rounded-lg border-2 border-transparent group-hover:border-blue-500/50 transition-all duration-500" />
                         </Card>
                     ))}
                 </div>
