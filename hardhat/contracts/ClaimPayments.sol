@@ -196,9 +196,9 @@ contract ClaimPayments {
         );
 
         // Calculate crypto amount based on current oracle price
-        // Formula: cryptoAmount = (usdAmountInCents * 10^decimals) / currentPrice
-        // Example: ($1000 * 100 cents * 10^2 decimals) / 7000000 = 0.0143 BTC
-        uint256 paymentAmount = (payment.usdAmount * (10 ** uint256(int256(decimals)))) / currentPrice;
+        // Formula: cryptoAmount = (usdAmountInCents * 10^18 Wei * 10^decimals) / (currentPrice * 100)
+        // Example with $0.32 @ $2058.44 ETH: (32 * 10^18 * 10^3) / (2058440 * 100) = 0.000155494 ETH
+        uint256 paymentAmount = (payment.usdAmount * 1e18 * (10 ** uint256(int256(decimals)))) / (currentPrice * 100);
 
         require(paymentAmount <= payment.collateralAmount, "ClaimPayments: Insufficient collateral");
 
@@ -320,6 +320,6 @@ contract ClaimPayments {
         ClaimPayment memory payment = claimPayments[_paymentId];
         require(payment.collateralAmount > 0, "ClaimPayments: Payment does not exist");
         
-        estimatedAmount = (payment.usdAmount * (10 ** uint256(int256(_decimals)))) / _estimatedPrice;
+        estimatedAmount = (payment.usdAmount * 1e18 * (10 ** uint256(int256(_decimals)))) / (_estimatedPrice * 100);
     }
 }
