@@ -16,6 +16,7 @@ export interface ClaimPayment {
     takeProfitPrice: bigint;
     collateralAmount: bigint;
     createdAt: number;
+    createdAtPrice: bigint;
     expiresAt: number;
     executed: boolean;
     executedAt: number;
@@ -108,6 +109,7 @@ export function useContract() {
             takeProfitPrice: payment.takeProfitPrice,
             collateralAmount: payment.collateralAmount,
             createdAt: Number(payment.createdAt),
+            createdAtPrice: payment.createdAtPrice,
             expiresAt: Number(payment.expiresAt),
             executed: payment.executed,
             executedAt: Number(payment.executedAt),
