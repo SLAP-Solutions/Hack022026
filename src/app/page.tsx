@@ -1,5 +1,7 @@
 "use client";
 
+import { useState, useMemo } from "react";
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
@@ -17,10 +19,14 @@ import {
   PieChart,
   Pie,
   Cell,
-  Legend
+  Legend,
+  LineChart,
+  Line
 } from "recharts";
 
 export default function Home() {
+  const [estateFilter, setEstateFilter] = useState<'active' | 'closed' | 'combined'>('combined');
+
   // Calculate Statistics
   const totalClaims = claimsData.length;
 
@@ -33,13 +39,52 @@ export default function Home() {
   const settledClaims = claimsData.filter(c => c.status === 'settled').length;
 
   // Calculate Estate Aggregates
-  const totalLowerBound = claimsData.reduce((acc, claim) => {
-    return acc + (claim.payments?.reduce((sum: number, p: any) => sum + (Number(p.stopLossPrice) / 100), 0) || 0);
-  }, 0);
+  const filteredClaimsForEstate = useMemo(() => {
+    if (estateFilter === 'combined') return claimsData;
 
-  const totalUpperBound = claimsData.reduce((acc, claim) => {
-    return acc + (claim.payments?.reduce((sum: number, p: any) => sum + (Number(p.takeProfitPrice) / 100), 0) || 0);
-  }, 0);
+    return claimsData.map(claim => ({
+      ...claim,
+      payments: claim.payments?.filter(p => {
+        if (estateFilter === 'active') return p.status === 'pending';
+        if (estateFilter === 'closed') return ['executed', 'expired'].includes(p.status);
+        return true;
+      }) || []
+    }));
+  }, [estateFilter]);
+
+  const estateAggregates = useMemo(() => {
+    return filteredClaimsForEstate.reduce((acc, claim) => {
+      const claimPayments = claim.payments || [];
+
+      acc.lower += claimPayments.reduce((sum: number, p: any) => sum + (Number(p.stopLossPrice) / 100), 0);
+      acc.current += claimPayments.reduce((sum: number, p: any) => sum + (Number(p.usdAmount) / 100), 0);
+      acc.upper += claimPayments.reduce((sum: number, p: any) => sum + (Number(p.takeProfitPrice) / 100), 0);
+
+      return acc;
+    }, { lower: 0, current: 0, upper: 0 });
+  }, [filteredClaimsForEstate]);
+
+  const totalLowerBound = estateAggregates.lower;
+  const totalEstateCurrent = estateAggregates.current; // Use this for the estate card only
+  const totalUpperBound = estateAggregates.upper;
+
+  // Generate Mock Historical Data for Risk Trend
+  const riskTrendData = Array.from({ length: 30 }, (_, i) => {
+    const date = new Date();
+    date.setDate(date.getDate() - (29 - i));
+
+    // Variance factors to simulate movement
+    const variance = (Math.random() - 0.5) * 0.1; // +/- 5%
+    const lowerVariance = 1 + ((Math.random() - 0.5) * 0.02);
+    const upperVariance = 1 + ((Math.random() - 0.5) * 0.02);
+
+    return {
+      date: date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }),
+      lower: totalLowerBound * (0.95 + (i / 30) * 0.05) * lowerVariance, // Slowly trending up to current
+      current: totalEstateCurrent * (0.9 + (i / 30) * 0.1) * (1 + variance), // Volatile trend up
+      upper: totalUpperBound * (0.98 + (i / 30) * 0.02) * upperVariance, // Stable trend
+    };
+  });
 
   // Prepare Chart Data
   const statusDistribution = [
@@ -121,11 +166,29 @@ export default function Home() {
         {/* Overall Payment Estate Card */}
         <Card className="border-2 border-primary/10 bg-gradient-to-br from-background to-primary/5">
           <CardHeader>
-            <div className="flex items-center gap-2">
-              <ShieldAlert className="w-5 h-5 text-primary" />
-              <CardTitle>Overall Payment Estate</CardTitle>
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div className="flex items-center gap-2">
+                <ShieldAlert className="w-5 h-5 text-primary" />
+                <div>
+                  <CardTitle>Overall Payment Estate</CardTitle>
+                  <p className="text-sm text-muted-foreground mt-1">Aggregate risk exposure across {estateFilter} payments.</p>
+                </div>
+              </div>
+              <div className="flex bg-muted/50 p-1 rounded-lg border">
+                {(['active', 'closed', 'combined'] as const).map((filter) => (
+                  <button
+                    key={filter}
+                    onClick={() => setEstateFilter(filter)}
+                    className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${estateFilter === filter
+                        ? 'bg-background text-primary shadow-sm border'
+                        : 'text-muted-foreground hover:text-primary/80'
+                      }`}
+                  >
+                    {filter.charAt(0).toUpperCase() + filter.slice(1)}
+                  </button>
+                ))}
+              </div>
             </div>
-            <p className="text-sm text-muted-foreground">Aggregate risk exposure across all active payments.</p>
           </CardHeader>
           <CardContent>
             <div className="space-y-6">
@@ -136,7 +199,7 @@ export default function Home() {
                 </div>
                 <div className="text-center">
                   <p className="text-xs text-muted-foreground mb-1">Total Current Value</p>
-                  <p className="font-mono font-bold text-3xl text-primary">${totalPayments.toLocaleString(undefined, { minimumFractionDigits: 2 })}</p>
+                  <p className="font-mono font-bold text-3xl text-primary">${totalEstateCurrent.toLocaleString(undefined, { minimumFractionDigits: 2 })}</p>
                 </div>
                 <div className="text-right">
                   <p className="text-xs text-muted-foreground mb-1">Total Upper Bound (Take Profit)</p>
@@ -147,8 +210,8 @@ export default function Home() {
               <div className="pt-2 pb-6">
                 <Slider
                   defaultValue={[totalLowerBound + (totalUpperBound - totalLowerBound) * 0.5]} // Mock position for now as we don't have real-time price feeds for all
-                  value={[totalPayments]}
-                  max={totalUpperBound}
+                  value={[totalEstateCurrent]}
+                  max={totalUpperBound || 100} // Prevent 0 max
                   min={totalLowerBound}
                   step={0.01}
                   disabled
@@ -161,6 +224,62 @@ export default function Home() {
                   <span>High Risk Zone</span>
                   <span>Optimal Zone</span>
                   <span>Profit Zone</span>
+                </div>
+              </div>
+
+              {/* Risk Trend Graph */}
+              <div className="pt-4 border-t">
+                <h3 className="text-sm font-semibold mb-4">Risk Exposure Over Time (30 Days)</h3>
+                <div className="h-[300px] w-full">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={riskTrendData} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
+                      <XAxis
+                        dataKey="date"
+                        fontSize={12}
+                        tickLine={false}
+                        axisLine={false}
+                        minTickGap={30}
+                      />
+                      <YAxis
+                        fontSize={12}
+                        tickLine={false}
+                        axisLine={false}
+                        tickFormatter={(value) => `$${value}`}
+                      />
+                      <Tooltip
+                        formatter={(value: number) => [`$${value.toLocaleString(undefined, { minimumFractionDigits: 2 })}`, '']}
+                        contentStyle={{ borderRadius: '8px', fontSize: '12px' }}
+                      />
+                      <Legend />
+                      <Line
+                        type="monotone"
+                        dataKey="upper"
+                        name="Upper Bound (Take Profit)"
+                        stroke="#22c55e"
+                        strokeWidth={2}
+                        dot={false}
+                        strokeDasharray="5 5"
+                      />
+                      <Line
+                        type="monotone"
+                        dataKey="current"
+                        name="Current Value"
+                        stroke="#3b82f6"
+                        strokeWidth={2}
+                        dot={false}
+                      />
+                      <Line
+                        type="monotone"
+                        dataKey="lower"
+                        name="Lower Bound (Stop Loss)"
+                        stroke="#ef4444"
+                        strokeWidth={2}
+                        dot={false}
+                        strokeDasharray="5 5"
+                      />
+                    </LineChart>
+                  </ResponsiveContainer>
                 </div>
               </div>
             </div>
