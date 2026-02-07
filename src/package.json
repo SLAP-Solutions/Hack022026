@@ -7,8 +7,8 @@
   },
   "scripts": {
     "dev": "next dev",
-    "build": "next build && cp -r .next/static .next/standalone/.next/ && cp -r public .next/standalone/",
-    "start": "next start",
+    "build": "next build && copyfiles -u 2 \".next/static/**/*\" .next/standalone/.next/static && copyfiles -u 1 \"public/**/*\" .next/standalone/public",
+    "start": "node .next/standalone/server.js",
     "lint": "eslint"
   },
   "dependencies": {
@@ -41,6 +41,7 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "copyfiles": "^2.4.1",
     "eslint": "^9",
     "eslint-config-next": "16.1.6",
     "tailwindcss": "^4",

@@ -11,49 +11,8 @@ env:
   TF_DIR: './resources'
 
 jobs:
-  build-nextjs:
-    name: Build Next.js Application
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Remove old artifacts
-        uses: c-hive/gha-remove-artifacts@v1
-        with:
-          age: '14 days'
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-          cache-dependency-path: src/package-lock.json
-
-      - name: Install npm dependencies
-        working-directory: ${{ env.WORKING_DIR }}
-        run: npm ci
-
-      - name: Build Next.js application
-        working-directory: ${{ env.WORKING_DIR }}
-        run: npm run build
-        env:
-          NODE_ENV: production
-
-      - name: Upload build artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: nextjs-build
-          path: |
-            ${{ env.WORKING_DIR }}/.next
-            ${{ env.WORKING_DIR }}/public
-            ${{ env.WORKING_DIR }}/package.json
-            ${{ env.WORKING_DIR }}/next.config.ts
-          retention-days: 1
-
   terraform-apply:
     name: Terraform Apply
-    needs: [build-nextjs]
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/smart-contracts'
     environment: production
@@ -105,12 +64,6 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Download build artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: nextjs-build
-          path: ${{ env.WORKING_DIR }}
-
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
         with:
@@ -148,8 +101,8 @@ jobs:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           action: 'upload'
           app_location: '${{ env.WORKING_DIR }}'
-          skip_app_build: true
-          skip_api_build: true
+          api_location: ''
+          output_location: ''
 
       - name: Health Check
         run: |
@@ -173,17 +126,3 @@ jobs:
           echo "Note: Static Web Apps may take a few minutes to fully propagate"
           echo "Check manually at: $SWA_URL"
 
-  cleanup:
-    name: Cleanup Artifacts
-    needs: [deploy-to-azure]
-    runs-on: ubuntu-latest
-    if: always()
-    
-    steps:
-      - name: Delete artifacts
-        uses: geekyeggo/delete-artifact@v5
-        with:
-          name: |
-            tfplan
-            nextjs-build
-          failOnError: false
