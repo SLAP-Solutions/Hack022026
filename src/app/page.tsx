@@ -159,13 +159,7 @@ export default function Home() {
         </Card>
       </div>
 
-      <div className="mt-16">
-        <Button asChild size="lg">
-          <Link href="/payments">
-            Payment Dashboard
-          </Link>
-        </Button>
-      </div>
+
     </div>
   );
 }

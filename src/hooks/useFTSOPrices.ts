@@ -14,8 +14,9 @@ interface PriceData {
     error: string | null;
 }
 
+const publicProvider = new JsonRpcProvider(RPC_URL);
+
 export function useFTSOPrices() {
-    const publicProvider = new JsonRpcProvider(RPC_URL);
 
     const [prices, setPrices] = useState<Record<string, PriceData>>({
         "ETH/USD": { symbol: "ETH/USD", price: "0", decimals: 0, timestamp: 0, loading: true, error: null },

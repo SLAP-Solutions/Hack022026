@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Plus, Search, Edit, Trash2, User, Loader2 } from "lucide-react";
+import { PageHeader } from "@/components/layout/PageHeader";
 import {
     AlertDialog,
     AlertDialogAction,
@@ -54,38 +55,34 @@ export default function ContactsPage() {
 
 
     return (
-        <div className="max-w-7xl mx-auto space-y-6">
-            {/* Header */}
-            <div className="flex flex-col gap-4">
-                <div>
-                    <h1 className="text-3xl font-bold font-serif">
-                        Contacts
-                    </h1>
-                    <p className="text-muted-foreground mt-2">
-                        Public directory of contacts and receiver addresses
-                    </p>
-                </div>
+        <div className="flex flex-col h-full -m-6">
+            <PageHeader title="Contacts">
+                <Button
+                    onClick={() => openModal()}
+                    className="bg-primary text-primary-foreground hover:bg-primary/90"
+                    size="sm"
+                >
+                    <Plus className="mr-2 h-4 w-4" />
+                    Add Contact
+                </Button>
+            </PageHeader>
 
-                {/* Search and Add Button */}
-                <div className="flex flex-col sm:flex-row gap-4">
-                    <div className="relative flex-1">
+            <div className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+                <div className="px-6 py-2 flex items-center gap-1">
+                    <div className="relative flex-1 max-w-md">
                         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                         <Input
                             placeholder="Search contacts by name or address..."
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            className="pl-10"
+                            className="pl-10 h-8"
                         />
                     </div>
-                    <Button
-                        onClick={() => openModal()}
-                        className="bg-[#FF67E1] hover:bg-[#FF67E1]/90 text-white"
-                    >
-                        <Plus className="mr-2 h-4 w-4" />
-                        Add Contact
-                    </Button>
                 </div>
             </div>
+
+            <div className="flex-1 overflow-auto p-6">
+                <div className="max-w-7xl mx-auto space-y-6">
 
             {/* Loading State */}
             {isLoading && (
@@ -200,6 +197,8 @@ export default function ContactsPage() {
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
+                </div>
+            </div>
         </div>
     );
 }
