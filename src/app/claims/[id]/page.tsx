@@ -267,7 +267,7 @@ export default function ClaimDetailPage() {
                                                         </div>
                                                     </div>
                                                     <Slider
-                                                        value={[lower + (upper - lower) * 0.5]} // Setting fake "current" price for visualization
+                                                        value={[amount]}
                                                         max={upper}
                                                         min={lower}
                                                         step={0.01}
@@ -275,7 +275,7 @@ export default function ClaimDetailPage() {
                                                         className="opacity-100"
                                                         trackClassName="bg-gradient-to-r from-red-500 to-green-500"
                                                         rangeClassName="opacity-0"
-                                                        thumbContent="Pending"
+                                                        thumbContent={`$${amount.toFixed(2)}`}
                                                     />
                                                 </div>
 
