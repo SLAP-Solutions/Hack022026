@@ -7,7 +7,7 @@ interface ClaimsStore {
     claims: Claim[];
     getClaim: (id: string) => Claim | undefined;
     addPayment: (claimId: string, payment: Payment) => void;
-    updatePaymentStatus: (claimId: string, paymentId: string | bigint, status: 'pending' | 'executed' | 'expired') => void;
+    updatePaymentStatus: (claimId: string, paymentId: string | bigint, status: 'pending' | 'committed' | 'executed' | 'expired') => void;
 }
 
 export const useClaimsStore = create<ClaimsStore>((set, get) => ({
@@ -32,7 +32,7 @@ export const useClaimsStore = create<ClaimsStore>((set, get) => ({
         }));
     },
 
-    updatePaymentStatus: (claimId: string, paymentId: string | bigint, status: 'pending' | 'executed' | 'expired') => {
+    updatePaymentStatus: (claimId: string, paymentId: string | bigint, status: 'pending' | 'committed' | 'executed' | 'expired') => {
         set((state) => ({
             claims: state.claims.map((claim) => {
                 if (claim.id === claimId) {
