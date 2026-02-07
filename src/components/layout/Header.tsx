@@ -17,6 +17,7 @@ export function Header() {
                 <div className="flex items-center gap-4">
                     <nav className="hidden md:flex items-center gap-6 text-sm font-medium text-muted-foreground">
                         <a href="/" className="hover:text-primary transition-colors">Home</a>
+                        <a href="/claims" className="hover:text-primary transition-colors">Claims</a>
                         <a href="/prices" className="hover:text-primary transition-colors">Prices</a>
                     </nav>
 

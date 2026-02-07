@@ -14,11 +14,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className="dark">
-      <body className="min-h-screen bg-background font-sans antialiased">
+    <html lang="en">
+      <body className="min-h-screen bg-white dark:bg-black font-sans antialiased">
         <WalletProvider>
-          <Header />
           <main className="container mx-auto px-4 py-8">
+            <Header />
             {children}
           </main>
         </WalletProvider>
