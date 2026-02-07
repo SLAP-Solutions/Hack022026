@@ -4,7 +4,8 @@ import { useParams, useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Calendar, DollarSign, Tag } from "lucide-react";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { ArrowLeft, Calendar, DollarSign, Tag, Receipt } from "lucide-react";
 
 interface Claim {
     id: string;
@@ -14,6 +15,15 @@ interface Claim {
     status: "pending" | "approved" | "rejected" | "processing";
     date: string;
     category: string;
+}
+
+interface Payment {
+    id: string;
+    date: string;
+    amount: number;
+    method: string;
+    status: "completed" | "pending" | "failed";
+    reference: string;
 }
 
 const sampleClaims: Claim[] = [
@@ -78,6 +88,31 @@ const statusColors = {
     approved: "bg-gradient-to-r from-emerald-500/20 to-green-500/20 text-emerald-700 dark:text-emerald-300 border-emerald-500/30",
     rejected: "bg-gradient-to-r from-rose-500/20 to-red-500/20 text-rose-700 dark:text-rose-300 border-rose-500/30",
     processing: "bg-gradient-to-r from-blue-500/20 to-cyan-500/20 text-blue-700 dark:text-blue-300 border-blue-500/30"
+};
+
+const paymentStatusColors = {
+    completed: "text-emerald-700 dark:text-emerald-400",
+    pending: "text-amber-700 dark:text-amber-400",
+    failed: "text-rose-700 dark:text-rose-400"
+};
+
+// Sample payment data for each claim
+const claimPayments: Record<string, Payment[]> = {
+    "CLM-001": [
+        { id: "PAY-001-1", date: "2026-02-06", amount: 450.00, method: "Bank Transfer", status: "completed", reference: "TXN-20260206-001" }
+    ],
+    "CLM-002": [
+        { id: "PAY-002-1", date: "2026-02-05", amount: 649.99, method: "Credit Card", status: "completed", reference: "TXN-20260205-002" },
+        { id: "PAY-002-2", date: "2026-02-06", amount: 650.00, method: "Credit Card", status: "pending", reference: "TXN-20260206-003" }
+    ],
+    "CLM-003": [],
+    "CLM-004": [
+        { id: "PAY-004-1", date: "2026-02-03", amount: 299.00, method: "PayPal", status: "completed", reference: "TXN-20260203-004" }
+    ],
+    "CLM-005": [
+        { id: "PAY-005-1", date: "2026-02-02", amount: 520.00, method: "Bank Transfer", status: "failed", reference: "TXN-20260202-005" }
+    ],
+    "CLM-006": []
 };
 
 export default function ClaimDetailPage() {
@@ -190,7 +225,7 @@ export default function ClaimDetailPage() {
                 </Card>
 
                 {/* Category Card */}
-                <Card>
+                <Card className="mb-6">
                     <CardHeader>
                         <div className="flex items-center gap-2 text-slate-600 dark:text-slate-400">
                             <Tag className="w-5 h-5" />
@@ -201,6 +236,61 @@ export default function ClaimDetailPage() {
                         <Badge variant="secondary" className="text-lg px-4 py-2">
                             {claim.category}
                         </Badge>
+                    </CardContent>
+                </Card>
+
+                {/* Payment History */}
+                <Card>
+                    <CardHeader>
+                        <div className="flex items-center gap-2 text-slate-900 dark:text-white">
+                            <Receipt className="w-5 h-5" />
+                            <h3 className="text-xl font-semibold">Payment History</h3>
+                        </div>
+                    </CardHeader>
+                    <CardContent>
+                        {claimPayments[claim.id] && claimPayments[claim.id].length > 0 ? (
+                            <Table>
+                                <TableHeader>
+                                    <TableRow>
+                                        <TableHead>Date</TableHead>
+                                        <TableHead>Reference</TableHead>
+                                        <TableHead>Method</TableHead>
+                                        <TableHead className="text-right">Amount</TableHead>
+                                        <TableHead className="text-right">Status</TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {claimPayments[claim.id].map((payment) => (
+                                        <TableRow key={payment.id}>
+                                            <TableCell className="font-medium">
+                                                {new Date(payment.date).toLocaleDateString('en-GB', {
+                                                    day: 'numeric',
+                                                    month: 'short',
+                                                    year: 'numeric'
+                                                })}
+                                            </TableCell>
+                                            <TableCell className="font-mono text-sm text-slate-600 dark:text-slate-400">
+                                                {payment.reference}
+                                            </TableCell>
+                                            <TableCell>{payment.method}</TableCell>
+                                            <TableCell className="text-right font-semibold">
+                                                £{payment.amount.toFixed(2)}
+                                            </TableCell>
+                                            <TableCell className="text-right">
+                                                <span className={`font-medium ${paymentStatusColors[payment.status]}`}>
+                                                    {payment.status.charAt(0).toUpperCase() + payment.status.slice(1)}
+                                                </span>
+                                            </TableCell>
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
+                        ) : (
+                            <div className="text-center py-8 text-slate-500 dark:text-slate-400">
+                                <Receipt className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                                <p>No payments recorded yet</p>
+                            </div>
+                        )}
                     </CardContent>
                 </Card>
             </div>
