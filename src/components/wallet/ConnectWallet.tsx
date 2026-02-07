@@ -6,13 +6,22 @@ import { Button } from "../ui/button";
 import { Loader2, LogOut, Wallet, ChevronDown } from "lucide-react";
 
 export function ConnectWallet() {
-    const { address, isConnecting, error, connectWallet, disconnect, isConnected, walletType } = useWallet();
+    const { address, isConnecting, isInitializing, error, connectWallet, disconnect, isConnected, walletType } = useWallet();
     const [showWalletMenu, setShowWalletMenu] = useState(false);
 
     const handleConnect = (wallet: "metamask" | "phantom") => {
         connectWallet(wallet);
         setShowWalletMenu(false);
     };
+
+    if (isInitializing) {
+        return (
+            <Button disabled className="gap-2 bg-muted text-muted-foreground opacity-50">
+                <Loader2 className="w-4 h-4 animate-spin" />
+                <span>Loading...</span>
+            </Button>
+        );
+    }
 
     return (
         <div className="relative flex items-center gap-4">
