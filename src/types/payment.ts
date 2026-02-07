@@ -17,7 +17,7 @@ export interface Payment {
     executedAt: bigint;             // Block timestamp when payment was executed (0 if not executed)
     executedPrice: bigint;          // Crypto price at execution time (0 if not executed)
     paidAmount: bigint;             // Actual crypto amount paid to receiver (0 if not executed)
-    originalAmount?: number;        // Original crypto amount calculated at creation
+    originalAmount?: number;        // Original USD amount (for comparison)
 }
 
 /**

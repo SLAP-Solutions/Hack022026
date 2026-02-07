@@ -37,7 +37,6 @@ export default function ClaimDetailPage() {
     const { openModal } = usePaymentModal();
     const { prices } = useFTSOPrices();
     const [isRiskModalOpen, setIsRiskModalOpen] = useState(false);
-    const { prices } = useFTSOPrices();
 
     const claim = getClaim(claimId);
 
@@ -312,7 +311,8 @@ export default function ClaimDetailPage() {
                                                             if (!currentPrice) return null;
 
                                                             const currentCryptoAmount = amount / currentPrice;
-                                                            const diff = payment.originalAmount - currentCryptoAmount;
+                                                            const originalCryptoAmount = payment.originalAmount / currentPrice;
+                                                            const diff = originalCryptoAmount - currentCryptoAmount;
                                                             const isSaving = diff > 0;
                                                             const percentDiff = (Math.abs(diff) / payment.originalAmount) * 100;
 

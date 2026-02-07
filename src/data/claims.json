@@ -14,12 +14,12 @@
                 "id": "1",
                 "receiver": "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb",
                 "usdAmount": 450.00,
-                "stopLossPrice": 40500,
-                "takeProfitPrice": 49500,
+                "stopLossPrice": 405.00,
+                "takeProfitPrice": 495.00,
                 "cryptoSymbol": "BTC/USD",
                 "status": "executed",
                 "executedAt": "2026-02-06T10:30:00Z",
-                "originalAmount": 15000,
+                "originalAmount": 460.00,
                 "description": "Initial consultation fee"
             }
         ]
@@ -38,13 +38,13 @@
                 "id": "2",
                 "receiver": "0x8ba1f109551bD432803012645Ac136ddd64DBA72",
                 "usdAmount": 1299.99,
-                "stopLossPrice": 117000,
-                "takeProfitPrice": 143000,
+                "stopLossPrice": 1170.00,
+                "takeProfitPrice": 1430.00,
                 "cryptoSymbol": "BTC",
                 "status": "pending",
                 "executedAt": null,
                 "expiresAt": "2026-03-06",
-                "originalAmount": 0.015,
+                "originalAmount": 1250.00,
                 "description": "MacBook Pro M4"
             }
         ]
@@ -63,24 +63,24 @@
                 "id": "3",
                 "receiver": "0x5aAeb6053F3E94C9b9A09f33669435E7Ef1BeAed",
                 "usdAmount": 500.00,
-                "stopLossPrice": 45000,
-                "takeProfitPrice": 55000,
+                "stopLossPrice": 450.00,
+                "takeProfitPrice": 550.00,
                 "cryptoSymbol": "ETH",
                 "status": "pending",
                 "executedAt": null,
-                "originalAmount": 47500,
+                "originalAmount": 525.00,
                 "description": "Flight to LHR"
             },
             {
                 "id": "4",
                 "receiver": "0x5aAeb6053F3E94C9b9A09f33669435E7Ef1BeAed",
                 "usdAmount": 375.50,
-                "stopLossPrice": 33800,
-                "takeProfitPrice": 41300,
+                "stopLossPrice": 338.00,
+                "takeProfitPrice": 413.00,
                 "cryptoSymbol": "FLR",
                 "status": "pending",
                 "executedAt": null,
-                "originalAmount": 12516,
+                "originalAmount": 395.00,
                 "description": "Hotel stay (3 nights)"
             }
         ]
@@ -100,12 +100,12 @@
                 "id": "5",
                 "receiver": "0xfB6916095ca1df60bB79Ce92cE3Ea74c37c5d359",
                 "usdAmount": 299.00,
-                "stopLossPrice": 26900,
-                "takeProfitPrice": 32900,
+                "stopLossPrice": 269.00,
+                "takeProfitPrice": 329.00,
                 "cryptoSymbol": "FLR",
                 "status": "executed",
                 "executedAt": "2026-02-03T14:20:00Z",
-                "originalAmount": 9966,
+                "originalAmount": 310.00,
                 "description": "Cloud Arch Cert"
             }
         ]
@@ -135,12 +135,12 @@
                 "id": "6",
                 "receiver": "0x71C7656EC7ab88b098defB751B7401B5f6d8976F",
                 "usdAmount": 699.00,
-                "stopLossPrice": 62900,
-                "takeProfitPrice": 76900,
+                "stopLossPrice": 629.00,
+                "takeProfitPrice": 769.00,
                 "cryptoSymbol": "ETH",
                 "status": "pending",
                 "executedAt": null,
-                "originalAmount": 0.23,
+                "originalAmount": 650.00,
                 "description": "IntelliJ Ultimate License"
             }
         ]

@@ -51,10 +51,10 @@ export function AddPaymentModal() {
             id: BigInt(Date.now()), // Mock ID
             payer: "0x123...MockPayer",
             receiver: receiver || "0x...",
-            usdAmount: BigInt(Math.floor(parseFloat(usdAmount))), // Raw amount
+            usdAmount: parseFloat(usdAmount), // Raw amount
             cryptoFeedId: cryptoFeedId || "0x...",
-            stopLossPrice: BigInt(Math.floor(parseFloat(stopLoss))),
-            takeProfitPrice: BigInt(Math.floor(parseFloat(takeProfit))),
+            stopLossPrice: parseFloat(stopLoss),
+            takeProfitPrice: parseFloat(takeProfit),
             collateralAmount: BigInt(0), // Defaulting to 0 since removed from UI
             createdAt: BigInt(Math.floor(Date.now() / 1000)),
             expiresAt: BigInt(Math.floor(Date.now() / 1000) + (parseInt(durationDays) * 86400)),
@@ -63,12 +63,8 @@ export function AddPaymentModal() {
             executedPrice: BigInt(0),
             paidAmount: BigInt(0),
             originalAmount: (() => {
-                if (!cryptoFeedId || !usdAmount) return 0;
-                const feed = FEEDS.find((f) => f.id === cryptoFeedId);
-                if (!feed) return 0;
-                const priceData = prices[feed.name];
-                const price = priceData ? parseFloat(priceData.price) : 0;
-                return price > 0 ? parseFloat(usdAmount) / price : 0;
+                // Store original USD amount for comparison
+                return usdAmount ? parseFloat(usdAmount) : 0;
             })()
         };
 
