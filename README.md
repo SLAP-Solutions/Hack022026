@@ -143,6 +143,18 @@ npx hardhat run scripts/test-all-feeds.ts --network coston2
 **Coston2 Testnet:** `0xCe7C24526501401D1A015129314493a74D93b374`  
 [View on Explorer](https://coston2-explorer.flare.network/address/0xCe7C24526501401D1A015129314493a74D93b374)
 
+### 🔄 Deploying New Contract
+
+When you deploy a new contract, update the GitHub secret:
+
+1. Deploy contract: `cd hardhat && npx hardhat run scripts/deploy.ts --network coston2`
+2. Copy new address from `src/lib/contract/deployment.json`
+3. Go to **GitHub repo → Settings → Secrets and variables → Actions**
+4. Update `CONTRACT_ADDRESS` secret with the new address
+5. Redeploy keeper (GitHub Actions will use the new address)
+
+⚠️ **Important:** The keeper requires `CONTRACT_ADDRESS` in GitHub Secrets to connect to the deployed contract.
+
 ## 💰 Real Savings Example
 
 **Scenario:** Insurance company owes $1,000 USD, holds ETH

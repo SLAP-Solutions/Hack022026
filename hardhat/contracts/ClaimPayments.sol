@@ -39,6 +39,7 @@ contract ClaimPayments {
         uint256 takeProfitPrice;    // Upper limit: execute when price reaches this (pay minimal crypto)
         uint256 collateralAmount;   // Native FLR locked as collateral & gas reserve
         uint256 createdAt;          // Block timestamp when payment was created
+        uint256 createdAtPrice;     // Crypto price when payment was created (for reference/UI display)
         uint256 expiresAt;          // Deadline timestamp - payment cannot execute after this
         bool executed;              // Whether payment has been completed
         uint256 executedAt;         // Block timestamp when payment was executed (0 if not executed)
@@ -123,6 +124,9 @@ contract ClaimPayments {
         require(msg.value > 0, "ClaimPayments: Must provide collateral");
         require(_expiryDays > 0, "ClaimPayments: Expiry days must be positive");
 
+        // Query current price from FTSO for reference (visual display in UI)
+        (uint256 currentPrice, , ) = ftsoV2.getFeedById(_cryptoFeedId);
+
         paymentId = paymentCounter++;
         uint256 expiryTimestamp = block.timestamp + (_expiryDays * 1 days);
 
@@ -136,6 +140,7 @@ contract ClaimPayments {
             takeProfitPrice: _takeProfitPrice,
             collateralAmount: msg.value,
             createdAt: block.timestamp,
+            createdAtPrice: currentPrice,
             expiresAt: expiryTimestamp,
             executed: false,
             executedAt: 0,
@@ -291,6 +296,7 @@ contract ClaimPayments {
             takeProfitPrice: currentPrice, // Set to current price (already executed)
             collateralAmount: msg.value,
             createdAt: block.timestamp,
+            createdAtPrice: currentPrice,
             expiresAt: expiryTimestamp,
             executed: true, // Mark as executed immediately
             executedAt: block.timestamp,

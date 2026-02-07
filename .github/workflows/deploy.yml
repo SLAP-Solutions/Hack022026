@@ -99,27 +99,30 @@ jobs:
           az acr login --name ${{ needs.terraform-apply.outputs.acr_name }}
 
       - name: Build and Push Keeper Image
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          file: ./keeper/Dockerfile
-          push: true
-          tags: |
-            ${{ needs.terraform-apply.outputs.acr_login_server }}/payment-keeper:latest
-            ${{ needs.terraform-apply.outputs.acr_login_server }}/payment-keeper:${{ github.sha }}
+        run: |
+          cd keeper
+          az acr build \
+            --registry ${{ needs.terraform-apply.outputs.acr_name }} \
+            --image payment-keeper:latest \
+            --image payment-keeper:${{ github.sha }} \
+            --file Dockerfile \
+            ..
 
       - name: Deploy Container Instance with Secrets
         run: |
           ACR_USERNAME=$(az acr credential show --name ${{ needs.terraform-apply.outputs.acr_name }} --query "username" -o tsv)
           ACR_PASSWORD=$(az acr credential show --name ${{ needs.terraform-apply.outputs.acr_name }} --query "passwords[0].value" -o tsv)
           
-          # Delete existing container if it exists (for updates)
+          # Delete existing container if it exists
           az container delete \
             --resource-group ${{ needs.terraform-apply.outputs.rg_name }} \
             --name ${{ needs.terraform-apply.outputs.container_name }} \
             --yes 2>/dev/null || true
           
-          # Create container with actual image and secrets (GitHub Actions manages this resource)
+          # Wait for delete to complete
+          sleep 5
+          
+          # Create container with minimal resources
           az container create \
             --resource-group ${{ needs.terraform-apply.outputs.rg_name }} \
             --name ${{ needs.terraform-apply.outputs.container_name }} \
@@ -127,18 +130,14 @@ jobs:
             --os-type Linux \
             --cpu 0.5 \
             --memory 0.5 \
-            --ip-address-type Public \
+            --dns-name-label ${{ needs.terraform-apply.outputs.container_name }} \
             --ports 8080 \
             --registry-login-server ${{ needs.terraform-apply.outputs.acr_login_server }} \
             --registry-username "$ACR_USERNAME" \
             --registry-password "$ACR_PASSWORD" \
-            --secure-environment-variables \
-              PRIVATE_KEY=${{ secrets.KEEPER_PRIVATE_KEY }} \
-            --environment-variables \
-              RPC_URL="https://coston2-api.flare.network/ext/C/rpc" \
-              POLL_INTERVAL="15000" \
-              GAS_LIMIT="500000" \
-            --restart-policy Always
+            --restart-policy Always \
+            --environment-variables RPC_URL=https://coston2-api.flare.network/ext/C/rpc POLL_INTERVAL=15000 GAS_LIMIT=500000 CONTRACT_ADDRESS=${{ secrets.CONTRACT_ADDRESS }} \
+            --secure-environment-variables PRIVATE_KEY=${{ secrets.KEEPER_PRIVATE_KEY }}
 
       - name: Verify Keeper Deployment
         run: |
@@ -156,12 +155,11 @@ jobs:
           echo "📝 Recent Keeper Logs:"
           az container logs \
             --resource-group ${{ needs.terraform-apply.outputs.rg_name }} \
-            --name ${{ needs.terraform-apply.outputs.container_name }} \
-            --tail 30
+            --name ${{ needs.terraform-apply.outputs.container_name }}
 
   deploy-to-azure:
     name: Deploy to Azure Static Web Apps
-    needs: [build-and-push-keeper]
+    needs: [terraform-apply, build-and-push-keeper]
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/smart-contracts'
     environment: production

@@ -13,7 +13,23 @@ When you deploy the keeper to Azure, you're running:
 
 ## Prerequisites
 
-### 1. Install Azure CLI
+### 1. GitHub Secrets Configuration
+
+**Required Secrets** (Settings → Secrets and variables → Actions):
+
+| Secret Name | Description | Example |
+|-------------|-------------|----------|
+| `KEEPER_PRIVATE_KEY` | Keeper wallet private key | `0x123abc...` |
+| `CONTRACT_ADDRESS` | Deployed contract address | `0xF9484...` |
+| `AZURE_CREDENTIALS` | Azure service principal | JSON blob |
+
+⚠️ **When deploying a new contract:**
+1. Deploy: `cd hardhat && npx hardhat run scripts/deploy.ts --network coston2`
+2. Get address from `src/lib/contract/deployment.json`
+3. **Update `CONTRACT_ADDRESS` in GitHub Secrets**
+4. GitHub Actions will use new address on next deployment
+
+### 2. Install Azure CLI
 
 **Windows:**
 ```powershell
@@ -27,7 +43,7 @@ Or download from: https://aka.ms/installazurecliwindows
 az version
 ```
 
-### 2. Login to Azure
+### 3. Login to Azure
 
 ```powershell
 az login
