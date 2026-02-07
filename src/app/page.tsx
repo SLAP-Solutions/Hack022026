@@ -26,6 +26,7 @@ import {
 
 export default function Home() {
   const [estateFilter, setEstateFilter] = useState<'active' | 'closed' | 'combined'>('combined');
+  const [graphRange, setGraphRange] = useState<'1H' | '24H' | '1W' | '1M' | '3M' | '1Y' | 'ALL'>('1M');
 
   // Calculate Statistics
   const totalClaims = claimsData.length;
@@ -69,20 +70,39 @@ export default function Home() {
   const totalUpperBound = estateAggregates.upper;
 
   // Generate Mock Historical Data for Risk Trend
-  const riskTrendData = Array.from({ length: 30 }, (_, i) => {
-    const date = new Date();
-    date.setDate(date.getDate() - (29 - i));
+  const rangeConfig = {
+    '1H': { points: 60, interval: 60 * 1000, labelFormat: 'time', volatility: 0.005 }, // 1 min intervals
+    '24H': { points: 24, interval: 60 * 60 * 1000, labelFormat: 'time', volatility: 0.01 }, // 1 hour intervals
+    '1W': { points: 7, interval: 24 * 60 * 60 * 1000, labelFormat: 'date', volatility: 0.02 },
+    '1M': { points: 30, interval: 24 * 60 * 60 * 1000, labelFormat: 'date', volatility: 0.1 },
+    '3M': { points: 90, interval: 24 * 60 * 60 * 1000, labelFormat: 'date', volatility: 0.15 },
+    '1Y': { points: 365, interval: 24 * 60 * 60 * 1000, labelFormat: 'date', volatility: 0.2 },
+    'ALL': { points: 730, interval: 24 * 60 * 60 * 1000, labelFormat: 'date', volatility: 0.25 }
+  }[graphRange];
 
-    // Variance factors to simulate movement
-    const variance = (Math.random() - 0.5) * 0.1; // +/- 5%
-    const lowerVariance = 1 + ((Math.random() - 0.5) * 0.02);
-    const upperVariance = 1 + ((Math.random() - 0.5) * 0.02);
+  const riskTrendData = Array.from({ length: rangeConfig.points }, (_, i) => {
+    const date = new Date();
+    // Calculate timestamp: Current Time - (Total Points - 1 - Current Index) * Interval
+    date.setTime(date.getTime() - (rangeConfig.points - 1 - i) * rangeConfig.interval);
+
+    // Variance factors to simulate movement (adjust volatility based on time range)
+    const variance = (Math.random() - 0.5) * rangeConfig.volatility;
+
+    // Simulate trends over time
+    const trendFactor = i / rangeConfig.points;
+
+    // Tighter variance for shorter timeframes
+    const boundVolatility = rangeConfig.volatility * 0.5;
+    const lowerVariance = 1 + ((Math.random() - 0.5) * boundVolatility);
+    const upperVariance = 1 + ((Math.random() - 0.5) * boundVolatility);
 
     return {
-      date: date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }),
-      lower: totalLowerBound * (0.95 + (i / 30) * 0.05) * lowerVariance, // Slowly trending up to current
-      current: totalEstateCurrent * (0.9 + (i / 30) * 0.1) * (1 + variance), // Volatile trend up
-      upper: totalUpperBound * (0.98 + (i / 30) * 0.02) * upperVariance, // Stable trend
+      date: rangeConfig.labelFormat === 'time'
+        ? date.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })
+        : date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }),
+      lower: totalLowerBound * (0.95 + trendFactor * 0.05) * lowerVariance,
+      current: totalEstateCurrent * (0.9 + trendFactor * 0.1) * (1 + variance),
+      upper: totalUpperBound * (0.98 + trendFactor * 0.02) * upperVariance,
     };
   });
 
@@ -119,50 +139,6 @@ export default function Home() {
           </Button>
         </div>
 
-        {/* Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Claims</CardTitle>
-              <FileText className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{totalClaims}</div>
-              <p className="text-xs text-muted-foreground">+2 from last month</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Payments</CardTitle>
-              <DollarSign className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">${totalPayments.toLocaleString(undefined, { minimumFractionDigits: 2 })}</div>
-              <p className="text-xs text-muted-foreground">+12% from last month</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Active Claims</CardTitle>
-              <Activity className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{activeClaims}</div>
-              <p className="text-xs text-muted-foreground">Requires attention</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Settled Claims</CardTitle>
-              <CheckCircle className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{settledClaims}</div>
-              <p className="text-xs text-muted-foreground">Successfully processed</p>
-            </CardContent>
-          </Card>
-        </div>
-
         {/* Overall Payment Estate Card */}
         <Card className="border-2 border-primary/10 bg-gradient-to-br from-background to-primary/5">
           <CardHeader>
@@ -180,8 +156,8 @@ export default function Home() {
                     key={filter}
                     onClick={() => setEstateFilter(filter)}
                     className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${estateFilter === filter
-                        ? 'bg-background text-primary shadow-sm border'
-                        : 'text-muted-foreground hover:text-primary/80'
+                      ? 'bg-background text-primary shadow-sm border'
+                      : 'text-muted-foreground hover:text-primary/80'
                       }`}
                   >
                     {filter.charAt(0).toUpperCase() + filter.slice(1)}
@@ -229,7 +205,23 @@ export default function Home() {
 
               {/* Risk Trend Graph */}
               <div className="pt-4 border-t">
-                <h3 className="text-sm font-semibold mb-4">Risk Exposure Over Time (30 Days)</h3>
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-4">
+                  <h3 className="text-sm font-semibold">Risk Exposure Over Time</h3>
+                  <div className="flex bg-muted/50 p-1 rounded-lg border">
+                    {(['1H', '24H', '1W', '1M', '3M', '1Y', 'ALL'] as const).map((range) => (
+                      <button
+                        key={range}
+                        onClick={() => setGraphRange(range)}
+                        className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${graphRange === range
+                          ? 'bg-background text-primary shadow-sm border'
+                          : 'text-muted-foreground hover:text-primary/80'
+                          }`}
+                      >
+                        {range}
+                      </button>
+                    ))}
+                  </div>
+                </div>
                 <div className="h-[300px] w-full">
                   <ResponsiveContainer width="100%" height="100%">
                     <LineChart data={riskTrendData} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
@@ -285,6 +277,52 @@ export default function Home() {
             </div>
           </CardContent>
         </Card>
+
+        {/* Stats Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Total Claims</CardTitle>
+              <FileText className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{totalClaims}</div>
+              <p className="text-xs text-muted-foreground">+2 from last month</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Total Payments</CardTitle>
+              <DollarSign className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">${totalPayments.toLocaleString(undefined, { minimumFractionDigits: 2 })}</div>
+              <p className="text-xs text-muted-foreground">+12% from last month</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Active Claims</CardTitle>
+              <Activity className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{activeClaims}</div>
+              <p className="text-xs text-muted-foreground">Requires attention</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Settled Claims</CardTitle>
+              <CheckCircle className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{settledClaims}</div>
+              <p className="text-xs text-muted-foreground">Successfully processed</p>
+            </CardContent>
+          </Card>
+        </div>
+
+
 
         {/* Charts Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
