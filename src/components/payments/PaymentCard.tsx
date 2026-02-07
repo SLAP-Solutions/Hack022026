@@ -109,6 +109,10 @@ export function PaymentCard({ payment, onRefresh }: PaymentCardProps) {
     // Refund = locked collateral - what you'd pay now
     const refundAmount = collateralAmount - currentPayoutInTicker;
 
+    // Amount from smart contract (amount at creation)
+    const createdAtPrice = Number(payment.createdAtPrice) / multiplier;
+    const amountAtCreation = createdAtPrice > 0 ? usdAmountDollars / createdAtPrice : 0;
+
 
     // Mock data generation for HoverCard preview
     const chartData = useMemo(() => {
@@ -218,6 +222,9 @@ export function PaymentCard({ payment, onRefresh }: PaymentCardProps) {
                     <h4 className="font-semibold text-xs mb-2 border-b pb-1">Estimated Payout Details</h4>
 
                     <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
+                        <span className="text-muted-foreground">Amount Entered:</span>
+                        <span className="font-mono text-right">{amountAtCreation.toFixed(6)} {ticker}</span>
+
                         <span className="text-muted-foreground">Collateral Locked:</span>
                         <span className="font-mono text-right">{collateralAmount.toFixed(6)} {ticker}</span>
 
@@ -250,6 +257,20 @@ export function PaymentCard({ payment, onRefresh }: PaymentCardProps) {
                                         {savingsVsStopLoss.toFixed(2)}%
                                     </span>
                                 </div>
+                            </>
+                        )}
+
+                        {payment.executed && (
+                            <>
+                                <span className="text-muted-foreground mt-3">Price at Execution:</span>
+                                <span className="font-mono text-right mt-3">
+                                    ${(Number(payment.executedPrice) / multiplier).toFixed(2)}
+                                </span>
+
+                                <span className="text-muted-foreground font-semibold">Actual Payout:</span>
+                                <span className="font-mono text-right font-bold text-green-600">
+                                    {ethers.formatEther(payment.paidAmount.toString())} {ticker}
+                                </span>
                             </>
                         )}
                     </div>
