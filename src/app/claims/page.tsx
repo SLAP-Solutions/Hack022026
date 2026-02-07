@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -152,60 +153,65 @@ export default function ClaimsPage() {
                 {/* Claims Grid */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {filteredClaims.map((claim, idx) => (
-                        <Card
+                        <Link
                             key={claim.id}
-                            className="group relative overflow-hidden hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-2"
-                            style={{
-                                animation: `fadeInUp 0.5s ease-out ${idx * 0.1}s both`
-                            }}
+                            href={`/claims/${claim.id}`}
+                            className="block"
                         >
-                            {/* Gradient Background */}
-                            <div className={`absolute inset-0 bg-gradient-to-br ${categoryGradients[claim.category as keyof typeof categoryGradients] || categoryGradients.Technology} opacity-50 group-hover:opacity-100 transition-opacity duration-500`} />
+                            <Card
+                                className="group relative overflow-hidden hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-2 cursor-pointer"
+                                style={{
+                                    animation: `fadeInUp 0.5s ease-out ${idx * 0.1}s both`
+                                }}
+                            >
+                                {/* Gradient Background */}
+                                <div className={`absolute inset-0 bg-gradient-to-br ${categoryGradients[claim.category as keyof typeof categoryGradients] || categoryGradients.Technology} opacity-50 group-hover:opacity-100 transition-opacity duration-500`} />
 
-                            {/* Content */}
-                            <CardHeader className="relative">
-                                <div className="flex items-start justify-between">
-                                    <div>
-                                        <div className="text-sm font-mono text-slate-500 dark:text-slate-400 mb-1">
-                                            {claim.id}
+                                {/* Content */}
+                                <CardHeader className="relative">
+                                    <div className="flex items-start justify-between">
+                                        <div>
+                                            <div className="text-sm font-mono text-slate-500 dark:text-slate-400 mb-1">
+                                                {claim.id}
+                                            </div>
+                                            <h3 className="text-xl font-bold text-slate-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                                                {claim.title}
+                                            </h3>
                                         </div>
-                                        <h3 className="text-xl font-bold text-slate-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
-                                            {claim.title}
-                                        </h3>
+                                        <Badge variant="outline" className={statusColors[claim.status]}>
+                                            {claim.status.toUpperCase()}
+                                        </Badge>
                                     </div>
-                                    <Badge variant="outline" className={statusColors[claim.status]}>
-                                        {claim.status.toUpperCase()}
+                                </CardHeader>
+
+                                <CardContent className="relative">
+                                    <p className="text-slate-600 dark:text-slate-300 text-sm line-clamp-2">
+                                        {claim.description}
+                                    </p>
+                                </CardContent>
+
+                                <CardFooter className="relative flex items-center justify-between">
+                                    <div>
+                                        <div className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-blue-700 bg-clip-text text-transparent">
+                                            £{claim.amount.toFixed(2)}
+                                        </div>
+                                        <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                                            {new Date(claim.date).toLocaleDateString('en-GB', {
+                                                day: 'numeric',
+                                                month: 'short',
+                                                year: 'numeric'
+                                            })}
+                                        </div>
+                                    </div>
+                                    <Badge variant="secondary" className="bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
+                                        {claim.category}
                                     </Badge>
-                                </div>
-                            </CardHeader>
+                                </CardFooter>
 
-                            <CardContent className="relative">
-                                <p className="text-slate-600 dark:text-slate-300 text-sm line-clamp-2">
-                                    {claim.description}
-                                </p>
-                            </CardContent>
-
-                            <CardFooter className="relative flex items-center justify-between">
-                                <div>
-                                    <div className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-blue-700 bg-clip-text text-transparent">
-                                        £{claim.amount.toFixed(2)}
-                                    </div>
-                                    <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                                        {new Date(claim.date).toLocaleDateString('en-GB', {
-                                            day: 'numeric',
-                                            month: 'short',
-                                            year: 'numeric'
-                                        })}
-                                    </div>
-                                </div>
-                                <Badge variant="secondary" className="bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
-                                    {claim.category}
-                                </Badge>
-                            </CardFooter>
-
-                            {/* Hover Effect Border */}
-                            <div className="absolute inset-0 rounded-lg border-2 border-transparent group-hover:border-blue-500/50 transition-all duration-500" />
-                        </Card>
+                                {/* Hover Effect Border */}
+                                <div className="absolute inset-0 rounded-lg border-2 border-transparent group-hover:border-blue-500/50 transition-all duration-500" />
+                            </Card>
+                        </Link>
                     ))}
                 </div>
 
