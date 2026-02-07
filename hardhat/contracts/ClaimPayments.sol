@@ -20,15 +20,21 @@ import "@flarenetwork/flare-periphery-contracts/coston2/FtsoV2Interface.sol";
  * 
  * EXECUTION LOGIC (Take Profit / Stop Loss):
 <<<<<<< HEAD
+<<<<<<< HEAD
  * - Upper Limit (Take Profit): When price reaches this HIGH, execute to pay MINIMAL crypto
  * - Lower Limit (Stop Loss): If price drops to this LOW, execute to prevent paying even MORE crypto
  * - Payment executes when: lowerLimit ≤ currentPrice ≤ upperLimit
 =======
+=======
+>>>>>>> origin
  * - Stop Loss (Lower Limit): If price drops to or below this, execute to prevent paying even MORE crypto
  * - Take Profit (Upper Limit): When price reaches or exceeds this HIGH, execute to pay MINIMAL crypto
  * - Payment executes when: currentPrice ≤ stopLossPrice OR currentPrice ≥ takeProfitPrice
  * - Payment is PENDING when: stopLossPrice < currentPrice < takeProfitPrice
+<<<<<<< HEAD
 >>>>>>> 8d7cf1a08f9d1701448dcf8f157eb834dc15bcc7
+=======
+>>>>>>> origin
  */
 contract ClaimPayments {
     /// @notice Flare Time Series Oracle v2 interface
@@ -168,10 +174,14 @@ contract ClaimPayments {
      * Price Execution Logic:
      * - Queries Flare FTSO v2 for current crypto price
 <<<<<<< HEAD
+<<<<<<< HEAD
      * - Checks if price is within [stopLossPrice, takeProfitPrice] range
 =======
      * - Executes if price hits stop loss (≤ lower limit) OR take profit (≥ upper limit)
 >>>>>>> 8d7cf1a08f9d1701448dcf8f157eb834dc15bcc7
+=======
+     * - Executes if price hits stop loss (≤ lower limit) OR take profit (≥ upper limit)
+>>>>>>> origin
      * - Calculates crypto amount needed: (usdAmount * 10^decimals) / currentPrice
      * - Pays receiver the calculated crypto amount
      * - Refunds excess collateral to payer
@@ -182,10 +192,14 @@ contract ClaimPayments {
      * - Payment must exist and not be executed
      * - Current time must be before expiry deadline
 <<<<<<< HEAD
+<<<<<<< HEAD
      * - Current FTSO price must be within trigger range
 =======
      * - Current FTSO price must be at or beyond one of the trigger points
 >>>>>>> 8d7cf1a08f9d1701448dcf8f157eb834dc15bcc7
+=======
+     * - Current FTSO price must be at or beyond one of the trigger points
+>>>>>>> origin
      * - Collateral must be sufficient to cover calculated payment amount
      * 
      * Emits ClaimPaymentExecuted event with execution details
@@ -202,6 +216,7 @@ contract ClaimPayments {
             ftsoV2.getFeedById(payment.cryptoFeedId);
 
 <<<<<<< HEAD
+<<<<<<< HEAD
         // Verify price is within execution range
         require(
             currentPrice >= payment.stopLossPrice && 
@@ -214,6 +229,8 @@ contract ClaimPayments {
         // Example: ($1000 * 100 cents * 10^2 decimals) / 7000000 = 0.0143 BTC
         uint256 paymentAmount = (payment.usdAmount * (10 ** uint256(int256(decimals)))) / currentPrice;
 =======
+=======
+>>>>>>> origin
         // Verify price has hit a trigger point
         // Execute if: price dropped to/below stop loss OR price reached/exceeded take profit
         require(
@@ -226,7 +243,10 @@ contract ClaimPayments {
         // Formula: cryptoAmount = (usdAmountInCents * 10^18 Wei * 10^decimals) / (currentPrice * 100)
         // Example with $0.32 @ $2058.44 ETH: (32 * 10^18 * 10^3) / (2058440 * 100) = 0.000155494 ETH
         uint256 paymentAmount = (payment.usdAmount * 1e18 * (10 ** uint256(int256(decimals)))) / (currentPrice * 100);
+<<<<<<< HEAD
 >>>>>>> 8d7cf1a08f9d1701448dcf8f157eb834dc15bcc7
+=======
+>>>>>>> origin
 
         require(paymentAmount <= payment.collateralAmount, "ClaimPayments: Insufficient collateral");
 
@@ -349,9 +369,13 @@ contract ClaimPayments {
         require(payment.collateralAmount > 0, "ClaimPayments: Payment does not exist");
         
 <<<<<<< HEAD
+<<<<<<< HEAD
         estimatedAmount = (payment.usdAmount * (10 ** uint256(int256(_decimals)))) / _estimatedPrice;
 =======
         estimatedAmount = (payment.usdAmount * 1e18 * (10 ** uint256(int256(_decimals)))) / (_estimatedPrice * 100);
 >>>>>>> 8d7cf1a08f9d1701448dcf8f157eb834dc15bcc7
+=======
+        estimatedAmount = (payment.usdAmount * 1e18 * (10 ** uint256(int256(_decimals)))) / (_estimatedPrice * 100);
+>>>>>>> origin
     }
 }
