@@ -94,20 +94,9 @@ jobs:
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-      - name: Get ACR Credentials
-        id: get-acr-creds
-        run: |
-          ACR_USERNAME=$(az acr credential show --name ${{ needs.terraform-apply.outputs.acr_name }} --query "username" -o tsv)
-          ACR_PASSWORD=$(az acr credential show --name ${{ needs.terraform-apply.outputs.acr_name }} --query "passwords[0].value" -o tsv)
-          echo "acr_username=$ACR_USERNAME" >> $GITHUB_OUTPUT
-          echo "acr_password=$ACR_PASSWORD" >> $GITHUB_OUTPUT
-
       - name: Login to Azure Container Registry
-        uses: docker/login-action@v3
-        with:
-          registry: ${{ needs.terraform-apply.outputs.acr_login_server }}
-          username: ${{ steps.get-acr-creds.outputs.acr_username }}
-          password: ${{ steps.get-acr-creds.outputs.acr_password }}
+        run: |
+          az acr login --name ${{ needs.terraform-apply.outputs.acr_name }}
 
       - name: Build and Push Keeper Image
         uses: docker/build-push-action@v5
@@ -121,6 +110,9 @@ jobs:
 
       - name: Update Container Instance with Secrets
         run: |
+          ACR_USERNAME=$(az acr credential show --name ${{ needs.terraform-apply.outputs.acr_name }} --query "username" -o tsv)
+          ACR_PASSWORD=$(az acr credential show --name ${{ needs.terraform-apply.outputs.acr_name }} --query "passwords[0].value" -o tsv)
+          
           az container create \
             --resource-group ${{ needs.terraform-apply.outputs.rg_name }} \
             --name ${{ needs.terraform-apply.outputs.container_name }} \
@@ -128,8 +120,8 @@ jobs:
             --cpu 0.5 \
             --memory 0.5 \
             --registry-login-server ${{ needs.terraform-apply.outputs.acr_login_server }} \
-            --registry-username ${{ steps.get-acr-creds.outputs.acr_username }} \
-            --registry-password ${{ steps.get-acr-creds.outputs.acr_password }} \
+            --registry-username "$ACR_USERNAME" \
+            --registry-password "$ACR_PASSWORD" \
             --secure-environment-variables \
               PRIVATE_KEY=${{ secrets.KEEPER_PRIVATE_KEY }} \
             --environment-variables \
@@ -188,21 +180,17 @@ jobs:
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-      - name: Get Static Web App API Key
-        id: get-swa-key
+      - name: Deploy to Static Web App
         run: |
           SWA_API_KEY=$(az staticwebapp secrets list --name ${{ needs.terraform-apply.outputs.swa_name }} --resource-group ${{ needs.terraform-apply.outputs.rg_name }} --query "properties.apiKey" -o tsv)
-          echo "swa_api_key=$SWA_API_KEY" >> $GITHUB_OUTPUT
-  
-      - name: Deploy to Static Web App
-        uses: Azure/static-web-apps-deploy@v1
-        with:
-          azure_static_web_apps_api_token: ${{ steps.get-swa-key.outputs.swa_api_key }}
-          repo_token: ${{ secrets.GITHUB_TOKEN }}
-          action: 'upload'
-          app_location: '${{ env.WORKING_DIR }}'
-          output_location: ''
-          skip_app_build: true
+          
+          npx @azure/static-web-apps-cli deploy \
+            --deployment-token "$SWA_API_KEY" \
+            --app-location '${{ env.WORKING_DIR }}' \
+            --output-location '' \
+            --no-use-keychain
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Health Check
         run: |
