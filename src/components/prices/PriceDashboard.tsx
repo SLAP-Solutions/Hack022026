@@ -2,22 +2,9 @@
 
 import { useFTSOPrices } from "../../hooks/useFTSOPrices";
 import { PriceCard } from "./PriceCard";
-import { useWallet } from "../../hooks/useWallet";
-import { Card, CardContent } from "../ui/card";
 
 export function PriceDashboard() {
-    const { isConnected, address } = useWallet();
-    const { prices, refresh } = useFTSOPrices();
-
-    if (!isConnected) {
-        return (
-            <div>
-                <p className="text-4xl font-medium">
-                    Connect your wallet to view live FTSO prices
-                </p>
-            </div>
-        );
-    }
+    const { prices } = useFTSOPrices();
 
     return (
         <div className="w-[60%]">

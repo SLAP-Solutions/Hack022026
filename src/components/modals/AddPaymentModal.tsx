@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { usePaymentModal } from "@/stores/usePaymentModal";
 import { useClaimsStore } from "@/stores/useClaimsStore";
+import { useFTSOPrices } from "@/hooks/useFTSOPrices";
+import { FEEDS } from "@/config/feeds";
 import {
     Dialog,
     DialogContent,
@@ -25,14 +27,16 @@ import {
 export function AddPaymentModal() {
     const { isOpen, claimId, closeModal } = usePaymentModal();
     const { addPayment } = useClaimsStore();
+    const { prices } = useFTSOPrices();
 
     // Form State
     const [receiver, setReceiver] = useState("");
+    const [description, setDescription] = useState("");
     const [usdAmount, setUsdAmount] = useState("");
     const [cryptoFeedId, setCryptoFeedId] = useState("");
     const [stopLoss, setStopLoss] = useState("");
     const [takeProfit, setTakeProfit] = useState("");
-    const [collateral, setCollateral] = useState("");
+    // Collateral removed from UI, defaulting to 0
     const [durationDays, setDurationDays] = useState("30");
 
     const handleSubmit = (e: React.FormEvent) => {
@@ -47,17 +51,21 @@ export function AddPaymentModal() {
             id: BigInt(Date.now()), // Mock ID
             payer: "0x123...MockPayer",
             receiver: receiver || "0x...",
-            usdAmount: BigInt(Math.floor(parseFloat(usdAmount) * 100)), // Convert to cents
+            usdAmount: parseFloat(usdAmount), // Raw amount
             cryptoFeedId: cryptoFeedId || "0x...",
-            stopLossPrice: BigInt(Math.floor(parseFloat(stopLoss) * 100)),
-            takeProfitPrice: BigInt(Math.floor(parseFloat(takeProfit) * 100)),
-            collateralAmount: BigInt(parseFloat(collateral || "0") * 1e18), // Mock FLR conversion
+            stopLossPrice: parseFloat(stopLoss),
+            takeProfitPrice: parseFloat(takeProfit),
+            collateralAmount: BigInt(0), // Defaulting to 0 since removed from UI
             createdAt: BigInt(Math.floor(Date.now() / 1000)),
             expiresAt: BigInt(Math.floor(Date.now() / 1000) + (parseInt(durationDays) * 86400)),
             executed: false,
             executedAt: BigInt(0),
             executedPrice: BigInt(0),
-            paidAmount: BigInt(0)
+            paidAmount: BigInt(0),
+            originalAmount: (() => {
+                // Store original USD amount for comparison
+                return usdAmount ? parseFloat(usdAmount) : 0;
+            })()
         };
 
         // Add to store
@@ -70,11 +78,11 @@ export function AddPaymentModal() {
 
     const handleClose = () => {
         setReceiver("");
+        setDescription("");
         setUsdAmount("");
         setCryptoFeedId("");
         setStopLoss("");
         setTakeProfit("");
-        setCollateral("");
         setDurationDays("30");
         closeModal();
     };
@@ -103,7 +111,18 @@ export function AddPaymentModal() {
                             />
                         </div>
 
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid gap-2">
+                            <Label htmlFor="description">Description</Label>
+                            <Input
+                                id="description"
+                                placeholder="Payment for..."
+                                value={description}
+                                onChange={(e) => setDescription(e.target.value)}
+                                required
+                            />
+                        </div>
+
+                        <div className="grid grid-cols-1 gap-4">
                             <div className="grid gap-2">
                                 <Label htmlFor="amount">Amount (USD)</Label>
                                 <Input
@@ -116,32 +135,63 @@ export function AddPaymentModal() {
                                     required
                                 />
                             </div>
-                            <div className="grid gap-2">
-                                <Label htmlFor="collateral">Collateral (FLR)</Label>
-                                <Input
-                                    id="collateral"
-                                    type="number"
-                                    step="0.1"
-                                    placeholder="500"
-                                    value={collateral}
-                                    onChange={(e) => setCollateral(e.target.value)}
-                                    required
-                                />
-                            </div>
                         </div>
+
+
 
                         <div className="grid gap-2">
                             <Label htmlFor="feed">Crypto Feed ID (FTSO)</Label>
-                            <Select value={cryptoFeedId} onValueChange={setCryptoFeedId}>
-                                <SelectTrigger>
-                                    <SelectValue placeholder="Select asset feed" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="0x01...">BTC/USD</SelectItem>
-                                    <SelectItem value="0x02...">ETH/USD</SelectItem>
-                                    <SelectItem value="0x03...">FLR/USD</SelectItem>
-                                </SelectContent>
-                            </Select>
+                            <div className="flex items-center gap-3">
+                                <div className="flex-4">
+                                    <Select value={cryptoFeedId} onValueChange={setCryptoFeedId}>
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Select asset feed" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {FEEDS.map((feed) => (
+                                                <SelectItem key={feed.id} value={feed.id}>
+                                                    {feed.name}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                    {(() => {
+                                        if (!cryptoFeedId || !usdAmount) return null;
+                                        const feed = FEEDS.find((f) => f.id === cryptoFeedId);
+                                        if (!feed) return null;
+                                        const priceData = prices[feed.name];
+                                        const price = priceData ? parseFloat(priceData.price) : 0;
+                                        if (price <= 0) return null;
+                                        const amount = parseFloat(usdAmount) / price;
+                                        return (
+                                            <div className="flex mt-2">
+                                                <p className="text-sm text-muted-foreground">
+                                                    ≈ {amount.toFixed(6)} {feed.symbol}
+                                                </p>
+                                            </div>
+                                        );
+                                    })()}
+                                </div>
+                                {(() => {
+                                    if (!cryptoFeedId) return null;
+                                    const feed = FEEDS.find((f) => f.id === cryptoFeedId);
+                                    if (!feed) return null;
+                                    const priceData = prices[feed.name];
+                                    const price = priceData ? parseFloat(priceData.price) : 0;
+                                    if (price <= 0) return null;
+                                    return (
+                                        <div className="flex items-baseline-last gap-4">
+
+                                            <div className="text-4xl font-medium text-center whitespace-nowrap flex-3">
+                                                ${price.toFixed(2)}
+                                            </div>
+                                            <div>
+                                                <p className="text-sm text-muted-foreground">Current price</p>
+                                            </div>
+                                        </div>
+                                    );
+                                })()}
+                            </div>
                         </div>
 
                         <div className="grid grid-cols-2 gap-4">
