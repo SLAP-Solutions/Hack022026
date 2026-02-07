@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { ConnectWallet } from "../wallet/ConnectWallet";
 import { Home, FileText, TrendingUp } from "lucide-react";
@@ -8,28 +9,28 @@ export function Header() {
             <div className="flex h-16 items-center justify-between px-6 w-full">
                 <div className="flex items-center gap-2">
                     <div className="flex items-center gap-2">
-                        <a href="/landing" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
+                        <Link href="/landing" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
                             <div className="h-6 w-6 bg-primary rounded-full animate-pulse" />
                             <span className="text-xl font-bold tracking-tight text-foreground">
                                 SLAPSure
                             </span>
-                        </a>
+                        </Link>
                     </div>
                 </div>
 
                 <nav className="hidden md:flex items-center gap-6 text-sm font-medium text-muted-foreground absolute left-1/2 -translate-x-1/2">
-                    <a href="/" className="flex items-center gap-2 hover:text-primary transition-colors">
+                    <Link href="/" className="flex items-center gap-2 hover:text-primary transition-colors">
                         <Home className="w-4 h-4" />
                         Home
-                    </a>
-                    <a href="/claims" className="flex items-center gap-2 hover:text-primary transition-colors">
+                    </Link>
+                    <Link href="/claims" className="flex items-center gap-2 hover:text-primary transition-colors">
                         <FileText className="w-4 h-4" />
                         Claims
-                    </a>
-                    <a href="/prices" className="flex items-center gap-2 hover:text-primary transition-colors">
+                    </Link>
+                    <Link href="/prices" className="flex items-center gap-2 hover:text-primary transition-colors">
                         <TrendingUp className="w-4 h-4" />
                         Prices
-                    </a>
+                    </Link>
                 </nav>
 
                 <div className="flex items-center gap-2">

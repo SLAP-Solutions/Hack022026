@@ -79,7 +79,7 @@ export default function ClaimsPage() {
                             claimantName={claim.claimantName}
                             lineOfBusiness={claim.lineOfBusiness}
                             status={claim.status as any}
-                            totalCost={claim.totalCost}
+                            totalCost={claim.payments?.reduce((acc: number, p: any) => acc + Number(p.usdAmount), 0) || 0}
                             dateCreated={claim.dateCreated}
                             dateSettled={claim.dateSettled}
                             payments={claim.payments as any}

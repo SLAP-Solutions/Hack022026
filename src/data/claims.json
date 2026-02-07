@@ -16,7 +16,7 @@
                 "usdAmount": 45000,
                 "stopLossPrice": 40500,
                 "takeProfitPrice": 49500,
-                "cryptoSymbol": "FLR",
+                "cryptoSymbol": "BTC/USD",
                 "status": "executed",
                 "executedAt": "2026-02-06T10:30:00Z"
             }
