@@ -9,7 +9,7 @@ import { ArrowLeft, Calendar, DollarSign, Tag, Receipt, User, Building, Plus, Sh
 import { usePaymentModal } from "@/stores/usePaymentModal";
 import { AddPaymentModal } from "@/components/modals/AddPaymentModal";
 import { ClaimRiskModal } from "@/components/modals/ClaimRiskModal";
-import { useClaimsStore } from "@/stores/useClaimsStore";
+import { useInvoicesStore } from "@/stores/useInvoicesStore";
 import { Slider } from "@/components/ui/slider";
 import { cn } from "@/lib/utils";
 import { getFeedName, getFeedSymbol } from "@/config/feeds";
@@ -33,15 +33,15 @@ const paymentStatusConfig = {
 export default function InvoiceDetailPage() {
     const params = useParams();
     const router = useRouter();
-    const claimId = params.id as string;
-    const { getClaim, updatePaymentStatus } = useClaimsStore();
+    const invoiceId = params.id as string;
+    const { getInvoice, updatePaymentStatus } = useInvoicesStore();
     const { openModal } = usePaymentModal();
     const { prices } = useFTSOPrices();
     const [isRiskModalOpen, setIsRiskModalOpen] = useState(false);
 
-    const claim = getClaim(claimId);
+    const invoice = getInvoice(invoiceId);
 
-    if (!claim) {
+    if (!invoice) {
         return (
             <div className="max-w-4xl mx-auto">
                 <Card>
@@ -60,7 +60,7 @@ export default function InvoiceDetailPage() {
         );
     }
 
-    const statusInfo = statusConfig[claim.status as keyof typeof statusConfig];
+    const statusInfo = statusConfig[invoice.status as keyof typeof statusConfig];
 
     return (
         <div className="max-w-7xl mx-auto space-y-6">
@@ -82,16 +82,16 @@ export default function InvoiceDetailPage() {
                             <div className="flex-1">
                                 <div className="flex items-center gap-2 mb-2">
                                     <Badge variant="outline" className="text-xs">
-                                        {claim.id}
+                                        {invoice.id}
                                     </Badge>
                                     <Badge className={cn("text-xs border", statusInfo.color)}>
-                                        {claim.status.toUpperCase()}
+                                        {invoice.status.toUpperCase()}
                                     </Badge>
                                 </div>
                                 <h1 className="text-4xl font-bold font-serif mb-2">
-                                    {claim.title}
+                                    {invoice.title}
                                 </h1>
-                                <p className="text-muted-foreground">{claim.description}</p>
+                                <p className="text-muted-foreground">{invoice.description}</p>
                             </div>
                         </div>
                     </CardHeader>
@@ -106,7 +106,7 @@ export default function InvoiceDetailPage() {
                                 <span className="text-xs font-medium uppercase tracking-wider">Total Cost</span>
                             </div>
                             <div className="text-4xl font-bold bg-gradient-to-r from-primary to-primary/90 bg-clip-text text-transparent">
-                                ${(claim.payments?.reduce((acc: number, payment: any) => acc + Number(payment.usdAmount), 0) || 0).toFixed(2)}
+                                ${(invoice.payments?.reduce((acc: number, payment: any) => acc + Number(payment.usdAmount), 0) || 0).toFixed(2)}
                             </div>
                         </div>
                     </CardContent>
@@ -121,7 +121,7 @@ export default function InvoiceDetailPage() {
                             <User className="w-4 h-4" />
                             <span className="text-xs font-medium">Client</span>
                         </div>
-                        <p className="font-semibold">{claim.claimantName}</p>
+                        <p className="font-semibold">{invoice.claimantName}</p>
                     </CardContent>
                 </Card>
 
@@ -131,7 +131,7 @@ export default function InvoiceDetailPage() {
                             <Building className="w-4 h-4" />
                             <span className="text-xs font-medium">Type</span>
                         </div>
-                        <Badge variant="secondary">{claim.type}</Badge>
+                        <Badge variant="secondary">{invoice.type}</Badge>
                     </CardContent>
                 </Card>
 
@@ -142,12 +142,12 @@ export default function InvoiceDetailPage() {
                             <span className="text-xs font-medium">Created</span>
                         </div>
                         <p className="font-semibold">
-                            {new Date(claim.dateCreated).toLocaleDateString()}
+                            {new Date(invoice.dateCreated).toLocaleDateString()}
                         </p>
                     </CardContent>
                 </Card>
 
-                {claim.dateSettled && (
+                {invoice.dateSettled && (
                     <Card>
                         <CardContent className="p-4">
                             <div className="flex items-center gap-2 text-muted-foreground mb-1">
@@ -155,7 +155,7 @@ export default function InvoiceDetailPage() {
                                 <span className="text-xs font-medium">Settled</span>
                             </div>
                             <p className="font-semibold">
-                                {new Date(claim.dateSettled).toLocaleDateString()}
+                                {new Date(invoice.dateSettled).toLocaleDateString()}
                             </p>
                         </CardContent>
                     </Card>
@@ -169,7 +169,7 @@ export default function InvoiceDetailPage() {
                         <div className="flex items-center gap-2">
                             <Receipt className="w-5 h-5" />
                             <h3 className="text-xl font-semibold">Payments</h3>
-                            <Badge variant="secondary">{claim.payments.length}</Badge>
+                            <Badge variant="secondary">{invoice.payments.length}</Badge>
                         </div>
                         <div className="flex gap-2">
                             <Button
@@ -182,7 +182,7 @@ export default function InvoiceDetailPage() {
                                 View Risk Exposure
                             </Button>
                             <Button
-                                onClick={() => openModal(claim.id)}
+                                onClick={() => openModal(invoice.id)}
                                 size="sm"
                                 className="bg-primary hover:bg-primary/90"
                             >
@@ -193,9 +193,9 @@ export default function InvoiceDetailPage() {
                     </div>
                 </CardHeader>
                 <CardContent>
-                    {claim.payments && claim.payments.length > 0 ? (
+                    {invoice.payments && invoice.payments.length > 0 ? (
                         <div className="space-y-3">
-                            {claim.payments.map((payment: any) => {
+                            {invoice.payments.map((payment: any) => {
                                 const paymentStatus = paymentStatusConfig[(payment.status || "pending") as keyof typeof paymentStatusConfig];
 
                                 // Calculate display values
@@ -290,7 +290,7 @@ export default function InvoiceDetailPage() {
                                                     <Button
                                                         size="sm"
                                                         className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground"
-                                                        onClick={() => updatePaymentStatus(claim.id, payment.id, 'committed')}
+                                                        onClick={() => updatePaymentStatus(invoice.id, payment.id, 'committed')}
                                                     >
                                                         <Receipt className="w-4 h-4 mr-2" />
                                                         Commit
@@ -303,7 +303,7 @@ export default function InvoiceDetailPage() {
                                                     <Button
                                                         size="sm"
                                                         className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground"
-                                                        onClick={() => updatePaymentStatus(claim.id, payment.id, 'executed')}
+                                                        onClick={() => updatePaymentStatus(invoice.id, payment.id, 'executed')}
                                                     >
                                                         <CreditCard className="w-4 h-4 mr-2" />
                                                         Pay Now
@@ -380,7 +380,7 @@ export default function InvoiceDetailPage() {
             <ClaimRiskModal
                 open={isRiskModalOpen}
                 onOpenChange={setIsRiskModalOpen}
-                claim={claim}
+                claim={invoice}
             />
         </div>
     );

@@ -27,12 +27,12 @@ async function init() {
         });
         console.log(`Container '${contactsContainer.id}' created or already exists.`);
 
-        // Claims: /id (changed from /Id)
-        const { container: claimsContainer } = await database.containers.createIfNotExists({
-            id: "claims",
-            partitionKey: "/id"
+        // Invoices: /walletId
+        const { container: invoicesContainer } = await database.containers.createIfNotExists({
+            id: "invoices",
+            partitionKey: "/walletId"
         });
-        console.log(`Container '${claimsContainer.id}' created or already exists.`);
+        console.log(`Container '${invoicesContainer.id}' created or already exists.`);
 
         // Payments: /ClaimId
         const { container: paymentsContainer } = await database.containers.createIfNotExists({
