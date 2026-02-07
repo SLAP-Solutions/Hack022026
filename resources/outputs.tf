@@ -14,7 +14,7 @@ output "resource_group_location" {
 }
 
 output "webapp_name" {
-  value       = azurerm_linux_web_app.nextjs.name
+  value       = azurerm_linux_web_app.webapp.name
   description = "The name of the Next.js web app"
 }
 
@@ -24,6 +24,6 @@ output "webapp_url" {
 }
 
 output "webapp_id" {
-  value       = azurerm_linux_web_app.nextjs.id
+  value       = azurerm_linux_web_app.webapp.id
   description = "The ID of the Next.js web app"
 }
