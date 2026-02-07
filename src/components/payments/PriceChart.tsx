@@ -36,14 +36,13 @@ export function PriceBar({
     }, []);
 
 
-    const maxDeviation = Math.max(
-        Math.abs(tpPrice - currentPrice),
-        Math.abs(currentPrice - slPrice),
-        currentPrice * 0.15 // Minimum +/- 15% range
-    );
+    const actualMaxDist = Math.max(Math.abs(tpPrice - currentPrice), Math.abs(currentPrice - slPrice));
+    const minDev = currentPrice * (readOnly ? 0.02 : 0.08);
+    const maxDeviation = Math.max(actualMaxDist, minDev);
 
-    const minRange = currentPrice - (maxDeviation * 1.2); // Add 20% padding
-    const maxRange = currentPrice + (maxDeviation * 1.2);
+    const zoomPadding = readOnly ? 1.1 : 1.2;
+    const minRange = currentPrice - (maxDeviation * zoomPadding);
+    const maxRange = currentPrice + (maxDeviation * zoomPadding);
     const totalRange = maxRange - minRange;
 
     const getPosPercent = (price: number) => {

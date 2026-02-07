@@ -106,34 +106,27 @@ export function PaymentCard({ payment, onRefresh }: PaymentCardProps) {
         ? ((cryptoAtStopLoss - cryptoAtTakeProfit) / cryptoAtStopLoss) * 100
         : 0;
 
-    // Contact matching
     const contact = contacts.find(c => c.receiverAddress.toLowerCase() === payment.receiver.toLowerCase());
     const receiverName = contact ? contact.name : `${payment.receiver.slice(0, 6)}...${payment.receiver.slice(-4)}`;
 
-    // Calculated amounts in Ticker
-    // The payment.usdAmount is in cents.
-    // To get ticker amount: (usdAmount / 100) / currentPrice
     const tickerAmountCurrent = current > 0 ? usdAmountDollars / current : 0;
 
-    // Collateral calculations within component for display
     const collateralEth = ethers.formatEther(payment.collateralAmount.toString());
     const collateralAmount = parseFloat(collateralEth);
 
-    // What would be paid at current price (in ticker)
     const currentPayoutInTicker = current > 0 ? usdAmountDollars / current : 0;
-
-    // Refund = locked collateral - what you'd pay now
     const refundAmount = collateralAmount - currentPayoutInTicker;
 
-    // Amount from smart contract (amount at creation)
     const createdAtPrice = Number(payment.createdAtPrice) / multiplier;
     const amountAtCreation = createdAtPrice > 0 ? usdAmountDollars / createdAtPrice : 0;
 
+    const pnlPercent = createdAtPrice > 0
+        ? ((createdAtPrice / current) - 1) * 100
+        : 0;
 
-    // Mock data generation for HoverCard preview
     const chartData = useMemo(() => {
         if (!current) return [];
-        const points = 20; // Fewer points for preview
+        const points = 20;
         const result = [];
         let price = current * 0.95;
         for (let i = 0; i < points; i++) {
@@ -148,7 +141,6 @@ export function PaymentCard({ payment, onRefresh }: PaymentCardProps) {
         return result;
     }, [current]);
 
-    // Calculate domain for preview
     const history = chartData.map((d) => d.price);
     const allPrices = [...history, takeProfit, stopLoss, current];
     const minPrice = Math.min(...allPrices) * 0.98;
@@ -157,7 +149,6 @@ export function PaymentCard({ payment, onRefresh }: PaymentCardProps) {
     return (
         <>
             <div className="border rounded-lg p-4 hover:shadow-md transition-shadow bg-card relative h-fit">
-                {/* Header */}
                 <div className="flex justify-between items-start mb-3">
                     <div>
                         <h3 className="font-bold text-lg flex items-center gap-2">
@@ -188,7 +179,6 @@ export function PaymentCard({ payment, onRefresh }: PaymentCardProps) {
                     </Badge>
                 </div>
 
-                {/* Progress bar (Hover for Chart, Click for Modal) - Only for Pending payments */}
                 {!payment.executed && (
                     <HoverCard openDelay={200}>
                         <HoverCardTrigger asChild>
@@ -244,11 +234,14 @@ export function PaymentCard({ payment, onRefresh }: PaymentCardProps) {
                     <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
                         {!payment.executed ? (
                             <>
+                                <span className="text-muted-foreground">Price at Creation:</span>
+                                <span className="font-mono text-right">${createdAtPrice.toFixed(2)}</span>
+
                                 <span className="text-muted-foreground">Amount Entered:</span>
                                 <span className="font-mono text-right">{amountAtCreation.toFixed(6)} {ticker}</span>
 
-                                <span className="text-muted-foreground">Collateral Locked:</span>
-                                <span className="font-mono text-right">{collateralAmount.toFixed(6)} {ticker}</span>
+                                <span className="text-muted-foreground mt-3">Collateral Locked:</span>
+                                <span className="font-mono text-right mt-3">{collateralAmount.toFixed(6)} {ticker}</span>
 
                                 <span className="text-muted-foreground">Current Refund:</span>
                                 <span className={cn("font-mono text-right", refundAmount >= 0 ? "text-green-600" : "text-red-600")}>
@@ -273,8 +266,11 @@ export function PaymentCard({ payment, onRefresh }: PaymentCardProps) {
 
                                 <div className="col-span-2 border-t pt-1 mt-1 flex justify-between items-center">
                                     <span className="text-muted-foreground">PNL:</span>
-                                    <span className={cn("font-bold", savingsVsStopLoss > 0 ? "text-green-600" : "text-muted-foreground")}>
-                                        {savingsVsStopLoss.toFixed(2)}%
+                                    <span className={cn(
+                                        "font-bold",
+                                        pnlPercent > 0 ? "text-green-600" : pnlPercent < 0 ? "text-red-600" : "text-muted-foreground"
+                                    )}>
+                                        {pnlPercent > 0 ? "+" : ""}{pnlPercent.toFixed(2)}%
                                     </span>
                                 </div>
                             </>
