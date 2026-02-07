@@ -196,6 +196,7 @@ jobs:
             --deployment-token "$SWA_API_KEY" \
             --app-location '${{ env.WORKING_DIR }}' \
             --output-location '' \
+            --env production \
             --no-use-keychain
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
