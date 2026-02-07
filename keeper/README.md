@@ -2,6 +2,18 @@
 
 Autonomous bot that monitors and executes trigger-based payments when price conditions are met.
 
+## 🚀 Deployment Options
+
+### Local Development
+Run keeper on your machine for testing:
+```powershell
+.\start-dev.ps1  # From repo root
+# or
+cd keeper && npm run dev
+```
+
+---
+
 ##  What It Does
 
 - **Monitors** all pending payments in the ClaimsPayments contract

@@ -53,9 +53,113 @@ jobs:
           ARM_TENANT_ID: ${{ fromJSON(secrets.AZURE_CREDENTIALS).tenantId }}
           ARM_USE_CLI: false
 
+      - name: Get Terraform Outputs
+        id: tf-outputs
+        working-directory: ${{ env.TF_DIR }}
+        run: |
+          echo "rg_name=$(terraform output -raw resource_group_name)" >> $GITHUB_OUTPUT
+          echo "acr_login_server=$(terraform output -raw keeper_registry_login_server)" >> $GITHUB_OUTPUT
+          echo "acr_name=$(terraform output -raw keeper_registry_name)" >> $GITHUB_OUTPUT
+          echo "container_name=$(terraform output -raw keeper_container_group_name)" >> $GITHUB_OUTPUT
+          echo "swa_name=$(terraform output -raw static_web_app_name)" >> $GITHUB_OUTPUT
+          echo "swa_hostname=$(terraform output -raw static_web_app_default_host_name)" >> $GITHUB_OUTPUT
+        env:
+          ARM_CLIENT_ID: ${{ fromJSON(secrets.AZURE_CREDENTIALS).clientId }}
+          ARM_CLIENT_SECRET: ${{ fromJSON(secrets.AZURE_CREDENTIALS).clientSecret }}
+          ARM_SUBSCRIPTION_ID: ${{ fromJSON(secrets.AZURE_CREDENTIALS).subscriptionId }}
+          ARM_TENANT_ID: ${{ fromJSON(secrets.AZURE_CREDENTIALS).tenantId }}
+          ARM_USE_CLI: false
+
+    outputs:
+      rg_name: ${{ steps.tf-outputs.outputs.rg_name }}
+      acr_login_server: ${{ steps.tf-outputs.outputs.acr_login_server }}
+      acr_name: ${{ steps.tf-outputs.outputs.acr_name }}
+      container_name: ${{ steps.tf-outputs.outputs.container_name }}
+      swa_name: ${{ steps.tf-outputs.outputs.swa_name }}
+      swa_hostname: ${{ steps.tf-outputs.outputs.swa_hostname }}
+
+  build-and-push-keeper:
+    name: Build and Push Keeper Container
+    needs: [terraform-apply]
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/smart-contracts'
+    environment: production
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Azure Login
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Get ACR Credentials
+        id: get-acr-creds
+        run: |
+          ACR_USERNAME=$(az acr credential show --name ${{ needs.terraform-apply.outputs.acr_name }} --query "username" -o tsv)
+          ACR_PASSWORD=$(az acr credential show --name ${{ needs.terraform-apply.outputs.acr_name }} --query "passwords[0].value" -o tsv)
+          echo "acr_username=$ACR_USERNAME" >> $GITHUB_OUTPUT
+          echo "acr_password=$ACR_PASSWORD" >> $GITHUB_OUTPUT
+
+      - name: Login to Azure Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ needs.terraform-apply.outputs.acr_login_server }}
+          username: ${{ steps.get-acr-creds.outputs.acr_username }}
+          password: ${{ steps.get-acr-creds.outputs.acr_password }}
+
+      - name: Build and Push Keeper Image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./keeper/Dockerfile
+          push: true
+          tags: |
+            ${{ needs.terraform-apply.outputs.acr_login_server }}/payment-keeper:latest
+            ${{ needs.terraform-apply.outputs.acr_login_server }}/payment-keeper:${{ github.sha }}
+
+      - name: Update Container Instance with Secrets
+        run: |
+          az container create \
+            --resource-group ${{ needs.terraform-apply.outputs.rg_name }} \
+            --name ${{ needs.terraform-apply.outputs.container_name }} \
+            --image ${{ needs.terraform-apply.outputs.acr_login_server }}/payment-keeper:latest \
+            --cpu 0.5 \
+            --memory 0.5 \
+            --registry-login-server ${{ needs.terraform-apply.outputs.acr_login_server }} \
+            --registry-username ${{ steps.get-acr-creds.outputs.acr_username }} \
+            --registry-password ${{ steps.get-acr-creds.outputs.acr_password }} \
+            --secure-environment-variables \
+              PRIVATE_KEY=${{ secrets.KEEPER_PRIVATE_KEY }} \
+            --environment-variables \
+              RPC_URL="https://coston2-api.flare.network/ext/C/rpc" \
+              POLL_INTERVAL="15000" \
+              GAS_LIMIT="500000" \
+            --restart-policy Always
+
+      - name: Verify Keeper Deployment
+        run: |
+          echo "Waiting for keeper to start..."
+          sleep 10
+          
+          echo "📋 Keeper Status:"
+          az container show \
+            --resource-group ${{ needs.terraform-apply.outputs.rg_name }} \
+            --name ${{ needs.terraform-apply.outputs.container_name }} \
+            --query '{Status:instanceView.state, RestartCount:containers[0].instanceView.restartCount}' \
+            --output table
+          
+          echo ""
+          echo "📝 Recent Keeper Logs:"
+          az container logs \
+            --resource-group ${{ needs.terraform-apply.outputs.rg_name }} \
+            --name ${{ needs.terraform-apply.outputs.container_name }} \
+            --tail 30
+
   deploy-to-azure:
     name: Deploy to Azure Static Web Apps
-    needs: [terraform-apply]
+    needs: [build-and-push-keeper]
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/smart-contracts'
     environment: production
@@ -79,40 +183,21 @@ jobs:
         working-directory: ${{ env.WORKING_DIR }}
         run: npm run build
 
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v3
-        with:
-          terraform_version: ${{ env.TERRAFORM_VERSION }}
-          terraform_wrapper: false
-
       - name: Azure Login
         uses: azure/login@v2
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-      - name: Get Static Web App Details
-        id: get-swa
-        working-directory: ${{ env.TF_DIR }}
+      - name: Get Static Web App API Key
+        id: get-swa-key
         run: |
-          # Re-initialize terraform to get outputs
-          terraform init
-          SWA_NAME=$(terraform output -raw static_web_app_name)
-          SWA_HOSTNAME=$(terraform output -raw static_web_app_default_host_name)
-          SWA_API_KEY=$(terraform output -raw static_web_app_api_key)
-          echo "swa_name=$SWA_NAME" >> $GITHUB_OUTPUT
-          echo "swa_hostname=$SWA_HOSTNAME" >> $GITHUB_OUTPUT
+          SWA_API_KEY=$(az staticwebapp secrets list --name ${{ needs.terraform-apply.outputs.swa_name }} --resource-group ${{ needs.terraform-apply.outputs.rg_name }} --query "properties.apiKey" -o tsv)
           echo "swa_api_key=$SWA_API_KEY" >> $GITHUB_OUTPUT
-        env:
-          ARM_CLIENT_ID: ${{ fromJSON(secrets.AZURE_CREDENTIALS).clientId }}
-          ARM_CLIENT_SECRET: ${{ fromJSON(secrets.AZURE_CREDENTIALS).clientSecret }}
-          ARM_SUBSCRIPTION_ID: ${{ fromJSON(secrets.AZURE_CREDENTIALS).subscriptionId }}
-          ARM_TENANT_ID: ${{ fromJSON(secrets.AZURE_CREDENTIALS).tenantId }}
-          ARM_USE_CLI: false
   
       - name: Deploy to Static Web App
         uses: Azure/static-web-apps-deploy@v1
         with:
-          azure_static_web_apps_api_token: ${{ steps.get-swa.outputs.swa_api_key }}
+          azure_static_web_apps_api_token: ${{ steps.get-swa-key.outputs.swa_api_key }}
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           action: 'upload'
           app_location: '${{ env.WORKING_DIR }}'
@@ -123,7 +208,7 @@ jobs:
         run: |
           echo "Waiting for Static Web App to deploy..."
           sleep 30
-          SWA_URL="https://${{ steps.get-swa.outputs.swa_hostname }}"
+          SWA_URL="https://${{ needs.terraform-apply.outputs.swa_hostname }}"
           echo "Checking deployment at: $SWA_URL"
           
           for i in {1..15}; do
