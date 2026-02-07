@@ -54,21 +54,31 @@ resource "azurerm_linux_web_app" "webapp" {
       node_version = "20-lts"
     }
 
-    app_command_line = "node_modules/.bin/next start -p 8080"
+    # Use startup script that properly configures port binding
+    app_command_line = "bash startup.sh"
+    
+    # Health check configuration
+    health_check_path                 = "/api/health"
+    health_check_eviction_time_in_min = 5
   }
 
   app_settings = {
     "WEBSITE_NODE_DEFAULT_VERSION" = "~20"
-    "SCM_DO_BUILD_DURING_DEPLOYMENT" = "true"
-    "ENABLE_ORYX_BUILD" = "true"
     
-    "PRE_BUILD_COMMAND" = "cd src && npm install"
-    "POST_BUILD_COMMAND" = "cd src && npm run build"
+    # Disable Oryx build - we're deploying a pre-built standalone app
+    "SCM_DO_BUILD_DURING_DEPLOYMENT" = "false"
+    "ENABLE_ORYX_BUILD" = "false"
     
+    # Port configuration for Next.js standalone server
     "PORT" = "8080"
     "WEBSITES_PORT" = "8080"
+    "HOSTNAME" = "0.0.0.0"
 
+    # Production environment
     "NODE_ENV" = "production"
+    
+    # Increase startup timeout tolerance
+    "WEBSITES_CONTAINER_START_TIME_LIMIT" = "600"
   }
 
   logs {
@@ -92,4 +102,24 @@ resource "azurerm_linux_web_app" "webapp" {
     Project     = "Hack022026"
   }
 }
+
+resource "azurecaf_name" "static_web_app_hack" {
+  name          = local.name
+  resource_type = "azurerm_static_site"
+  clean_input   = true
+}
+
+resource "azurerm_static_web_app" "hack" {
+  name                = azurecaf_name.static_web_app_hack.result
+  resource_group_name = azurerm_resource_group.main.name
+  location           = var.location
+  sku_tier           = "Free"
+  sku_size           = "Free"
+}
+
+# resource "azurerm_static_site_custom_domain" "app_custom_domain" {
+#   static_site_id  = azurerm_static_web_app.onsomble_client.id
+#   domain_name     = "${local.dns_domains[var.environment]}.${azurerm_dns_cname_record.onsomble_client_cname.zone_name}"
+#   validation_type = "cname-delegation"
+# }
 
