@@ -20,18 +20,21 @@ async function init() {
     console.log("Initializing database...");
 
     try {
+        // Contacts: /id
         const { container: contactsContainer } = await database.containers.createIfNotExists({
             id: "contacts",
             partitionKey: "/id"
         });
         console.log(`Container '${contactsContainer.id}' created or already exists.`);
 
+        // Claims: /id (changed from /Id)
         const { container: claimsContainer } = await database.containers.createIfNotExists({
             id: "claims",
-            partitionKey: "/Id"
+            partitionKey: "/id"
         });
         console.log(`Container '${claimsContainer.id}' created or already exists.`);
 
+        // Payments: /ClaimId
         const { container: paymentsContainer } = await database.containers.createIfNotExists({
             id: "payments",
             partitionKey: "/ClaimId"

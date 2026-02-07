@@ -7,12 +7,12 @@ import { ChevronDown, ChevronUp, User, Calendar, DollarSign, CheckCircle, Clock,
 import { cn } from "@/lib/utils";
 
 interface Payment {
-    id: string;
+    id: string | bigint;
     receiver: string;
     usdAmount: number;
     cryptoSymbol: string;
     status: "pending" | "executed" | "expired";
-    executedAt: string | null;
+    executedAt: string | number | bigint | null;
 }
 
 interface ClaimCardProps {
@@ -122,7 +122,7 @@ export function ClaimCard(props: ClaimCardProps) {
                                     const paymentStatus = paymentStatusConfig[payment.status];
                                     return (
                                         <div
-                                            key={payment.id}
+                                            key={payment.id.toString()}
                                             className="p-3 rounded-lg border bg-card hover:bg-muted/30 transition-colors"
                                         >
                                             <div className="flex items-center justify-between mb-2">
@@ -130,14 +130,14 @@ export function ClaimCard(props: ClaimCardProps) {
                                                     {paymentStatus.label}
                                                 </Badge>
                                                 <span className="text-xs text-muted-foreground">
-                                                    ID: {payment.id}
+                                                    ID: {payment.id.toString()}
                                                 </span>
                                             </div>
                                             <div className="grid grid-cols-2 gap-2 text-sm">
                                                 <div>
                                                     <p className="text-xs text-muted-foreground">Amount</p>
                                                     <p className="font-semibold">
-                                                        ${payment.usdAmount.toFixed(2)} ({payment.cryptoSymbol})
+                                                        ${Number(payment.usdAmount).toFixed(2)} ({payment.cryptoSymbol})
                                                     </p>
                                                 </div>
                                                 <div>
@@ -150,7 +150,7 @@ export function ClaimCard(props: ClaimCardProps) {
                                                     <div className="col-span-2">
                                                         <p className="text-xs text-muted-foreground">Executed</p>
                                                         <p className="text-xs">
-                                                            {new Date(payment.executedAt).toLocaleString()}
+                                                            {new Date(Number(payment.executedAt) * 1000).toLocaleString()}
                                                         </p>
                                                     </div>
                                                 )}

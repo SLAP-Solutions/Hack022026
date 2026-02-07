@@ -14,7 +14,20 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const claim = await create("claims", body);
+
+    // Generate a unique ID (e.g., CLM-TIMESTAMP-RANDOM)
+    const id = `CLM-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
+
+    const newClaim = {
+      ...body,
+      id,
+      status: "pending",
+      totalCost: 0,
+      payments: [],
+      dateCreated: new Date().toISOString().split('T')[0], // YYYY-MM-DD
+    };
+
+    const claim = await create("claims", newClaim);
     return NextResponse.json(claim, { status: 201 });
   } catch (error) {
     console.error("Failed to create claim:", error);
