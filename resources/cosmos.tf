@@ -1,9 +1,9 @@
 locals {
-  name = "hack-dev"
+  name = "hack"
 }
 
 resource "azurecaf_name" "cosmos_account" {
-  name          = local.name
+  name          = "hack-dev"
   resource_type = "azurerm_cosmosdb_account"
   suffixes      = []
   clean_input   = true
