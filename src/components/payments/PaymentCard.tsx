@@ -158,7 +158,7 @@ export function PaymentCard({ payment, onRefresh }: PaymentCardProps) {
                                     : "bg-primary/20 text-primary border-primary/40"
                         )}
                     >
-                        {payment.executed ? "✓ Executed" : canExecute ? "⚡ Ready" : "⏳ Pending"}
+                        {payment.executed ? "Executed" : canExecute ? "Ready" : "Pending"}
                     </Badge>
                 </div>
 
@@ -184,7 +184,7 @@ export function PaymentCard({ payment, onRefresh }: PaymentCardProps) {
                                 {progress > 0 && progress < 100 && (
                                     <div
                                         className="absolute top-0 bottom-0 w-0.5 bg-white z-10 shadow-[0_0_4px_rgba(0,0,0,0.5)]"
-                                        style={{ left: `${progress}%` }}
+                                        style={{ left: `${payment.executed ? 100 : progress}%` }}
                                     />
                                 )}
                             </div>
@@ -218,23 +218,23 @@ export function PaymentCard({ payment, onRefresh }: PaymentCardProps) {
 
                     <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
                         <span className="text-muted-foreground">Collateral Locked:</span>
-                        <span className="font-mono text-right">{parseFloat(collateralEth).toFixed(4)} FLR</span>
+                        <span className="font-mono text-right">{parseFloat(collateralEth).toFixed(4)} {ticker}</span>
 
                         {!payment.executed && (
                             <>
                                 <span className="text-muted-foreground">Current Refund:</span>
                                 <span className={cn("font-mono text-right", refundAmount >= 0 ? "text-green-600" : "text-red-600")}>
-                                    {refundAmount > 0 ? "+" : ""}{refundAmount.toFixed(4)} FLR
+                                    {refundAmount > 0 ? "+" : ""}{refundAmount.toFixed(4)} {ticker}
                                 </span>
 
                                 <span className="text-muted-foreground mt-1">If Stop Loss Hit:</span>
                                 <span className="font-mono text-right text-red-600 mt-1">
-                                    {ethers.formatEther(cryptoAtStopLoss.toString()).substring(0, 8)} FLR
+                                    {ethers.formatEther(cryptoAtStopLoss.toString()).substring(0, 8)} {ticker}
                                 </span>
 
                                 <span className="text-muted-foreground">If Take Profit Hit:</span>
                                 <span className="font-mono text-right text-green-600">
-                                    {ethers.formatEther(cryptoAtTakeProfit.toString()).substring(0, 8)} FLR
+                                    {ethers.formatEther(cryptoAtTakeProfit.toString()).substring(0, 8)} {ticker}
                                 </span>
 
                                 <div className="col-span-2 border-t pt-1 mt-1 flex justify-between items-center">
