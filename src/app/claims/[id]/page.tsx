@@ -236,8 +236,14 @@ export default function ClaimDetailPage() {
                                                 <div className="grid grid-cols-2 gap-4">
 
                                                     <div>
+                                                        <div className="text-xs text-muted-foreground mb-1">Description</div>
+                                                        <div className="text-xl font-bold text-foreground">
+                                                            {payment.description || "Payment"}
+                                                        </div>
+                                                    </div>
+                                                    <div>
                                                         <div className="text-xs text-muted-foreground mb-1">Amount</div>
-                                                        <div className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-blue-700 bg-clip-text text-transparent">
+                                                        <div className="text-sm font-mono font-semibold">
                                                             ${amount.toFixed(2)}
                                                         </div>
                                                         <Badge variant="outline" className="mt-1 text-[10px] h-5">
@@ -263,7 +269,7 @@ export default function ClaimDetailPage() {
                                                         </div>
                                                     </div>
                                                     <Slider
-                                                        value={[lower + (upper - lower) * 0.5]} // Setting fake "current" price for visualization
+                                                        value={[amount]}
                                                         max={upper}
                                                         min={lower}
                                                         step={0.01}
