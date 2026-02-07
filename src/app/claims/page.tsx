@@ -138,7 +138,7 @@ export default function ClaimsPage() {
                         { label: "Total Amount", value: `£${sampleClaims.reduce((sum, c) => sum + c.amount, 0).toLocaleString()}`, color: "from-blue-700 to-blue-800" }
                     ].map((stat, idx) => (
                         <Card key={idx} className="hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
-                            <CardContent className="pt-6">
+                            <CardContent>
                                 <div className={`inline-block px-3 py-1 rounded-lg bg-gradient-to-r ${stat.color} text-white text-sm font-semibold mb-2`}>
                                     {stat.label}
                                 </div>
