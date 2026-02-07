@@ -35,9 +35,10 @@ export function CreateInvoiceModal({ isOpen, onClose }: CreateClaimModalProps) {
     const [description, setDescription] = useState("");
     const [claimantName, setClaimantName] = useState("");
     const [type, setType] = useState("");
+    const [dateNotified, setDateNotified] = useState("");
     const [mode, setMode] = useState<"manual" | "upload">("manual");
     const [file, setFile] = useState<File | null>(null);
-    
+
     // Agent processing state
     const [processingStatus, setProcessingStatus] = useState<ProcessingStatus>("idle");
     const [agentResponse, setAgentResponse] = useState<string>("");
@@ -63,7 +64,7 @@ export function CreateInvoiceModal({ isOpen, onClose }: CreateClaimModalProps) {
 
         try {
             setProcessingStatus("processing");
-            
+
             // Call AI agent to process invoice
             const response = await fetch("/api/invoices/process", {
                 method: "POST",
@@ -77,7 +78,7 @@ export function CreateInvoiceModal({ isOpen, onClose }: CreateClaimModalProps) {
             }
 
             const extractedData = result.data;
-            
+
             // Store agent response for display
             if (result.agentResponse) {
                 setAgentResponse(result.agentResponse);
@@ -90,7 +91,7 @@ export function CreateInvoiceModal({ isOpen, onClose }: CreateClaimModalProps) {
             setType(extractedData.type || "");
 
             setProcessingStatus("success");
-            
+
             // After a short delay, switch to manual mode for review
             setTimeout(() => {
                 setMode("manual");
@@ -102,7 +103,7 @@ export function CreateInvoiceModal({ isOpen, onClose }: CreateClaimModalProps) {
             console.error("AI Processing Error:", error);
             setProcessingStatus("error");
             setProcessingError(error instanceof Error ? error.message : "Unknown error occurred");
-            
+
             // Fallback if AI fails: Use filename as title
             setTitle(file.name.split('.')[0]);
             setDescription("Uploaded document processing failed. Please enter details manually.");
@@ -131,7 +132,8 @@ export function CreateInvoiceModal({ isOpen, onClose }: CreateClaimModalProps) {
                 description,
                 claimantName,
                 type,
-                walletId: address
+                walletId: address,
+                ...(dateNotified && { dateNotified })
             });
             handleClose();
         } catch (error) {
@@ -148,6 +150,7 @@ export function CreateInvoiceModal({ isOpen, onClose }: CreateClaimModalProps) {
         setDescription("");
         setClaimantName("");
         setType("");
+        setDateNotified("");
         setMode("manual");
         setFile(null);
         setProcessingStatus("idle");
@@ -155,7 +158,7 @@ export function CreateInvoiceModal({ isOpen, onClose }: CreateClaimModalProps) {
         setProcessingError("");
         onClose();
     };
-    
+
     const handleRetry = () => {
         setProcessingStatus("idle");
         setProcessingError("");
@@ -235,6 +238,20 @@ export function CreateInvoiceModal({ isOpen, onClose }: CreateClaimModalProps) {
                         </div>
 
                         <div className="space-y-2">
+                            <Label htmlFor="dateNotified">Date Notified (Optional)</Label>
+                            <Input
+                                id="dateNotified"
+                                type="date"
+                                value={dateNotified}
+                                onChange={(e) => setDateNotified(e.target.value)}
+                                placeholder="When was the client notified?"
+                            />
+                            <p className="text-xs text-muted-foreground">
+                                When was the client notified of this invoice?
+                            </p>
+                        </div>
+
+                        <div className="space-y-2">
                             <Label htmlFor="description">Description</Label>
                             <Textarea
                                 id="description"
@@ -300,10 +317,10 @@ export function CreateInvoiceModal({ isOpen, onClose }: CreateClaimModalProps) {
                                             <div className="flex-1">
                                                 <p className="font-medium text-red-700">Processing Failed</p>
                                                 <p className="text-sm text-red-600">{processingError}</p>
-                                                <Button 
-                                                    type="button" 
-                                                    variant="outline" 
-                                                    size="sm" 
+                                                <Button
+                                                    type="button"
+                                                    variant="outline"
+                                                    size="sm"
                                                     className="mt-2"
                                                     onClick={handleRetry}
                                                 >
@@ -313,7 +330,7 @@ export function CreateInvoiceModal({ isOpen, onClose }: CreateClaimModalProps) {
                                         </>
                                     )}
                                 </div>
-                                
+
                                 {/* Agent Response Preview */}
                                 {agentResponse && processingStatus === "success" && (
                                     <div className="mt-3 pt-3 border-t border-green-200">
@@ -323,11 +340,11 @@ export function CreateInvoiceModal({ isOpen, onClose }: CreateClaimModalProps) {
                                 )}
                             </div>
                         )}
-                        
+
                         {/* File Upload Area */}
                         {processingStatus === "idle" && (
-                            <div 
-                                className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-12 text-center hover:bg-muted/50 transition-colors cursor-pointer" 
+                            <div
+                                className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-12 text-center hover:bg-muted/50 transition-colors cursor-pointer"
                                 onClick={() => document.getElementById('file-upload')?.click()}
                             >
                                 <input
@@ -353,8 +370,8 @@ export function CreateInvoiceModal({ isOpen, onClose }: CreateClaimModalProps) {
                             <Button type="button" variant="outline" onClick={handleClose} disabled={isLoading}>
                                 Cancel
                             </Button>
-                            <Button 
-                                type="submit" 
+                            <Button
+                                type="submit"
                                 disabled={!file || isLoading || processingStatus !== "idle"}
                                 className="gap-2"
                             >

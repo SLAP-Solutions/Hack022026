@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Bot, FileText, DollarSign, UserPlus, Search, Filter, Calendar, Wallet } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
+import { useWallet } from "@/hooks/useWallet";
 
 // Mock Data matching user request
 const AGENT_TYPES = ["Invoice Interpreter", "Payment Creator", "Contact Manager"] as const;
@@ -95,17 +96,20 @@ const MOCK_ACTIVITIES = [
 export default function AgentsPage() {
     const [filter, setFilter] = useState<string>("all");
     const [search, setSearch] = useState("");
+    const { address } = useWallet();
 
     const uniqueAgents = Array.from(new Set(MOCK_ACTIVITIES.map(a => a.agent)));
 
     const filteredActivities = MOCK_ACTIVITIES.filter(activity => {
+        // Filter by connected wallet - only show activities for the user's wallet
+        const matchesWallet = !address || activity.walletId.toLowerCase().includes(address.toLowerCase().slice(0, 5));
+
         const matchesAgent = filter === "all" || activity.agent === filter;
         const matchesSearch = activity.action.toLowerCase().includes(search.toLowerCase()) ||
             activity.target.toLowerCase().includes(search.toLowerCase()) ||
             activity.details.toLowerCase().includes(search.toLowerCase()) ||
-            (activity.relatedInvoice && activity.relatedInvoice.toLowerCase().includes(search.toLowerCase())) ||
-            (activity.walletId && activity.walletId.toLowerCase().includes(search.toLowerCase()));
-        return matchesAgent && matchesSearch;
+            (activity.relatedInvoice && activity.relatedInvoice.toLowerCase().includes(search.toLowerCase()));
+        return matchesWallet && matchesAgent && matchesSearch;
     }).sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
 
     // Group activities by Wallet -> Invoice
@@ -170,23 +174,27 @@ export default function AgentsPage() {
                         >
                             All Activities
                         </Button>
-                        {uniqueAgents.map(agent => (
-                            <Button
-                                key={agent}
-                                variant={filter === agent ? "default" : "outline"}
-                                size="sm"
-                                onClick={() => setFilter(agent)}
-                                className={cn("rounded-full whitespace-nowrap", filter === agent && "bg-primary text-primary-foreground")}
-                            >
-                                {agent}
-                            </Button>
-                        ))}
+                        {uniqueAgents.map(agent => {
+                            const AgentIcon = getAgentIcon(agent);
+                            return (
+                                <Button
+                                    key={agent}
+                                    variant={filter === agent ? "default" : "outline"}
+                                    size="sm"
+                                    onClick={() => setFilter(agent)}
+                                    className={cn("rounded-full whitespace-nowrap gap-2", filter === agent && "bg-primary text-primary-foreground")}
+                                >
+                                    <AgentIcon className="w-4 h-4" />
+                                    {agent}
+                                </Button>
+                            );
+                        })}
                     </div>
 
                     <div className="flex-1 md:ml-auto max-w-sm relative">
                         <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                         <Input
-                            placeholder="Search activities, invoices, or wallets..."
+                            placeholder="Search activities, invoices, or targets..."
                             className="pl-9 h-8 bg-muted/50"
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}

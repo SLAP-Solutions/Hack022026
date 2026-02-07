@@ -69,9 +69,9 @@ export function InvoiceCard(props: InvoiceCardProps) {
                 <div className="grid grid-cols-2 gap-4 mt-4 pt-4 border-t">
                     <div className="flex items-center gap-2 text-sm">
                         <User className="w-4 h-4 text-muted-foreground" />
-                        <div>
-                            <span className="text-xs text-muted-foreground">Client</span>
-                            <span className="font-semibold text-sm truncate">{props.claimantName}</span>
+                        <div className="flex flex-col gap-0.5">
+                            <p className="text-xs text-muted-foreground">Client</p>
+                            <p className="font-semibold text-sm truncate">{props.claimantName}</p>
                         </div>
                     </div>
                     <div className="flex items-center gap-2 text-sm">

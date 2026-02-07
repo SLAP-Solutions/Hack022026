@@ -6,17 +6,19 @@ export async function GET(request: NextRequest) {
     const searchParams = request.nextUrl.searchParams;
     const walletId = searchParams.get("walletId");
 
-    let invoices;
-    if (walletId) {
-      // Filter by walletId in the query (not partition key yet)
-      invoices = await query("invoices", {
-        query: "SELECT * FROM c WHERE c.walletId = @walletId",
-        parameters: [{ name: "@walletId", value: walletId }]
-      });
-    } else {
-      // Fallback to fetch all if no wallet specified
-      invoices = await getAll("invoices");
+    // SECURITY: Require walletId to prevent retrieving invoices from other wallets
+    if (!walletId) {
+      return NextResponse.json(
+        { error: "Wallet ID is required" },
+        { status: 400 }
+      );
     }
+
+    // Only retrieve invoices for the specified wallet - ensures data isolation
+    const invoices = await query("invoices", {
+      query: "SELECT * FROM c WHERE c.walletId = @walletId",
+      parameters: [{ name: "@walletId", value: walletId }]
+    });
 
     return NextResponse.json(invoices);
   } catch (error) {
