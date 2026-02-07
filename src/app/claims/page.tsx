@@ -5,6 +5,9 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { useClaimModal } from "@/stores/useClaimModal";
+import { CreateClaimModal } from "@/components/modals/CreateClaimModal";
+import { Plus } from "lucide-react";
 
 interface Claim {
     id: string;
@@ -90,6 +93,7 @@ const categoryGradients = {
 
 export default function ClaimsPage() {
     const [filter, setFilter] = useState<string>("all");
+    const { openModal } = useClaimModal();
 
     const filteredClaims = filter === "all"
         ? sampleClaims
@@ -108,9 +112,18 @@ export default function ClaimsPage() {
                             <p className="text-slate-600 dark:text-slate-400 mt-1">
                                 Manage and track all your claims in one place
                             </p>
-                        </div>
+                        
 
-                        {/* Filter Buttons */}
+                        <Button
+                            onClick={openModal}
+                            className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 shadow-lg shadow-blue-500/50 mt-2"
+                        >
+                            <Plus className="w-4 h-4 mr-2" />
+                            Create Claim
+                        </Button>
+                    </div>
+
+                    {/* Filter Buttons */}
                         <div className="flex gap-2 flex-wrap">
                             {["all", "pending", "processing", "approved", "rejected"].map((status) => (
                                 <Button
@@ -241,6 +254,11 @@ export default function ClaimsPage() {
           }
         }
       `}</style>
+
+        {/* Create Claim Modal */}
+        <CreateClaimModal />
         </div>
     );
 }
+
+
