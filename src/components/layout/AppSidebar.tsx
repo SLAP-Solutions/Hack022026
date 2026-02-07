@@ -19,6 +19,8 @@ import {
 } from "@/components/ui/sidebar"
 import { ConnectWallet } from "../wallet/ConnectWallet"
 import { PriceDashboard } from "@/components/prices/PriceDashboard"
+import { ThemeToggle } from "@/components/theme-toggle"
+import { useTheme } from "next-themes"
 
 const menuItems = [
   {
@@ -50,6 +52,8 @@ const menuItems = [
 
 export function AppSidebar() {
   const pathname = usePathname()
+  const { theme } = useTheme()
+  const isDark = theme === "dark"
 
   return (
     <Sidebar collapsible="icon">
@@ -57,7 +61,7 @@ export function AppSidebar() {
         <div className="flex items-center gap-2 px-2 py-2 group-data-[collapsible=icon]:justify-center">
           <Link href="/" className="flex items-center justify-center gap-2 hover:opacity-80 transition-opacity group-data-[collapsible=icon]:w-full group-data-[collapsible=icon]:justify-center">
             <Image
-              src="/logo.png"
+              src={isDark ? "/logo-white.png" : "/logo.png"}
               alt="SLAPSure Logo"
               width={120}
               height={32}
@@ -65,7 +69,7 @@ export function AppSidebar() {
               priority
             />
             <Image
-              src="/icon-logo.png"
+              src={isDark ? "/icon-logo-white.png" : "/icon-logo.png"}
               alt="SLAPSure"
               width={36}
               height={36}
@@ -103,8 +107,13 @@ export function AppSidebar() {
         </SidebarGroup>
       </SidebarContent>
       <SidebarFooter>
-        <div className="p-2 group-data-[collapsible=icon]:flex group-data-[collapsible=icon]:justify-center">
-          <ConnectWallet />
+        <div className="flex items-center gap-2 p-2">
+          <div className="flex-1">
+            <ConnectWallet />
+          </div>
+          <div className="group-data-[collapsible=icon]:hidden">
+            <ThemeToggle />
+          </div>
         </div>
       </SidebarFooter>
       <SidebarRail />
