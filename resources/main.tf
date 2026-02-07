@@ -54,16 +54,20 @@ resource "azurerm_linux_web_app" "webapp" {
       node_version = "20-lts"
     }
 
-    app_command_line = "node_modules/.bin/next start -p 8080"
+    # Use standalone server from Next.js build
+    app_command_line = "node standalone/server.js"
+    
+    # Health check configuration
+    health_check_path                 = "/api/health"
+    health_check_eviction_time_in_min = 5
   }
 
   app_settings = {
     "WEBSITE_NODE_DEFAULT_VERSION" = "~20"
-    "SCM_DO_BUILD_DURING_DEPLOYMENT" = "true"
-    "ENABLE_ORYX_BUILD" = "true"
     
-    "PRE_BUILD_COMMAND" = "cd src && npm install"
-    "POST_BUILD_COMMAND" = "cd src && npm run build"
+    # Disable Oryx build - we're deploying a pre-built standalone app
+    "SCM_DO_BUILD_DURING_DEPLOYMENT" = "false"
+    "ENABLE_ORYX_BUILD" = "false"
     
     "PORT" = "8080"
     "WEBSITES_PORT" = "8080"

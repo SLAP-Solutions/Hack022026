@@ -45,11 +45,9 @@ jobs:
         with:
           name: nextjs-build
           path: |
-            ${{ env.WORKING_DIR }}/.next
+            ${{ env.WORKING_DIR }}/.next/standalone
+            ${{ env.WORKING_DIR }}/.next/static
             ${{ env.WORKING_DIR }}/public
-            ${{ env.WORKING_DIR }}/package.json
-            ${{ env.WORKING_DIR }}/package-lock.json
-            ${{ env.WORKING_DIR }}/next.config.ts
           retention-days: 1
 
   terraform-apply:
@@ -140,9 +138,22 @@ jobs:
 
       - name: Create deployment package
         run: |
-          # Create a zip file with all necessary files from src directory
-          cd ${{ env.WORKING_DIR }}
-          zip -r ../deploy.zip .next public package.json package-lock.json next.config.ts node_modules -x "node_modules/.cache/*"
+          # Create deployment structure for standalone build
+          mkdir -p deploy/standalone
+          
+          # Copy standalone server and dependencies
+          cp -r ${{ env.WORKING_DIR }}/.next/standalone/* deploy/standalone/
+          
+          # Copy static files to the correct location for standalone mode
+          mkdir -p deploy/standalone/.next
+          cp -r ${{ env.WORKING_DIR }}/.next/static deploy/standalone/.next/static
+          
+          # Copy public folder
+          cp -r ${{ env.WORKING_DIR }}/public deploy/standalone/public
+          
+          # Create zip from the deploy directory
+          cd deploy
+          zip -r ../deploy.zip .
 
       - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v3
@@ -159,21 +170,27 @@ jobs:
           echo "Waiting for app to start..."
           sleep 30
           WEBAPP_URL="https://${{ steps.get-webapp.outputs.webapp_name }}.azurewebsites.net"
-          echo "Checking health at: $WEBAPP_URL"
+          HEALTH_URL="$WEBAPP_URL/api/health"
+          echo "Checking health at: $HEALTH_URL"
           
-          for i in {1..10}; do
-            HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" $WEBAPP_URL)
-            if [ $HTTP_CODE -eq 200 ] || [ $HTTP_CODE -eq 301 ] || [ $HTTP_CODE -eq 302 ]; then
-              echo "✅ App is healthy! (HTTP $HTTP_CODE)"
+          for i in {1..15}; do
+            HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" $HEALTH_URL)
+            if [ $HTTP_CODE -eq 200 ]; then
+              echo "✅ Health check passed! (HTTP $HTTP_CODE)"
+              HEALTH_DATA=$(curl -s $HEALTH_URL)
+              echo "Health status: $HEALTH_DATA"
               echo "🚀 Deployment successful: $WEBAPP_URL"
               exit 0
             fi
-            echo "⏳ Attempt $i: HTTP $HTTP_CODE - Waiting..."
-            sleep 10
+            echo "⏳ Attempt $i: HTTP $HTTP_CODE - Waiting for app to start..."
+            sleep 15
           done
           
-          echo "⚠️ Health check did not return 200 OK, but deployment completed"
-          exit 0
+          echo "⚠️ Health check did not return 200 OK after 15 attempts"
+          echo "Checking main URL..."
+          HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" $WEBAPP_URL)
+          echo "Main URL returned: HTTP $HTTP_CODE"
+          exit 1
 
   cleanup:
     name: Cleanup Artifacts
