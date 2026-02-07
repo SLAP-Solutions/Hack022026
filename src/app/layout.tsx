@@ -1,33 +1,49 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Merriweather, Manrope } from "next/font/google";
 import "./globals.css";
+import { AppSidebar } from "../components/layout/AppSidebar";
+import { WalletProvider } from "../context/WalletContext";
+import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const merriweather = Merriweather({
+  weight: ["300", "400", "700", "900"],
   subsets: ["latin"],
+  variable: "--font-merriweather",
+  display: "swap",
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const manrope = Manrope({
   subsets: ["latin"],
+  variable: "--font-manrope",
+  display: "swap",
 });
 
 export const metadata: Metadata = {
-  title: "Hackathon ETC Oxford 2026",
-  description: "Hackathon ETC Oxford 2026",
+  title: "Slapsure - Insurance Claims",
+  description: "Automated insurance claims and payouts on Flare using FTSO",
+  icons: {
+    icon: "/favicon.png",
+  },
 };
 
 export default function RootLayout({
   children,
-}: Readonly<{
+}: {
   children: React.ReactNode;
-}>) {
+}) {
   return (
-    <html lang="en">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
-        {children}
+    <html lang="en" className={`${manrope.variable} ${merriweather.variable}`}>
+      <body className={`${manrope.className} antialiased bg-sidebar`}>
+        <WalletProvider>
+          <SidebarProvider>
+            <AppSidebar />
+            <SidebarInset className="p-4 pl-0 h-screen overflow-hidden bg-sidebar">
+              <main className="bg-white dark:bg-slate-950 rounded-xl border border-slate-200 dark:border-slate-800 h-full overflow-auto p-6">
+                {children}
+              </main>
+            </SidebarInset>
+          </SidebarProvider>
+        </WalletProvider>
       </body>
     </html>
   );
