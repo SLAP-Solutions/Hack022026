@@ -3,54 +3,121 @@
         "id": "CLM-001",
         "title": "Medical Consultation",
         "description": "Annual health checkup and consultation with specialist",
-        "amount": 450.00,
+        "claimantName": "John Smith",
+        "lineOfBusiness": "Healthcare",
         "status": "approved",
-        "date": "2026-02-05",
-        "category": "Healthcare"
+        "totalCost": 450.00,
+        "dateCreated": "2026-02-05",
+        "dateSettled": "2026-02-06",
+        "payments": [
+            {
+                "id": "1",
+                "receiver": "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb",
+                "usdAmount": 450.00,
+                "cryptoSymbol": "FLR",
+                "status": "executed",
+                "executedAt": "2026-02-06T10:30:00Z"
+            }
+        ]
     },
     {
         "id": "CLM-002",
         "title": "Equipment Purchase",
         "description": "New laptop for remote work setup",
-        "amount": 1299.99,
+        "claimantName": "Sarah Johnson",
+        "lineOfBusiness": "Technology",
         "status": "processing",
-        "date": "2026-02-04",
-        "category": "Technology"
+        "totalCost": 1299.99,
+        "dateCreated": "2026-02-04",
+        "payments": [
+            {
+                "id": "2",
+                "receiver": "0x8ba1f109551bD432803012645Ac136ddd64DBA72",
+                "usdAmount": 1299.99,
+                "cryptoSymbol": "BTC",
+                "status": "pending",
+                "executedAt": null
+            }
+        ]
     },
     {
         "id": "CLM-003",
         "title": "Travel Expenses",
         "description": "Business trip to London - flights and accommodation",
-        "amount": 875.50,
+        "claimantName": "Michael Chen",
+        "lineOfBusiness": "Travel",
         "status": "pending",
-        "date": "2026-02-03",
-        "category": "Travel"
+        "totalCost": 875.50,
+        "dateCreated": "2026-02-03",
+        "payments": [
+            {
+                "id": "3",
+                "receiver": "0x5aAeb6053F3E94C9b9A09f33669435E7Ef1BeAed",
+                "usdAmount": 500.00,
+                "cryptoSymbol": "ETH",
+                "status": "pending",
+                "executedAt": null
+            },
+            {
+                "id": "4",
+                "receiver": "0x5aAeb6053F3E94C9b9A09f33669435E7Ef1BeAed",
+                "usdAmount": 375.50,
+                "cryptoSymbol": "FLR",
+                "status": "pending",
+                "executedAt": null
+            }
+        ]
     },
     {
         "id": "CLM-004",
         "title": "Professional Development",
         "description": "Online course certification in cloud architecture",
-        "amount": 299.00,
+        "claimantName": "Emily Rodriguez",
+        "lineOfBusiness": "Education",
         "status": "approved",
-        "date": "2026-02-02",
-        "category": "Education"
+        "totalCost": 299.00,
+        "dateCreated": "2026-02-02",
+        "dateSettled": "2026-02-03",
+        "payments": [
+            {
+                "id": "5",
+                "receiver": "0xfB6916095ca1df60bB79Ce92cE3Ea74c37c5d359",
+                "usdAmount": 299.00,
+                "cryptoSymbol": "FLR",
+                "status": "executed",
+                "executedAt": "2026-02-03T14:20:00Z"
+            }
+        ]
     },
     {
         "id": "CLM-005",
         "title": "Office Supplies",
         "description": "Ergonomic chair and desk accessories",
-        "amount": 520.00,
+        "claimantName": "David Park",
+        "lineOfBusiness": "Office",
         "status": "rejected",
-        "date": "2026-02-01",
-        "category": "Office"
+        "totalCost": 520.00,
+        "dateCreated": "2026-02-01",
+        "payments": []
     },
     {
         "id": "CLM-006",
         "title": "Software Subscription",
         "description": "Annual license for development tools",
-        "amount": 699.00,
+        "claimantName": "Lisa Anderson",
+        "lineOfBusiness": "Technology",
         "status": "pending",
-        "date": "2026-01-31",
-        "category": "Technology"
+        "totalCost": 699.00,
+        "dateCreated": "2026-01-31",
+        "payments": [
+            {
+                "id": "6",
+                "receiver": "0x71C7656EC7ab88b098defB751B7401B5f6d8976F",
+                "usdAmount": 699.00,
+                "cryptoSymbol": "ETH",
+                "status": "pending",
+                "executedAt": null
+            }
+        ]
     }
 ]
