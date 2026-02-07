@@ -2,12 +2,6 @@ name: Build and Deploy Next.js to Azure
 
 on:
   push:
-    branches:
-      - main
-      - smart-contracts
-  pull_request:
-    branches:
-      - main
   workflow_dispatch:
 
 env:
