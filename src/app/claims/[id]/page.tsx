@@ -25,6 +25,7 @@ const statusConfig = {
 
 const paymentStatusConfig = {
     pending: { color: "bg-amber-50 text-amber-700 border-amber-200", label: "Pending" },
+    committed: { color: "bg-blue-50 text-blue-700 border-blue-200", label: "Committed" },
     executed: { color: "bg-green-50 text-green-700 border-green-200", label: "Executed" },
     expired: { color: "bg-gray-50 text-gray-700 border-gray-200", label: "Expired" },
 };
@@ -108,7 +109,7 @@ export default function ClaimDetailPage() {
                                     <span className="text-xs font-medium uppercase tracking-wider">Total Cost</span>
                                 </div>
                                 <div className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-blue-700 bg-clip-text text-transparent">
-                                    ${(claim.payments?.reduce((acc: number, payment: any) => acc + (Number(payment.originalAmount || payment.usdAmount)), 0) || 0).toFixed(2)}
+                                    ${(claim.payments?.reduce((acc: number, payment: any) => acc + Number(payment.usdAmount), 0) || 0).toFixed(2)}
                                 </div>
                             </div>
                         </CardContent>
@@ -201,8 +202,7 @@ export default function ClaimDetailPage() {
                                     const paymentStatus = paymentStatusConfig[(payment.status || "pending") as keyof typeof paymentStatusConfig];
 
                                     // Calculate display values
-                                    const amount = Number(payment.originalAmount || payment.usdAmount);
-                                    const currentUsdAmount = Number(payment.usdAmount);
+                                    const amount = Number(payment.usdAmount);
                                     const lower = Number(payment.stopLossPrice);
                                     const upper = Number(payment.takeProfitPrice);
 
@@ -221,7 +221,18 @@ export default function ClaimDetailPage() {
                                                     </Badge>
                                                 </div>
 
-
+                                                {payment.status === 'pending' && payment.expiresAt && (
+                                                    <div className="mb-4 p-2 bg-blue-50 dark:bg-blue-950/30 rounded border border-blue-100 dark:border-blue-900" title={`Expires on ${new Date(payment.expiresAt).toLocaleDateString()}`}>
+                                                        <div className="flex justify-between items-baseline">
+                                                            <span className="text-sm font-semibold text-blue-700 dark:text-blue-400">
+                                                                {Math.ceil((new Date(payment.expiresAt).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))} Days Remaining
+                                                            </span>
+                                                            <span className="text-xs text-muted-foreground">
+                                                                Window ends: {new Date(payment.expiresAt).toLocaleDateString()}
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                )}
 
                                                 <div className="grid grid-cols-2 gap-4">
 
@@ -259,7 +270,7 @@ export default function ClaimDetailPage() {
                                                         </div>
                                                     </div>
                                                     <Slider
-                                                        value={[currentUsdAmount]}
+                                                        value={[amount]}
                                                         max={upper}
                                                         min={lower}
                                                         step={0.01}
@@ -267,11 +278,30 @@ export default function ClaimDetailPage() {
                                                         className="opacity-100"
                                                         trackClassName="bg-gradient-to-r from-red-500 to-green-500"
                                                         rangeClassName="opacity-0"
-                                                        thumbContent={`$${currentUsdAmount.toFixed(2)}`}
+                                                        thumbContent={(() => {
+                                                            const feedName = getFeedName(payment.cryptoFeedId);
+                                                            const priceData = prices[feedName];
+                                                            return priceData && !priceData.loading
+                                                                ? `$${parseFloat(priceData.price).toFixed(2)}`
+                                                                : "...";
+                                                        })()}
                                                     />
                                                 </div>
 
                                                 {payment.status === 'pending' && (
+                                                    <div className="mt-4 flex items-center gap-3">
+                                                        <Button
+                                                            size="sm"
+                                                            className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
+                                                            onClick={() => updatePaymentStatus(claim.id, payment.id, 'committed')}
+                                                        >
+                                                            <Receipt className="w-4 h-4 mr-2" />
+                                                            Commit
+                                                        </Button>
+                                                    </div>
+                                                )}
+
+                                                {payment.status === 'committed' && (
                                                     <div className="mt-4 flex items-center gap-3">
                                                         <Button
                                                             size="sm"
@@ -294,8 +324,8 @@ export default function ClaimDetailPage() {
                                                             const currentPrice = parseFloat(currentPriceData.price);
                                                             if (!currentPrice) return null;
 
-                                                            const currentCryptoAmount = currentUsdAmount / currentPrice;
-                                                            const originalCryptoAmount = amount / currentPrice;
+                                                            const currentCryptoAmount = amount / currentPrice;
+                                                            const originalCryptoAmount = payment.originalAmount / currentPrice;
                                                             const diff = originalCryptoAmount - currentCryptoAmount;
                                                             const isSaving = diff > 0;
                                                             const percentDiff = (Math.abs(diff) / payment.originalAmount) * 100;
@@ -324,11 +354,6 @@ export default function ClaimDetailPage() {
                                                                 </div>
                                                             );
                                                         })()}
-                                                        {payment.expiresAt && (
-                                                            <div className="ml-auto text-xs font-medium text-amber-600 bg-amber-50 px-3 py-1.5 rounded-md border border-amber-200 whitespace-nowrap">
-                                                                {Math.ceil((new Date(payment.expiresAt).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))} Days Left
-                                                            </div>
-                                                        )}
                                                     </div>
                                                 )}
 

@@ -23,7 +23,7 @@ export interface Payment {
 /**
  * Payment status derived from the payment data
  */
-export type PaymentStatus = "pending" | "executed" | "expired";
+export type PaymentStatus = "pending" | "committed" | "executed" | "expired";
 
 /**
  * Helper type for creating new payments (before blockchain submission)
