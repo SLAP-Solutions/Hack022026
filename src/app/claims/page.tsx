@@ -1,6 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardFooter } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 
 interface Claim {
     id: string;
@@ -109,16 +112,14 @@ export default function ClaimsPage() {
                         {/* Filter Buttons */}
                         <div className="flex gap-2 flex-wrap">
                             {["all", "pending", "processing", "approved", "rejected"].map((status) => (
-                                <button
+                                <Button
                                     key={status}
                                     onClick={() => setFilter(status)}
-                                    className={`px-4 py-2 rounded-xl font-medium transition-all duration-300 transform hover:scale-105 ${filter === status
-                                        ? "bg-gradient-to-r from-red-600 to-red-700 text-white shadow-lg shadow-red-500/50"
-                                        : "bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-red-50 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700"
-                                        }`}
+                                    variant={filter === status ? "default" : "outline"}
+                                    className={filter === status ? "bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 shadow-lg shadow-red-500/50" : "hover:bg-red-50 dark:hover:bg-slate-700"}
                                 >
                                     {status.charAt(0).toUpperCase() + status.slice(1)}
-                                </button>
+                                </Button>
                             ))}
                         </div>
                     </div>
@@ -135,26 +136,25 @@ export default function ClaimsPage() {
                         { label: "Approved", value: sampleClaims.filter(c => c.status === "approved").length, color: "from-emerald-500 to-green-500" },
                         { label: "Total Amount", value: `£${sampleClaims.reduce((sum, c) => sum + c.amount, 0).toLocaleString()}`, color: "from-red-700 to-red-800" }
                     ].map((stat, idx) => (
-                        <div
-                            key={idx}
-                            className="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-200 dark:border-slate-800 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1"
-                        >
-                            <div className={`inline-block px-3 py-1 rounded-lg bg-gradient-to-r ${stat.color} text-white text-sm font-semibold mb-2`}>
-                                {stat.label}
-                            </div>
-                            <div className="text-3xl font-bold text-slate-900 dark:text-white">
-                                {stat.value}
-                            </div>
-                        </div>
+                        <Card key={idx} className="hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
+                            <CardContent className="pt-6">
+                                <div className={`inline-block px-3 py-1 rounded-lg bg-gradient-to-r ${stat.color} text-white text-sm font-semibold mb-2`}>
+                                    {stat.label}
+                                </div>
+                                <div className="text-3xl font-bold text-slate-900 dark:text-white">
+                                    {stat.value}
+                                </div>
+                            </CardContent>
+                        </Card>
                     ))}
                 </div>
 
                 {/* Claims Grid */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {filteredClaims.map((claim, idx) => (
-                        <div
+                        <Card
                             key={claim.id}
-                            className="group relative bg-white dark:bg-slate-900 rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-800 shadow-lg hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-2"
+                            className="group relative overflow-hidden hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-2"
                             style={{
                                 animation: `fadeInUp 0.5s ease-out ${idx * 0.1}s both`
                             }}
@@ -163,9 +163,8 @@ export default function ClaimsPage() {
                             <div className={`absolute inset-0 bg-gradient-to-br ${categoryGradients[claim.category as keyof typeof categoryGradients] || categoryGradients.Technology} opacity-50 group-hover:opacity-100 transition-opacity duration-500`} />
 
                             {/* Content */}
-                            <div className="relative p-6">
-                                {/* Header */}
-                                <div className="flex items-start justify-between mb-4">
+                            <CardHeader className="relative">
+                                <div className="flex items-start justify-between">
                                     <div>
                                         <div className="text-sm font-mono text-slate-500 dark:text-slate-400 mb-1">
                                             {claim.id}
@@ -174,39 +173,39 @@ export default function ClaimsPage() {
                                             {claim.title}
                                         </h3>
                                     </div>
-                                    <span className={`px-3 py-1 rounded-full text-xs font-semibold border ${statusColors[claim.status]}`}>
+                                    <Badge variant="outline" className={statusColors[claim.status]}>
                                         {claim.status.toUpperCase()}
-                                    </span>
+                                    </Badge>
                                 </div>
+                            </CardHeader>
 
-                                {/* Description */}
-                                <p className="text-slate-600 dark:text-slate-300 text-sm mb-4 line-clamp-2">
+                            <CardContent className="relative">
+                                <p className="text-slate-600 dark:text-slate-300 text-sm line-clamp-2">
                                     {claim.description}
                                 </p>
+                            </CardContent>
 
-                                {/* Footer */}
-                                <div className="flex items-center justify-between pt-4 border-t border-slate-200 dark:border-slate-800">
-                                    <div>
-                                        <div className="text-2xl font-bold bg-gradient-to-r from-red-600 to-red-700 bg-clip-text text-transparent">
-                                            £{claim.amount.toFixed(2)}
-                                        </div>
-                                        <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                                            {new Date(claim.date).toLocaleDateString('en-GB', {
-                                                day: 'numeric',
-                                                month: 'short',
-                                                year: 'numeric'
-                                            })}
-                                        </div>
+                            <CardFooter className="relative flex items-center justify-between">
+                                <div>
+                                    <div className="text-2xl font-bold bg-gradient-to-r from-red-600 to-red-700 bg-clip-text text-transparent">
+                                        £{claim.amount.toFixed(2)}
                                     </div>
-                                    <div className="px-3 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-medium">
-                                        {claim.category}
+                                    <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                                        {new Date(claim.date).toLocaleDateString('en-GB', {
+                                            day: 'numeric',
+                                            month: 'short',
+                                            year: 'numeric'
+                                        })}
                                     </div>
                                 </div>
-                            </div>
+                                <Badge variant="secondary" className="bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
+                                    {claim.category}
+                                </Badge>
+                            </CardFooter>
 
                             {/* Hover Effect Border */}
-                            <div className="absolute inset-0 rounded-2xl border-2 border-transparent group-hover:border-red-500/50 transition-all duration-500" />
-                        </div>
+                            <div className="absolute inset-0 rounded-lg border-2 border-transparent group-hover:border-red-500/50 transition-all duration-500" />
+                        </Card>
                     ))}
                 </div>
 
