@@ -1,14 +1,23 @@
+using agent_api;
+using agent_api.Agents;
+
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
-
 builder.Services.AddControllers();
-// Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
+
+builder.Services.AddHttpClient<SlapsureClient>(client =>
+{
+    client.BaseAddress = new Uri("http://localhost:3000");
+    client.DefaultRequestHeaders.Add("Accept", "application/json");
+});
+
+// Register ToolsFactory and AgentDefinitions
+builder.Services.AddScoped<ToolsFactory>();
+builder.Services.AddScoped<AgentDefinitions>();
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
