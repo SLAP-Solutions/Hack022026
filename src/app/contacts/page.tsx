@@ -48,10 +48,7 @@ export default function ContactsPage() {
         setDeleteDialogOpen(false);
     };
 
-    const formatAddress = (address: string) => {
-        if (address.length <= 10) return address;
-        return `${address.slice(0, 6)}...${address.slice(-4)}`;
-    };
+
 
     return (
         <div className="max-w-7xl mx-auto space-y-6">
@@ -62,7 +59,7 @@ export default function ContactsPage() {
                         Contacts
                     </h1>
                     <p className="text-muted-foreground mt-2">
-                        Manage your contact list and receiver addresses
+                        Public directory of contacts and receiver addresses
                     </p>
                 </div>
 
@@ -119,8 +116,8 @@ export default function ContactsPage() {
                                     <div>
                                         <p className="text-xs text-muted-foreground mb-1">Receiver Address</p>
                                         <div className="flex items-center gap-2">
-                                            <code className="text-sm font-mono bg-muted px-2 py-1 rounded flex-1 truncate" title={contact.receiverAddress}>
-                                                {formatAddress(contact.receiverAddress)}
+                                            <code className="text-[10px] font-mono bg-muted px-2 py-1 rounded flex-1 break-all">
+                                                {contact.receiverAddress}
                                             </code>
                                             <Button
                                                 size="sm"

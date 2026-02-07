@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { usePaymentModal } from "@/stores/usePaymentModal";
 import { useClaimsStore } from "@/stores/useClaimsStore";
+import { useContactsStore } from "@/stores/useContactsStore";
 import { useFTSOPrices } from "@/hooks/useFTSOPrices";
 import { FEEDS } from "@/config/feeds";
 import {
@@ -28,6 +29,13 @@ export function AddPaymentModal() {
     const { isOpen, claimId, closeModal } = usePaymentModal();
     const { addPayment } = useClaimsStore();
     const { prices } = useFTSOPrices();
+    const { contacts, fetchContacts } = useContactsStore();
+
+    useEffect(() => {
+        if (isOpen) {
+            fetchContacts();
+        }
+    }, [isOpen, fetchContacts]);
 
     // Form State
     const [receiver, setReceiver] = useState("");
@@ -101,7 +109,23 @@ export function AddPaymentModal() {
                 <form onSubmit={handleSubmit}>
                     <div className="grid gap-4 py-4">
                         <div className="grid gap-2">
-                            <Label htmlFor="receiver">Receiver Address</Label>
+                            <div className="flex justify-between items-center">
+                                <Label htmlFor="receiver">Receiver Address</Label>
+                                {contacts.length > 0 && (
+                                    <Select onValueChange={setReceiver}>
+                                        <SelectTrigger className="w-[180px] h-7 text-xs">
+                                            <SelectValue placeholder="Select contact..." />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {contacts.map(contact => (
+                                                <SelectItem key={contact.id} value={contact.receiverAddress}>
+                                                    {contact.name}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                )}
+                            </div>
                             <Input
                                 id="receiver"
                                 placeholder="0x..."

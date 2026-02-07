@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useContract } from "@/hooks/useContract";
+import { useContactsStore } from "@/stores/useContactsStore";
 import { FEED_IDS } from "@/lib/contract/constants";
 import { ethers } from "ethers";
 import { Button } from "@/components/ui/button";
@@ -20,6 +21,11 @@ type PaymentMode = "trigger" | "instant";
 
 export function CreatePaymentForm() {
     const { createClaimPayment, createInstantPayment, getCurrentPrice, isLoading } = useContract();
+    const { contacts, fetchContacts } = useContactsStore();
+
+    useEffect(() => {
+        fetchContacts();
+    }, [fetchContacts]);
 
     // Form mode
     const [mode, setMode] = useState<PaymentMode>("trigger");
@@ -154,8 +160,25 @@ export function CreatePaymentForm() {
 
             <form onSubmit={handleSubmit} className="space-y-4">
                 {/* Receiver address */}
+                {/* Receiver address */}
                 <div className="space-y-2">
-                    <Label htmlFor="receiver">Recipient Address</Label>
+                    <div className="flex justify-between items-center">
+                        <Label htmlFor="receiver">Recipient Address</Label>
+                        {contacts.length > 0 && (
+                            <Select onValueChange={setReceiver}>
+                                <SelectTrigger className="w-[180px] h-7 text-xs">
+                                    <SelectValue placeholder="Select contact..." />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {contacts.map(contact => (
+                                        <SelectItem key={contact.id} value={contact.receiverAddress}>
+                                            {contact.name}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        )}
+                    </div>
                     <Input
                         id="receiver"
                         type="text"
