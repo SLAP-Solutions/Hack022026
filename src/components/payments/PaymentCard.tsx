@@ -90,26 +90,17 @@ export function PaymentCard({ payment, onRefresh }: PaymentCardProps) {
         ? ((cryptoAtStopLoss - cryptoAtTakeProfit) / cryptoAtStopLoss) * 100
         : 0;
 
-    // Contact matching
     const contact = contacts.find(c => c.receiverAddress.toLowerCase() === payment.receiver.toLowerCase());
     const receiverName = contact ? contact.name : `${payment.receiver.slice(0, 6)}...${payment.receiver.slice(-4)}`;
 
-    // Calculated amounts in Ticker
-    // The payment.usdAmount is in cents.
-    // To get ticker amount: (usdAmount / 100) / currentPrice
     const tickerAmountCurrent = current > 0 ? usdAmountDollars / current : 0;
 
-    // Collateral calculations within component for display
     const collateralEth = ethers.formatEther(payment.collateralAmount.toString());
     const collateralAmount = parseFloat(collateralEth);
 
-    // What would be paid at current price (in ticker)
     const currentPayoutInTicker = current > 0 ? usdAmountDollars / current : 0;
-
-    // Refund = locked collateral - what you'd pay now
     const refundAmount = collateralAmount - currentPayoutInTicker;
 
-    // Amount from smart contract (amount at creation)
     const createdAtPrice = Number(payment.createdAtPrice) / multiplier;
     const amountAtCreation = createdAtPrice > 0 ? usdAmountDollars / createdAtPrice : 0;
 
@@ -117,11 +108,9 @@ export function PaymentCard({ payment, onRefresh }: PaymentCardProps) {
         ? ((createdAtPrice / current) - 1) * 100
         : 0;
 
-
-    // Mock data generation for HoverCard preview
     const chartData = useMemo(() => {
         if (!current) return [];
-        const points = 20; // Fewer points for preview
+        const points = 20;
         const result = [];
         let price = current * 0.95;
         for (let i = 0; i < points; i++) {
@@ -136,7 +125,6 @@ export function PaymentCard({ payment, onRefresh }: PaymentCardProps) {
         return result;
     }, [current]);
 
-    // Calculate domain for preview
     const history = chartData.map((d) => d.price);
     const allPrices = [...history, takeProfit, stopLoss, current];
     const minPrice = Math.min(...allPrices) * 0.98;
@@ -145,7 +133,6 @@ export function PaymentCard({ payment, onRefresh }: PaymentCardProps) {
     return (
         <>
             <div className="border rounded-lg p-4 hover:shadow-md transition-shadow bg-card relative h-fit">
-                {/* Header */}
                 <div className="flex justify-between items-start mb-3">
                     <div>
                         <h3 className="font-bold text-lg flex items-center gap-2">
@@ -176,7 +163,6 @@ export function PaymentCard({ payment, onRefresh }: PaymentCardProps) {
                     </Badge>
                 </div>
 
-                {/* Progress bar (Hover for Chart, Click for Modal) - Only for Pending payments */}
                 {!payment.executed && (
                     <HoverCard openDelay={200}>
                         <HoverCardTrigger asChild>
