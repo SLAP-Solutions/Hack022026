@@ -9,7 +9,7 @@ import { ConnectWallet } from "@/components/wallet/ConnectWallet";
 
 export default function PaymentsPage() {
     const { address, isConnected } = useWallet();
-    const { payments, isLoading } = usePayments();
+    const { payments, isLoading, refetch } = usePayments();
 
     if (!isConnected) {
         return (
@@ -39,7 +39,7 @@ export default function PaymentsPage() {
                     </div>
                     <div className="lg:col-span-2">
                         <h2 className="text-2xl font-bold mb-4">Your Payments</h2>
-                        <PaymentsList payments={payments} isLoading={isLoading} />
+                        <PaymentsList payments={payments} isLoading={isLoading} onRefresh={refetch} />
                     </div>
                 </div>
 
