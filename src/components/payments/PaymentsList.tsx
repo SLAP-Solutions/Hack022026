@@ -1,8 +1,10 @@
-﻿"use client";
+"use client";
 
 import { useState } from "react";
 import { PaymentCard } from "./PaymentCard";
 import { ClaimPaymentWithPrice } from "@/hooks/usePayments";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 interface PaymentsListProps {
     payments: ClaimPaymentWithPrice[];
@@ -19,44 +21,41 @@ export function PaymentsList({ payments, isLoading }: PaymentsListProps) {
     });
 
     if (isLoading) {
-        return <div className="text-center py-8">Loading payments...</div>;
+        return <div className="text-center py-8 text-muted-foreground">Loading payments...</div>;
     }
 
     return (
         <div>
             <div className="flex gap-2 mb-4">
-                <button
+                <Button
                     onClick={() => setFilter("all")}
-                    className={`px-4 py-2 rounded font-semibold ${
-                        filter === "all" ? "bg-blue-600 text-white" : "bg-gray-200"
-                    }`}
+                    variant={filter === "all" ? "default" : "outline"}
+                    size="sm"
                 >
                     All ({payments.length})
-                </button>
-                <button
+                </Button>
+                <Button
                     onClick={() => setFilter("pending")}
-                    className={`px-4 py-2 rounded font-semibold ${
-                        filter === "pending" ? "bg-blue-600 text-white" : "bg-gray-200"
-                    }`}
+                    variant={filter === "pending" ? "default" : "outline"}
+                    size="sm"
                 >
                     Pending ({payments.filter((p) => !p.executed).length})
-                </button>
-                <button
+                </Button>
+                <Button
                     onClick={() => setFilter("executed")}
-                    className={`px-4 py-2 rounded font-semibold ${
-                        filter === "executed" ? "bg-blue-600 text-white" : "bg-gray-200"
-                    }`}
+                    variant={filter === "executed" ? "default" : "outline"}
+                    size="sm"
                 >
                     Executed ({payments.filter((p) => p.executed).length})
-                </button>
+                </Button>
             </div>
 
             {filteredPayments.length === 0 ? (
-                <div className="text-center py-8 text-gray-500">
+                <div className="text-center py-8 text-muted-foreground">
                     No {filter !== "all" && filter} payments found.
                 </div>
             ) : (
-                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                <div className="grid gap-4 md:grid-cols-2">
                     {filteredPayments.map((payment) => (
                         <PaymentCard key={payment.id.toString()} payment={payment} />
                     ))}

@@ -77,7 +77,7 @@ export function CreateClaimModal() {
         <Dialog open={isOpen} onOpenChange={handleClose}>
             <DialogContent className="sm:max-w-[525px]">
                 <DialogHeader>
-                    <DialogTitle className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-blue-700 bg-clip-text text-transparent">
+                    <DialogTitle className="text-2xl font-bold text-primary">
                         Create New Claim
                     </DialogTitle>
                     <DialogDescription>
@@ -153,7 +153,7 @@ export function CreateClaimModal() {
                         </Button>
                         <Button
                             type="submit"
-                            className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800"
+                            className="bg-primary hover:bg-primary/90"
                         >
                             Create Claim
                         </Button>

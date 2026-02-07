@@ -35,7 +35,7 @@ export default function Home() {
   // Prepare Chart Data
   const statusDistribution = [
     { name: 'Pending', value: claimsData.filter(c => c.status === 'pending').length, color: '#f59e0b' },
-    { name: 'Processing', value: claimsData.filter(c => c.status === 'processing').length, color: '#3b82f6' },
+    { name: 'Processing', value: claimsData.filter(c => c.status === 'processing').length, color: '#ec4899' },
     { name: 'Approved', value: claimsData.filter(c => c.status === 'approved').length, color: '#22c55e' },
     { name: 'Settled', value: claimsData.filter(c => c.status === 'settled').length, color: '#10b981' },
     { name: 'Rejected', value: claimsData.filter(c => c.status === 'rejected').length, color: '#ef4444' },
@@ -152,7 +152,7 @@ export default function Home() {
                 <XAxis type="number" />
                 <YAxis dataKey="name" type="category" width={100} tick={{ fontSize: 12 }} />
                 <Tooltip formatter={(value) => `$${Number(value).toLocaleString()}`} />
-                <Bar dataKey="cost" fill="#3b82f6" radius={[0, 4, 4, 0]} />
+                <Bar dataKey="cost" fill="#ec4899" radius={[0, 4, 4, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </CardContent>
@@ -160,7 +160,7 @@ export default function Home() {
       </div>
 
           <div className="mt-16">
-            <Button asChild size="lg" className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 shadow-lg shadow-blue-500/50 hover:shadow-xl hover:shadow-blue-500/60">
+            <Button asChild size="lg">
               <Link href="/payments">
                 Payment Dashboard
               </Link>

@@ -96,3 +96,25 @@ resource "azurerm_cosmosdb_sql_container" "hack_payments" {
     }
   }
 }
+
+resource "azurerm_cosmosdb_sql_container" "hack_contacts" {
+  name                  = "contacts"
+  resource_group_name   = azurerm_resource_group.main.name
+  account_name          = azurerm_cosmosdb_account.hack_account.name
+  database_name         = azurerm_cosmosdb_sql_database.hack_database.name
+  partition_key_version = 1
+  partition_key_paths   = ["/Id"]
+
+  conflict_resolution_policy {
+    mode                     = "LastWriterWins"
+    conflict_resolution_path = "/_ts"
+  }
+
+  indexing_policy {
+    indexing_mode = "consistent"
+
+    included_path {
+      path = "/*"
+    }
+  }
+}
