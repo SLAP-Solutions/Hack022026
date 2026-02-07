@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { PriceHistoryModal } from "./PriceHistoryModal";
-import { PriceChart } from "./PriceChart";
+import { PriceBar } from "./PriceChart";
 import { useContactsStore } from "../../stores/useContactsStore";
 import {
     HoverCard,
@@ -101,8 +101,14 @@ export function PaymentCard({ payment, onRefresh }: PaymentCardProps) {
 
     // Collateral calculations within component for display
     const collateralEth = ethers.formatEther(payment.collateralAmount.toString());
-    const currentPayoutEth = ethers.formatEther(cryptoAtCurrent.toString());
-    const refundAmount = parseFloat(collateralEth) - parseFloat(currentPayoutEth);
+    const collateralAmount = parseFloat(collateralEth);
+
+    // What would be paid at current price (in ticker)
+    const currentPayoutInTicker = current > 0 ? usdAmountDollars / current : 0;
+
+    // Refund = locked collateral - what you'd pay now
+    const refundAmount = collateralAmount - currentPayoutInTicker;
+
 
     // Mock data generation for HoverCard preview
     const chartData = useMemo(() => {
@@ -198,16 +204,11 @@ export function PaymentCard({ payment, onRefresh }: PaymentCardProps) {
                             <span className="font-semibold text-xs">{ticker} Price Action</span>
                             <span className="text-[10px] text-muted-foreground">Live Preview</span>
                         </div>
-                        <PriceChart
-                            data={chartData}
-                            minPrice={minPrice}
-                            maxPrice={maxPrice}
+                        <PriceBar
                             currentPrice={current}
                             tpPrice={takeProfit}
                             slPrice={stopLoss}
-                            readOnly={true}
-                            height={150}
-                            showLabels={true}
+                            ticker={ticker}
                         />
                     </HoverCardContent>
                 </HoverCard>
@@ -218,27 +219,33 @@ export function PaymentCard({ payment, onRefresh }: PaymentCardProps) {
 
                     <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
                         <span className="text-muted-foreground">Collateral Locked:</span>
-                        <span className="font-mono text-right">{parseFloat(collateralEth).toFixed(4)} {ticker}</span>
+                        <span className="font-mono text-right">{collateralAmount.toFixed(6)} {ticker}</span>
 
                         {!payment.executed && (
                             <>
                                 <span className="text-muted-foreground">Current Refund:</span>
                                 <span className={cn("font-mono text-right", refundAmount >= 0 ? "text-green-600" : "text-red-600")}>
-                                    {refundAmount > 0 ? "+" : ""}{refundAmount.toFixed(4)} {ticker}
+                                    {refundAmount > 0 ? "+" : ""}{refundAmount.toFixed(6)} {ticker}
                                 </span>
 
-                                <span className="text-muted-foreground mt-1">If Stop Loss Hit:</span>
-                                <span className="font-mono text-right text-red-600 mt-1">
-                                    {ethers.formatEther(cryptoAtStopLoss.toString()).substring(0, 8)} {ticker}
+
+                                <span className="text-muted-foreground mt-3">If Stop Loss Hit:</span>
+                                <span className="font-mono text-right text-red-600 mt-3">
+                                    {(usdAmountDollars / stopLoss).toFixed(6)} {ticker}
                                 </span>
 
                                 <span className="text-muted-foreground">If Take Profit Hit:</span>
                                 <span className="font-mono text-right text-green-600">
-                                    {ethers.formatEther(cryptoAtTakeProfit.toString()).substring(0, 8)} {ticker}
+                                    {(usdAmountDollars / takeProfit).toFixed(6)} {ticker}
+                                </span>
+
+                                <span className="text-muted-foreground mt-2">If Paid Now:</span>
+                                <span className="font-mono text-right text-green-600 mt-2">
+                                    {current > 0 ? (usdAmountDollars / current).toFixed(6) : "0.000000"} {ticker}
                                 </span>
 
                                 <div className="col-span-2 border-t pt-1 mt-1 flex justify-between items-center">
-                                    <span className="text-muted-foreground">Savings vs SL:</span>
+                                    <span className="text-muted-foreground">PNL:</span>
                                     <span className={cn("font-bold", savingsVsStopLoss > 0 ? "text-green-600" : "text-muted-foreground")}>
                                         {savingsVsStopLoss.toFixed(2)}%
                                     </span>

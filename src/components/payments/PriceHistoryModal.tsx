@@ -1,23 +1,24 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useEffect } from "react";
 import {
     Dialog,
     DialogContent,
     DialogHeader,
     DialogTitle,
     DialogFooter,
+    DialogDescription
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { PriceChart } from "./PriceChart";
+import { PriceBar } from "./PriceChart";
 
 interface PriceHistoryModalProps {
     isOpen: boolean;
     onClose: () => void;
     ticker: string;
     currentPrice: number;
-    initialTp: number; // Price value
-    initialSl: number; // Price value
+    initialTp: number;
+    initialSl: number;
     onSave: (tp: number, sl: number) => void;
     readOnly?: boolean;
 }
@@ -32,93 +33,57 @@ export function PriceHistoryModal({
     onSave,
     readOnly = false,
 }: PriceHistoryModalProps) {
-    // Local state for the lines
     const [tpPrice, setTpPrice] = useState(initialTp);
     const [slPrice, setSlPrice] = useState(initialSl);
 
-    // Initialize checks
     useEffect(() => {
         if (isOpen) {
-            setTpPrice(initialTp);
-            setSlPrice(initialSl);
-        }
-    }, [isOpen, initialTp, initialSl]);
-
-    // Mock data generation
-    const data = useMemo(() => {
-        const points = 50;
-        const result = [];
-        let price = currentPrice * 0.95; // Start a bit lower
-        for (let i = 0; i < points; i++) {
-            // Random walk
-            const change = (Math.random() - 0.45) * (currentPrice * 0.02);
-            price += change;
-            // Make sure the last point connects to current price roughly
-            if (i > points - 5) {
-                price = price + (currentPrice - price) * 0.5;
+            if (!readOnly && initialTp === 0 && initialSl === 0) {
+                setTpPrice(currentPrice * 1.05);
+                setSlPrice(currentPrice * 0.95);
+            } else {
+                setTpPrice(initialTp);
+                setSlPrice(initialSl);
             }
-            result.push({
-                time: i,
-                price: price
-            });
         }
-        // Force last point to be current price
-        result[result.length - 1].price = currentPrice;
-        return result;
-    }, [currentPrice]);
+    }, [isOpen, initialTp, initialSl, currentPrice, readOnly]);
 
-    // Calculate domain
-    const history = data.map((d) => d.price);
-    const allPrices = [...history, tpPrice, slPrice, currentPrice];
-    const minPrice = Math.min(...allPrices) * 0.98;
-    const maxPrice = Math.max(...allPrices) * 1.02;
-
-    const handleDrag = (type: "tp" | "sl", price: number) => {
-        if (type === "tp") {
-            setTpPrice(price);
-        } else {
-            setSlPrice(price);
-        }
+    const handleSave = () => {
+        onSave(tpPrice, slPrice);
     };
 
     return (
         <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-            <DialogContent className="sm:max-w-2xl">
+            <DialogContent className="sm:max-w-2xl overflow-visible">
                 <DialogHeader>
-                    <DialogTitle>{readOnly ? `Price History & Levels for ${ticker}` : `Set Trigger Levels for ${ticker}`}</DialogTitle>
+                    <DialogTitle>{readOnly ? `Price Levels: ${ticker}` : `Set Triggers for ${ticker}`}</DialogTitle>
+                    <DialogDescription>
+                        {readOnly
+                            ? "Visual representation of current price vs. set limits."
+                            : "Drag the sliders to adjust your Stop Loss and Take Profit levels."}
+                    </DialogDescription>
                 </DialogHeader>
 
-                <div className="py-6 h-[400px] w-full">
-                    <PriceChart
-                        data={data}
-                        minPrice={minPrice}
-                        maxPrice={maxPrice}
+                <div className="py-12 px-2 w-full select-none">
+                    <PriceBar
                         currentPrice={currentPrice}
                         tpPrice={tpPrice}
                         slPrice={slPrice}
+                        ticker={ticker}
                         readOnly={readOnly}
-                        onDrag={handleDrag}
-                        height="100%"
+                        onSlChange={setSlPrice}
+                        onTpChange={setTpPrice}
                     />
-                    {!readOnly && (
-                        <p className="text-center text-xs text-muted-foreground mt-2">
-                            Drag the green (Target) and red (Stop) lines to set your levels.
-                        </p>
-                    )}
                 </div>
 
-                <DialogFooter>
+                <DialogFooter className="gap-2 sm:gap-0">
                     {readOnly ? (
-                        <Button onClick={onClose}>
-                            Close
-                        </Button>
+                        <Button onClick={onClose}>Close</Button>
                     ) : (
                         <>
-                            <Button variant="outline" onClick={onClose}>
-                                Cancel
-                            </Button>
-                            <Button onClick={() => onSave(tpPrice, slPrice)}>
-                                Apply Settings
+                            <Button variant="outline" onClick={onClose}>Cancel</Button>
+                            <Button onClick={handleSave} className="bg-primary text-primary-foreground">
+                                Confirm Triggers
                             </Button>
                         </>
                     )}

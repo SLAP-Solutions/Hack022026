@@ -1,180 +1,178 @@
 "use client";
 
-import { useRef, useState, useEffect } from "react";
-import {
-    LineChart,
-    Line,
-    XAxis,
-    YAxis,
-    ResponsiveContainer,
-} from "recharts";
+import React, { useRef, useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
+import { motion, useMotionValue, useTransform } from "framer-motion";
 
-export interface PriceChartProps {
-    data: { time: number; price: number }[];
-    minPrice: number;
-    maxPrice: number;
+interface PriceBarProps {
     currentPrice: number;
     tpPrice: number;
     slPrice: number;
+    ticker: string;
     readOnly?: boolean;
-    onDrag?: (type: "tp" | "sl", price: number) => void;
-    height?: number | string;
-    showLabels?: boolean;
+    onSlChange?: (val: number) => void;
+    onTpChange?: (val: number) => void;
+    className?: string;
 }
 
-export function PriceChart({
-    data,
-    minPrice,
-    maxPrice,
+export function PriceBar({
     currentPrice,
     tpPrice,
     slPrice,
+    ticker,
     readOnly = false,
-    onDrag,
-    height = "100%",
-    showLabels = true,
-}: PriceChartProps) {
+    onSlChange,
+    onTpChange,
+    className,
+}: PriceBarProps) {
     const containerRef = useRef<HTMLDivElement>(null);
-    const [dragging, setDragging] = useState<"tp" | "sl" | null>(null);
+    const [width, setWidth] = useState(0);
 
-    // Helper to get % position for CSS top
-    const getTopPercent = (price: number) => {
-        const fraction = (maxPrice - price) / (maxPrice - minPrice);
-        return Math.max(0, Math.min(100, fraction * 100));
-    };
 
-    const formatPrice = (p: number) => p.toFixed(2);
-
-    const handleMouseMove = (e: React.MouseEvent | MouseEvent) => {
-        if (!dragging || !containerRef.current || readOnly || !onDrag) return;
-
-        const rect = containerRef.current.getBoundingClientRect();
-        const y = e.clientY - rect.top;
-        const h = rect.height;
-
-        // Clamp y
-        const clampedY = Math.max(0, Math.min(h, y));
-        const ratio = clampedY / h;
-        const priceRange = maxPrice - minPrice;
-        const newPrice = maxPrice - (ratio * priceRange);
-
-        onDrag(dragging, newPrice);
-    };
-
-    const handleMouseUp = () => {
-        setDragging(null);
-    };
-
-    // Attach global mouse listeners when dragging
     useEffect(() => {
-        if (dragging) {
-            window.addEventListener("mousemove", handleMouseMove as any);
-            window.addEventListener("mouseup", handleMouseUp);
-        } else {
-            window.removeEventListener("mousemove", handleMouseMove as any);
-            window.removeEventListener("mouseup", handleMouseUp);
+        if (containerRef.current) {
+            setWidth(containerRef.current.offsetWidth);
         }
-        return () => {
-            window.removeEventListener("mousemove", handleMouseMove as any);
-            window.removeEventListener("mouseup", handleMouseUp);
-        };
-    }, [dragging, maxPrice, minPrice]);
+    }, []);
+
+
+    const maxDeviation = Math.max(
+        Math.abs(tpPrice - currentPrice),
+        Math.abs(currentPrice - slPrice),
+        currentPrice * 0.15 // Minimum +/- 15% range
+    );
+
+    const minRange = currentPrice - (maxDeviation * 1.2); // Add 20% padding
+    const maxRange = currentPrice + (maxDeviation * 1.2);
+    const totalRange = maxRange - minRange;
+
+    const getPosPercent = (price: number) => {
+        return ((price - minRange) / totalRange) * 100;
+    };
+
+    const calculatePriceFromX = (x: number) => {
+        const percent = (x / width);
+        return minRange + (percent * totalRange);
+    };
+
+    const handleSlDrag = (event: any, info: any) => {
+        if (!containerRef.current) return;
+        const rect = containerRef.current.getBoundingClientRect();
+        const relativeX = info.point.x - rect.left;
+
+        let newPrice = calculatePriceFromX(relativeX);
+
+        // Constraints: 0 < SL < Current Price
+        newPrice = Math.max(0, Math.min(newPrice, currentPrice * 0.999));
+
+        onSlChange?.(newPrice);
+    };
+
+    const handleTpDrag = (event: any, info: any) => {
+        if (!containerRef.current) return;
+        const rect = containerRef.current.getBoundingClientRect();
+        const relativeX = info.point.x - rect.left;
+
+        let newPrice = calculatePriceFromX(relativeX);
+
+        // Constraints: TP > Current Price
+        newPrice = Math.max(currentPrice * 1.001, newPrice);
+
+        onTpChange?.(newPrice);
+    };
+
+    // Percent positions for rendering
+    const currentPos = getPosPercent(currentPrice);
+    const slPos = getPosPercent(slPrice);
+    const tpPos = getPosPercent(tpPrice);
+
+    // Percent changes for labels
+    const slPercentChange = ((slPrice - currentPrice) / currentPrice) * 100;
+    const tpPercentChange = ((tpPrice - currentPrice) / currentPrice) * 100;
 
     return (
-        <div
-            className="relative w-full bg-slate-50 dark:bg-slate-900 rounded-md border overflow-hidden select-none"
-            style={{ height }}
-            ref={containerRef}
-        >
-            <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={data}>
-                    <YAxis
-                        domain={[minPrice, maxPrice]}
-                        hide={true}
-                        type="number"
-                    />
-                    <XAxis dataKey="time" hide={true} />
-                    <Line
-                        type="monotone"
-                        dataKey="price"
-                        stroke="#3b82f6"
-                        strokeWidth={2}
-                        dot={false}
-                        isAnimationActive={false}
-                    />
-                </LineChart>
-            </ResponsiveContainer>
+        <div className={cn("w-full relative py-8 h-40", className)} ref={containerRef}>
+            {/* Background Track */}
+            <div className="absolute top-1/2 left-0 right-0 h-2 bg-secondary rounded-full -translate-y-1/2 overflow-hidden">
+                {/* Center marker (Current Price reference) */}
+                <div
+                    className="absolute top-0 bottom-0 w-0.5 bg-muted-foreground/20 z-0"
+                    style={{ left: `${currentPos}%` }}
+                />
 
-            {/* Current Price Line */}
-            <div
-                className="absolute w-full border-t-2 border-blue-500 border-dotted pointer-events-none flex items-center justify-end pr-2"
-                style={{ top: `${getTopPercent(currentPrice)}%` }}
-            >
-                {showLabels && (
-                    <div className="bg-blue-500 text-white text-[10px] px-1.5 py-0.5 rounded shadow absolute right-0 -translate-y-1/2">
-                        ${formatPrice(currentPrice)}
-                    </div>
-                )}
+                {/* Filled Range (SL to TP) - purely visual indicator of "active zone" */}
+                <div
+                    className="absolute top-0 bottom-0 bg-primary/5 transition-all duration-75"
+                    style={{
+                        left: `${Math.min(slPos, tpPos)}%`,
+                        width: `${Math.abs(tpPos - slPos)}%`
+                    }}
+                />
             </div>
 
-            {/* Take Profit Line (Draggable) */}
-            <div
+            <motion.div
+                drag={readOnly ? false : "x"}
+                dragMomentum={false}
+                dragElastic={0}
+                dragConstraints={containerRef}
+                onDrag={handleSlDrag}
                 className={cn(
-                    "absolute w-full border-t-2 border-green-500 flex items-center justify-between transition-opacity",
-                    !readOnly && "cursor-ns-resize group",
-                    dragging === 'tp' ? "z-50 opacity-100" : "z-40 opacity-80 hover:opacity-100"
+                    "absolute top-1/2 -translate-y-1/2 z-20 flex flex-col items-center cursor-grab active:cursor-grabbing",
+                    readOnly && "cursor-default"
                 )}
-                style={{ top: `${getTopPercent(tpPrice)}%` }}
-                onMouseDown={(e) => {
-                    if (readOnly) return;
-                    e.preventDefault();
-                    setDragging("tp");
-                }}
+                style={{ left: `${slPos}%` }}
+                layout={!readOnly}
             >
-                {showLabels && (
-                    <>
-                        <div className={cn(
-                            "bg-green-500 text-white text-[10px] px-1.5 py-0.5 rounded ml-2 -translate-y-1/2 select-none shadow-sm transition-transform",
-                            !readOnly && "group-hover:scale-110"
-                        )}>
-                            TP
-                        </div>
-                        <div className="bg-green-500 text-white text-[10px] px-1.5 py-0.5 rounded mr-2 -translate-y-1/2 select-none shadow-sm font-mono">
-                            ${formatPrice(tpPrice)} ({(((tpPrice - currentPrice) / currentPrice) * 100).toFixed(1)}%)
-                        </div>
-                    </>
-                )}
+                <div className="w-4 h-8 bg-background border-2 border-destructive rounded-full shadow-sm z-20 hover:scale-110 transition-transform" />
+
+                <div className="absolute top-10 flex flex-col items-center pointer-events-none">
+                    <span className="text-[10px] font-bold text-destructive uppercase tracking-wider">Stop</span>
+                    <span className="text-xs font-mono font-medium">${slPrice.toFixed(2)}</span>
+                    <span className="text-[10px] text-destructive/80 font-mono">
+                        {slPercentChange.toFixed(1)}%
+                    </span>
+                </div>
+            </motion.div>
+
+            {/* --- CURRENT PRICE INDICATOR (Fixed) --- */}
+            <div
+                className="absolute top-1/2 -translate-y-1/2 z-30 pointer-events-none flex flex-col items-center"
+                style={{ left: `${currentPos}%` }}
+            >
+                <div className="w-1.5 h-12 bg-primary/50 blur-[2px] absolute" />
+                <div className="w-0.5 h-12 bg-primary relative" />
+
+                <div className="absolute bottom-10 bg-primary text-primary-foreground text-[10px] font-bold px-2 py-0.5 rounded-full whitespace-nowrap shadow-lg">
+                    Current: ${currentPrice.toFixed(2)}
+                </div>
             </div>
 
-            {/* Stop Loss Line (Draggable) */}
-            <div
+            {/* --- TAKE PROFIT HANDLE --- */}
+            <motion.div
+                drag={readOnly ? false : "x"}
+                dragMomentum={false}
+                dragElastic={0}
+                dragConstraints={containerRef}
+                onDrag={handleTpDrag}
                 className={cn(
-                    "absolute w-full border-t-2 border-red-500 flex items-center justify-between transition-opacity",
-                    !readOnly && "cursor-ns-resize group",
-                    dragging === 'sl' ? "z-50 opacity-100" : "z-40 opacity-80 hover:opacity-100"
+                    "absolute top-1/2 -translate-y-1/2 z-20 flex flex-col items-center cursor-grab active:cursor-grabbing",
+                    readOnly && "cursor-default"
                 )}
-                style={{ top: `${getTopPercent(slPrice)}%` }}
-                onMouseDown={(e) => {
-                    if (readOnly) return;
-                    e.preventDefault();
-                    setDragging("sl");
-                }}
+                style={{ left: `${tpPos}%` }}
+                layout={!readOnly}
             >
-                {showLabels && (
-                    <>
-                        <div className={cn(
-                            "bg-red-500 text-white text-[10px] px-1.5 py-0.5 rounded ml-2 -translate-y-1/2 select-none shadow-sm transition-transform",
-                            !readOnly && "group-hover:scale-110"
-                        )}>
-                            SL
-                        </div>
-                        <div className="bg-red-500 text-white text-[10px] px-1.5 py-0.5 rounded mr-2 -translate-y-1/2 select-none shadow-sm font-mono">
-                            ${formatPrice(slPrice)} ({(((slPrice - currentPrice) / currentPrice) * 100).toFixed(1)}%)
-                        </div>
-                    </>
-                )}
-            </div>
+                {/* Handle UI */}
+                <div className="w-4 h-8 bg-background border-2 border-green-500 rounded-full shadow-sm z-20 hover:scale-110 transition-transform" />
+
+                {/* Floating Label */}
+                <div className="absolute top-10 flex flex-col items-center pointer-events-none">
+                    <span className="text-[10px] font-bold text-green-600 uppercase tracking-wider">Limit</span>
+                    <span className="text-xs font-mono font-medium">${tpPrice.toFixed(2)}</span>
+                    <span className="text-[10px] text-green-600/80 font-mono">
+                        +{tpPercentChange.toFixed(1)}%
+                    </span>
+                </div>
+            </motion.div>
         </div>
     );
 }
