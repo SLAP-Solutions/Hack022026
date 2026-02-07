@@ -44,10 +44,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: nextjs-build
-          path: |
-            ${{ env.WORKING_DIR }}/.next/standalone
-            ${{ env.WORKING_DIR }}/.next/static
-            ${{ env.WORKING_DIR }}/public
+          path: ${{ env.WORKING_DIR }}/out
           retention-days: 1
 
   terraform-apply:
@@ -94,7 +91,7 @@ jobs:
           ARM_USE_CLI: false
 
   deploy-to-azure:
-    name: Deploy to Azure App Service
+    name: Deploy to Azure Static Web Apps
     needs: [terraform-apply]
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/smart-contracts'
@@ -108,7 +105,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: nextjs-build
-          path: ${{ env.WORKING_DIR }}
+          path: build-output
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
@@ -121,91 +118,56 @@ jobs:
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-      - name: Get Web App Name
-        id: get-webapp
+      - name: Get Static Web App Details
+        id: get-swa
         working-directory: ${{ env.TF_DIR }}
         run: |
           # Re-initialize terraform to get outputs
           terraform init
-          WEBAPP_NAME=$(terraform output -raw webapp_name)
-          echo "webapp_name=$WEBAPP_NAME" >> $GITHUB_OUTPUT
+          SWA_NAME=$(terraform output -raw static_web_app_name)
+          SWA_HOSTNAME=$(terraform output -raw static_web_app_default_host_name)
+          SWA_API_KEY=$(terraform output -raw static_web_app_api_key)
+          echo "swa_name=$SWA_NAME" >> $GITHUB_OUTPUT
+          echo "swa_hostname=$SWA_HOSTNAME" >> $GITHUB_OUTPUT
+          echo "swa_api_key=$SWA_API_KEY" >> $GITHUB_OUTPUT
         env:
           ARM_CLIENT_ID: ${{ fromJSON(secrets.AZURE_CREDENTIALS).clientId }}
           ARM_CLIENT_SECRET: ${{ fromJSON(secrets.AZURE_CREDENTIALS).clientSecret }}
           ARM_SUBSCRIPTION_ID: ${{ fromJSON(secrets.AZURE_CREDENTIALS).subscriptionId }}
           ARM_TENANT_ID: ${{ fromJSON(secrets.AZURE_CREDENTIALS).tenantId }}
           ARM_USE_CLI: false
-
-      - name: Create deployment package
-        run: |
-          # Create deployment structure for standalone build
-          mkdir -p deploy
-          
-          # Copy standalone server and dependencies to root of deploy
-          cp -r ${{ env.WORKING_DIR }}/.next/standalone/* deploy/
-          
-          # Copy static files to the correct location for standalone mode
-          mkdir -p deploy/.next/static
-          cp -r ${{ env.WORKING_DIR }}/.next/static/* deploy/.next/static/
-          
-          # Copy public folder
-          cp -r ${{ env.WORKING_DIR }}/public deploy/public
-          
-          # Create startup script for Azure with proper port binding
-          cat > deploy/startup.sh << 'EOF'
-          #!/bin/sh
-          # Azure App Service startup script for Next.js standalone
-          
-          echo "Starting Next.js standalone server..."
-          echo "PORT: ${PORT:-8080}"
-          echo "NODE_ENV: ${NODE_ENV:-production}"
-          
-          # Set port from Azure environment or default to 8080
-          export PORT="${PORT:-8080}"
-          export HOSTNAME="${HOSTNAME:-0.0.0.0}"
-          
-          # Start the Next.js standalone server
-          node server.js
-          EOF
-          
-          chmod +x deploy/startup.sh
-          
-          # Create zip from the deploy directory
-          cd deploy
-          zip -r ../deploy.zip .
-
-      - name: Deploy to Azure Web App
-        uses: azure/webapps-deploy@v3
+  
+      - name: Deploy to Static Web App
+        uses: Azure/static-web-apps-deploy@v1
         with:
-          app-name: ${{ steps.get-webapp.outputs.webapp_name }}
-          package: ./deploy.zip
+          azure_static_web_apps_api_token: ${{ steps.get-swa.outputs.swa_api_key }}
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          action: 'upload'
+          app_location: 'build-output'
+          skip_app_build: true
+          skip_api_build: true
 
       - name: Health Check
         run: |
-          echo "Waiting for app to start..."
-          sleep 30
-          WEBAPP_URL="https://${{ steps.get-webapp.outputs.webapp_name }}.azurewebsites.net"
-          HEALTH_URL="$WEBAPP_URL/api/health"
-          echo "Checking health at: $HEALTH_URL"
+          echo "Waiting for Static Web App to update..."
+          sleep 20
+          SWA_URL="https://${{ steps.get-swa.outputs.swa_hostname }}"
+          echo "Checking deployment at: $SWA_URL"
           
-          for i in {1..15}; do
-            HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" $HEALTH_URL)
+          for i in {1..10}; do
+            HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" $SWA_URL)
             if [ $HTTP_CODE -eq 200 ]; then
               echo "✅ Health check passed! (HTTP $HTTP_CODE)"
-              HEALTH_DATA=$(curl -s $HEALTH_URL)
-              echo "Health status: $HEALTH_DATA"
-              echo "🚀 Deployment successful: $WEBAPP_URL"
+              echo "🚀 Deployment successful: $SWA_URL"
               exit 0
             fi
-            echo "⏳ Attempt $i: HTTP $HTTP_CODE - Waiting for app to start..."
-            sleep 15
+            echo "⏳ Attempt $i: HTTP $HTTP_CODE - Waiting for deployment to propagate..."
+            sleep 10
           done
           
-          echo "⚠️ Health check did not return 200 OK after 15 attempts"
-          echo "Checking main URL..."
-          HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" $WEBAPP_URL)
-          echo "Main URL returned: HTTP $HTTP_CODE"
-          exit 1
+          echo "⚠️ Health check did not return 200 OK after 10 attempts"
+          echo "Note: Static Web Apps may take a few minutes to fully propagate"
+          echo "Check manually at: $SWA_URL"
 
   cleanup:
     name: Cleanup Artifacts

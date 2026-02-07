@@ -103,3 +103,23 @@ resource "azurerm_linux_web_app" "webapp" {
   }
 }
 
+resource "azurecaf_name" "static_web_app_hack" {
+  name          = local.name
+  resource_type = "azurerm_static_site"
+  clean_input   = true
+}
+
+resource "azurerm_static_web_app" "hack" {
+  name                = azurecaf_name.static_web_app_hack.result
+  resource_group_name = azurerm_resource_group.main.name
+  location           = var.location
+  sku_tier           = "Free"
+  sku_size           = "Free"
+}
+
+# resource "azurerm_static_site_custom_domain" "app_custom_domain" {
+#   static_site_id  = azurerm_static_web_app.onsomble_client.id
+#   domain_name     = "${local.dns_domains[var.environment]}.${azurerm_dns_cname_record.onsomble_client_cname.zone_name}"
+#   validation_type = "cname-delegation"
+# }
+
