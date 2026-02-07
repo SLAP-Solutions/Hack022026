@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { ConnectWallet } from "../wallet/ConnectWallet";
 import { Home, FileText, TrendingUp, BarChart, DollarSign } from "lucide-react";
@@ -10,10 +11,14 @@ export function Header() {
                 <div className="flex items-center gap-2">
                     <div className="flex items-center gap-2">
                         <Link href="/landing" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
-                            <div className="h-6 w-6 bg-primary rounded-full animate-pulse" />
-                            <span className="text-xl font-bold tracking-tight text-foreground">
-                                SLAPSure
-                            </span>
+                            <Image 
+                                src="/logo.png" 
+                                alt="SLAPSure Logo" 
+                                width={120} 
+                                height={32}
+                                className="h-8 w-auto"
+                                priority
+                            />
                         </Link>
                     </div>
                 </div>
