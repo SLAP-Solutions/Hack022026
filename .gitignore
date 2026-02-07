@@ -48,6 +48,9 @@ node_modules
 
 # solidity-coverage files
 /coverage
+
+# development scripts
+.contract-hash
 /coverage.json
 
 # Hardhat Ignition default folder for deployments against a local node
