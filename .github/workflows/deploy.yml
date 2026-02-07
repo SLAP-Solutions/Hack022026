@@ -177,7 +177,7 @@ jobs:
 
       - name: Install dependencies
         working-directory: ${{ env.WORKING_DIR }}
-        run: npm ci
+        run: npm install
 
       - name: Build Next.js app
         working-directory: ${{ env.WORKING_DIR }}
