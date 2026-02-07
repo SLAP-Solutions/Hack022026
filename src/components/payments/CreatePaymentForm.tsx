@@ -43,6 +43,8 @@ export function CreatePaymentForm({ onSuccess }: CreatePaymentFormProps) {
     // Trigger-based fields
     const [stopLossPercent, setStopLossPercent] = useState(-5);
     const [takeProfitPercent, setTakeProfitPercent] = useState(5);
+    const [stopLossInput, setStopLossInput] = useState("");
+    const [takeProfitInput, setTakeProfitInput] = useState("");
     const [collateralRatio, setCollateralRatio] = useState(150);
     const [expiryDays, setExpiryDays] = useState(30);
 
@@ -55,6 +57,11 @@ export function CreatePaymentForm({ onSuccess }: CreatePaymentFormProps) {
         getCurrentPrice(feed).then(data => {
             setCurrentPrice(data.price);
             setDecimals(data.decimals);
+
+            // Initialize inputs when price is first loaded
+            const humanPrice = data.price / Math.pow(10, data.decimals);
+            setStopLossInput((humanPrice * (1 + stopLossPercent / 100)).toFixed(2));
+            setTakeProfitInput((humanPrice * (1 + takeProfitPercent / 100)).toFixed(2));
         }).catch(console.error);
     }, [feed]);
 
@@ -139,8 +146,8 @@ export function CreatePaymentForm({ onSuccess }: CreatePaymentFormProps) {
     const payoutAtCurrent = calculatePayout(currentPrice || 0);
     const payoutAtTakeProfit = calculatePayout(takeProfitPrice);
 
-    const savingsAtTakeProfit = stopLossPrice > 0 && payoutAtStopLoss > BigInt(0)
-        ? ((Number(payoutAtStopLoss - payoutAtTakeProfit)) / Number(payoutAtStopLoss)) * 100
+    const savingsAtTakeProfit = (currentPrice && takeProfitPrice > currentPrice)
+        ? (1 - (currentPrice / takeProfitPrice)) * 100
         : 0;
 
     const ticker = feed.split('/')[0];
@@ -202,7 +209,7 @@ export function CreatePaymentForm({ onSuccess }: CreatePaymentFormProps) {
                 <div className="space-y-2">
                     <Label htmlFor="amount">Payment Amount (USD)</Label>
                     <div className="relative">
-                        <span className="absolute left-3 top-2.5 text-muted-foreground">$</span>
+                        <span className="absolute left-3 top-1.75 text-muted-foreground">$</span>
                         <Input
                             id="amount"
                             type="number"
@@ -264,50 +271,69 @@ export function CreatePaymentForm({ onSuccess }: CreatePaymentFormProps) {
                                 Set Graphically
                             </Button>
                         </div>
-                        <div className="space-y-2">
-                            <Label>
-                                Stop Loss: {stopLossPercent.toFixed(1)}%
-                                <span className="text-red-600 font-semibold ml-2">
-                                    ${(stopLossPrice / Math.pow(10, decimals)).toFixed(decimals === 3 ? 2 : 0)}
-                                </span>
-                            </Label>
-                            <input
-                                type="range"
-                                min="-20"
-                                max="-0.1"
-                                step="0.1"
-                                value={stopLossPercent}
-                                onChange={(e) => setStopLossPercent(parseFloat(e.target.value))}
-                                className="w-full accent-primary"
-                            />
-                            <p className="text-xs text-muted-foreground">
-                                Execute if price drops here (limit losses from volatile markets)
-                            </p>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <Label htmlFor="stopLoss">Stop Loss Price ($)</Label>
+                                <div className="space-y-1">
+                                    <Input
+                                        id="stopLoss"
+                                        type="number"
+                                        step="0.01"
+                                        value={stopLossInput}
+                                        onChange={(e) => {
+                                            setStopLossInput(e.target.value);
+                                            const price = parseFloat(e.target.value);
+                                            if (currentPrice && !isNaN(price) && price > 0) {
+                                                const currentPriceHuman = currentPrice / Math.pow(10, decimals);
+                                                setStopLossPercent(((price - currentPriceHuman) / currentPriceHuman) * 100);
+                                            }
+                                        }}
+                                        className="font-mono"
+                                        placeholder="0.00"
+                                    />
+                                    <div className="flex justify-between items-center px-1">
+                                        <span className="text-[10px] text-red-600 font-medium">{stopLossPercent.toFixed(1)}% from current</span>
+                                    </div>
+                                </div>
+                                <p className="text-[10px] text-muted-foreground leading-tight">
+                                    Execute if price drops to this level
+                                </p>
+                            </div>
+
+                            <div className="space-y-2">
+                                <Label htmlFor="takeProfit">Take Profit Price ($)</Label>
+                                <div className="space-y-1">
+                                    <Input
+                                        id="takeProfit"
+                                        type="number"
+                                        step="0.01"
+                                        value={takeProfitInput}
+                                        onChange={(e) => {
+                                            setTakeProfitInput(e.target.value);
+                                            const price = parseFloat(e.target.value);
+                                            if (currentPrice && !isNaN(price) && price > 0) {
+                                                const currentPriceHuman = currentPrice / Math.pow(10, decimals);
+                                                setTakeProfitPercent(((price - currentPriceHuman) / currentPriceHuman) * 100);
+                                            }
+                                        }}
+                                        className="font-mono"
+                                        placeholder="0.00"
+                                    />
+                                    <div className="flex justify-between items-center px-1">
+                                        <span className="text-[10px] text-green-600 font-medium">+{takeProfitPercent.toFixed(1)}% from current</span>
+                                    </div>
+                                </div>
+                                <p className="text-[10px] text-muted-foreground leading-tight">
+                                    Execute if price reaches this level
+                                </p>
+                            </div>
                         </div>
 
                         <div className="space-y-2">
-                            <Label>
-                                Take Profit: +{takeProfitPercent.toFixed(1)}%
-                                <span className="text-green-600 font-semibold ml-2">
-                                    ${(takeProfitPrice / Math.pow(10, decimals)).toFixed(decimals === 3 ? 2 : 0)}
-                                </span>
+                            <Label className="flex justify-between">
+                                <span>Collateral Ratio:</span>
+                                <span className="font-mono text-primary">{collateralRatio}%</span>
                             </Label>
-                            <input
-                                type="range"
-                                min="0.1"
-                                max="20"
-                                step="0.1"
-                                value={takeProfitPercent}
-                                onChange={(e) => setTakeProfitPercent(parseFloat(e.target.value))}
-                                className="w-full accent-primary"
-                            />
-                            <p className="text-xs text-muted-foreground">
-                                Execute when price reaches here (pay less crypto, capture savings)
-                            </p>
-                        </div>
-
-                        <div className="space-y-2">
-                            <Label>Collateral Ratio: {collateralRatio}%</Label>
                             <input
                                 type="range"
                                 min="110"
@@ -315,15 +341,18 @@ export function CreatePaymentForm({ onSuccess }: CreatePaymentFormProps) {
                                 step="5"
                                 value={collateralRatio}
                                 onChange={(e) => setCollateralRatio(parseInt(e.target.value))}
-                                className="w-full accent-primary"
+                                className="w-full accent-primary h-1.5 rounded-lg appearance-none bg-muted cursor-pointer"
                             />
-                            <p className="text-xs text-muted-foreground">
-                                Safety buffer (150% recommended for moderate volatility)
+                            <p className="text-[10px] text-muted-foreground">
+                                Safety buffer (150% recommended)
                             </p>
                         </div>
 
                         <div className="space-y-2">
-                            <Label>Expiry: {expiryDays} days</Label>
+                            <Label className="flex justify-between">
+                                <span>Expiry:</span>
+                                <span className="font-mono text-primary">{expiryDays} days</span>
+                            </Label>
                             <input
                                 type="range"
                                 min="1"
@@ -331,10 +360,10 @@ export function CreatePaymentForm({ onSuccess }: CreatePaymentFormProps) {
                                 step="1"
                                 value={expiryDays}
                                 onChange={(e) => setExpiryDays(parseInt(e.target.value))}
-                                className="w-full accent-primary"
+                                className="w-full accent-primary h-1.5 rounded-lg appearance-none bg-muted cursor-pointer"
                             />
-                            <p className="text-xs text-muted-foreground">
-                                Payment expires if triggers not hit within this time
+                            <p className="text-[10px] text-muted-foreground">
+                                Deadline for execution
                             </p>
                         </div>
                     </>
@@ -355,17 +384,17 @@ export function CreatePaymentForm({ onSuccess }: CreatePaymentFormProps) {
                                 <>
                                     <span className="text-muted-foreground">If Stop Loss Hits:</span>
                                     <span className="text-right">
-                                        {ethers.formatEther(payoutAtStopLoss.toString()).substring(0, 10)} FLR
+                                        {ethers.formatEther(payoutAtStopLoss.toString()).substring(0, 10)} {ticker}
                                     </span>
 
                                     <span className="text-muted-foreground">If Current Price:</span>
                                     <span className="text-right">
-                                        {ethers.formatEther(payoutAtCurrent.toString()).substring(0, 10)} FLR
+                                        {ethers.formatEther(payoutAtCurrent.toString()).substring(0, 10)} {ticker}
                                     </span>
 
                                     <span className="text-green-600 font-semibold">If Take Profit Hits:</span>
                                     <span className="text-right font-semibold text-green-600">
-                                        {ethers.formatEther(payoutAtTakeProfit.toString()).substring(0, 10)} FLR
+                                        {ethers.formatEther(payoutAtTakeProfit.toString()).substring(0, 10)} {ticker}
                                     </span>
                                 </>
                             )}
@@ -416,6 +445,11 @@ export function CreatePaymentForm({ onSuccess }: CreatePaymentFormProps) {
 
                         setTakeProfitPercent(parseFloat(newTpPercent.toFixed(1)));
                         setStopLossPercent(parseFloat(newSlPercent.toFixed(1)));
+
+                        // Also update string inputs
+                        setTakeProfitInput(tp.toFixed(2));
+                        setStopLossInput(sl.toFixed(2));
+
                         setShowGraphModal(false);
                     }}
                 />

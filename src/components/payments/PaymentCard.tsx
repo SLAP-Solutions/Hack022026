@@ -104,8 +104,8 @@ export function PaymentCard({ payment, onRefresh }: PaymentCardProps) {
     const createdAtPrice = Number(payment.createdAtPrice) / multiplier;
     const amountAtCreation = createdAtPrice > 0 ? usdAmountDollars / createdAtPrice : 0;
 
-    const pnlPercent = createdAtPrice > 0
-        ? ((createdAtPrice / current) - 1) * 100
+    const pnlPercent = (createdAtPrice > 0 && current > 0)
+        ? (1 - (createdAtPrice / current)) * 100
         : 0;
 
     const chartData = useMemo(() => {
