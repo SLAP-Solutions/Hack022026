@@ -9,9 +9,10 @@ import { cn } from "@/lib/utils";
 interface PaymentsListProps {
     payments: ClaimPaymentWithPrice[];
     isLoading: boolean;
+    onRefresh?: () => void;
 }
 
-export function PaymentsList({ payments, isLoading }: PaymentsListProps) {
+export function PaymentsList({ payments, isLoading, onRefresh }: PaymentsListProps) {
     const [filter, setFilter] = useState<"all" | "pending" | "executed">("all");
 
     const filteredPayments = payments.filter((p) => {
@@ -57,7 +58,11 @@ export function PaymentsList({ payments, isLoading }: PaymentsListProps) {
             ) : (
                 <div className="grid gap-4 md:grid-cols-2">
                     {filteredPayments.map((payment) => (
-                        <PaymentCard key={payment.id.toString()} payment={payment} />
+                        <PaymentCard 
+                            key={payment.id.toString()} 
+                            payment={payment}
+                            onRefresh={onRefresh}
+                        />
                     ))}
                 </div>
             )}

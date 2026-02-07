@@ -11,7 +11,7 @@ import { Wallet } from "lucide-react";
 
 export default function PaymentsPage() {
     const { address, isConnected } = useWallet();
-    const { payments, isLoading } = usePayments();
+    const { payments, isLoading, refetch } = usePayments();
 
     if (!isConnected) {
         return (
@@ -44,6 +44,15 @@ export default function PaymentsPage() {
                     </h1>
                     <p className="text-muted-foreground mt-1">Create and manage blockchain payments</p>
                 </div>
+
+                <div className="grid gap-6 lg:grid-cols-3 mb-6">
+                    <div className="lg:col-span-1">
+                        <CreatePaymentForm />
+                    </div>
+                    <div className="lg:col-span-2">
+                        <h2 className="text-2xl font-bold mb-4">Your Payments</h2>
+                        <PaymentsList payments={payments} isLoading={isLoading} onRefresh={refetch} />
+                    </div>
                 <div className="text-sm text-muted-foreground font-mono bg-muted px-3 py-1.5 rounded-md">
                     {address?.slice(0, 6)}...{address?.slice(-4)}
                 </div>
