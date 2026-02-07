@@ -114,6 +114,12 @@ jobs:
           name: nextjs-build
           path: ${{ env.WORKING_DIR }}
 
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TERRAFORM_VERSION }}
+          terraform_wrapper: false
+
       - name: Azure Login
         uses: azure/login@v2
         with:
