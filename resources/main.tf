@@ -118,8 +118,7 @@ resource "azurerm_static_web_app" "hack" {
 }
 
 # resource "azurerm_static_site_custom_domain" "app_custom_domain" {
-#   static_site_id  = azurerm_static_web_app.onsomble_client.id
-#   domain_name     = "${local.dns_domains[var.environment]}.${azurerm_dns_cname_record.onsomble_client_cname.zone_name}"
+#   static_site_id  = azurerm_static_web_app.hack.id
+#   domain_name     = "slapsure.co.uk"
 #   validation_type = "cname-delegation"
 # }
-

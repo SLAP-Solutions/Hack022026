@@ -64,6 +64,21 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: '${{ env.WORKING_DIR }}/package-lock.json'
+
+      - name: Install dependencies
+        working-directory: ${{ env.WORKING_DIR }}
+        run: npm ci
+
+      - name: Build Next.js app
+        working-directory: ${{ env.WORKING_DIR }}
+        run: npm run build
+
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
         with:
@@ -100,9 +115,10 @@ jobs:
           azure_static_web_apps_api_token: ${{ steps.get-swa.outputs.swa_api_key }}
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           action: 'upload'
-          app_location: '${{ env.WORKING_DIR }}'
+          app_location: '${{ env.WORKING_DIR }}/.next/standalone'
           api_location: ''
           output_location: ''
+          skip_app_build: true
 
       - name: Health Check
         run: |
