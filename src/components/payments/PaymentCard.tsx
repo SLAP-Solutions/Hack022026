@@ -140,7 +140,7 @@ export function PaymentCard({ payment, onRefresh }: PaymentCardProps) {
 
     return (
         <>
-            <div className="border rounded-lg p-4 hover:shadow-md transition-shadow bg-card relative">
+            <div className="border rounded-lg p-4 hover:shadow-md transition-shadow bg-card relative h-fit">
                 {/* Header */}
                 <div className="flex justify-between items-start mb-3">
                     <div>
@@ -172,64 +172,68 @@ export function PaymentCard({ payment, onRefresh }: PaymentCardProps) {
                     </Badge>
                 </div>
 
-                {/* Progress bar (Hover for Chart, Click for Modal) */}
-                <HoverCard openDelay={200}>
-                    <HoverCardTrigger asChild>
-                        <div
-                            className="mb-3 cursor-pointer group"
-                            onClick={() => setIsModalOpen(true)}
-                        >
-                            <div className="flex justify-between text-xs mb-1">
-                                <span className="text-red-600 font-medium">SL: ${stopLoss.toFixed(2)}</span>
-                                <span className="text-green-600 font-medium">TP: ${takeProfit.toFixed(2)}</span>
-                            </div>
-                            <div className="w-full bg-muted rounded-full h-3 relative overflow-hidden ring-1 ring-transparent group-hover:ring-primary/20 transition-all">
-                                <div
-                                    className={cn(
-                                        "h-full rounded-full transition-all absolute top-0 left-0",
-                                        progress <= 0 ? "bg-red-500" : progress >= 100 ? "bg-green-500" : "bg-primary"
-                                    )}
-                                    style={{ width: `${Math.max(0, Math.min(100, progress))}%` }}
-                                />
-                                {progress > 0 && progress < 100 && (
+                {/* Progress bar (Hover for Chart, Click for Modal) - Only for Pending payments */}
+                {!payment.executed && (
+                    <HoverCard openDelay={200}>
+                        <HoverCardTrigger asChild>
+                            <div
+                                className="mb-3 cursor-pointer group"
+                                onClick={() => setIsModalOpen(true)}
+                            >
+                                <div className="flex justify-between text-xs mb-1">
+                                    <span className="text-red-600 font-medium">SL: ${stopLoss.toFixed(2)}</span>
+                                    <span className="text-green-600 font-medium">TP: ${takeProfit.toFixed(2)}</span>
+                                </div>
+                                <div className="w-full bg-muted rounded-full h-3 relative overflow-hidden ring-1 ring-transparent group-hover:ring-primary/20 transition-all">
                                     <div
-                                        className="absolute top-0 bottom-0 w-0.5 bg-white z-10 shadow-[0_0_4px_rgba(0,0,0,0.5)]"
-                                        style={{ left: `${payment.executed ? 100 : progress}%` }}
+                                        className={cn(
+                                            "h-full rounded-full transition-all absolute top-0 left-0",
+                                            progress <= 0 ? "bg-red-500" : progress >= 100 ? "bg-green-500" : "bg-primary"
+                                        )}
+                                        style={{ width: `${Math.max(0, Math.min(100, progress))}%` }}
                                     />
-                                )}
+                                    {progress > 0 && progress < 100 && (
+                                        <div
+                                            className="absolute top-0 bottom-0 w-0.5 bg-white z-10 shadow-[0_0_4px_rgba(0,0,0,0.5)]"
+                                            style={{ left: `${payment.executed ? 100 : progress}%` }}
+                                        />
+                                    )}
+                                </div>
+                                <div className="text-center text-[10px] text-muted-foreground mt-0.5 group-hover:text-primary transition-colors">
+                                    Hover to peek / Click to view full chart
+                                </div>
                             </div>
-                            <div className="text-center text-[10px] text-muted-foreground mt-0.5 group-hover:text-primary transition-colors">
-                                Hover to peek / Click to view full chart
+                        </HoverCardTrigger>
+                        <HoverCardContent className="w-80 p-0 overflow-hidden" side="top">
+                            <div className="p-3 bg-muted/50 border-b flex justify-between items-center">
+                                <span className="font-semibold text-xs">{ticker} Price Action</span>
+                                <span className="text-[10px] text-muted-foreground">Live Preview</span>
                             </div>
-                        </div>
-                    </HoverCardTrigger>
-                    <HoverCardContent className="w-80 p-0 overflow-hidden" side="top">
-                        <div className="p-3 bg-muted/50 border-b flex justify-between items-center">
-                            <span className="font-semibold text-xs">{ticker} Price Action</span>
-                            <span className="text-[10px] text-muted-foreground">Live Preview</span>
-                        </div>
-                        <PriceBar
-                            currentPrice={current}
-                            tpPrice={takeProfit}
-                            slPrice={stopLoss}
-                            ticker={ticker}
-                        />
-                    </HoverCardContent>
-                </HoverCard>
+                            <PriceBar
+                                currentPrice={current}
+                                tpPrice={takeProfit}
+                                slPrice={stopLoss}
+                                ticker={ticker}
+                            />
+                        </HoverCardContent>
+                    </HoverCard>
+                )}
 
                 {/* Payout breakdown */}
                 <div className="bg-muted/50 p-3 rounded text-sm space-y-2 mb-3">
-                    <h4 className="font-semibold text-xs mb-2 border-b pb-1">Estimated Payout Details</h4>
+                    <h4 className="font-semibold text-xs mb-2 border-b pb-1">
+                        {payment.executed ? "Execution Details" : "Estimated Payout Details"}
+                    </h4>
 
                     <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
-                        <span className="text-muted-foreground">Amount Entered:</span>
-                        <span className="font-mono text-right">{amountAtCreation.toFixed(6)} {ticker}</span>
-
-                        <span className="text-muted-foreground">Collateral Locked:</span>
-                        <span className="font-mono text-right">{collateralAmount.toFixed(6)} {ticker}</span>
-
-                        {!payment.executed && (
+                        {!payment.executed ? (
                             <>
+                                <span className="text-muted-foreground">Amount Entered:</span>
+                                <span className="font-mono text-right">{amountAtCreation.toFixed(6)} {ticker}</span>
+
+                                <span className="text-muted-foreground">Collateral Locked:</span>
+                                <span className="font-mono text-right">{collateralAmount.toFixed(6)} {ticker}</span>
+
                                 <span className="text-muted-foreground">Current Refund:</span>
                                 <span className={cn("font-mono text-right", refundAmount >= 0 ? "text-green-600" : "text-red-600")}>
                                     {refundAmount > 0 ? "+" : ""}{refundAmount.toFixed(6)} {ticker}
@@ -258,12 +262,10 @@ export function PaymentCard({ payment, onRefresh }: PaymentCardProps) {
                                     </span>
                                 </div>
                             </>
-                        )}
-
-                        {payment.executed && (
+                        ) : (
                             <>
-                                <span className="text-muted-foreground mt-3">Price at Execution:</span>
-                                <span className="font-mono text-right mt-3">
+                                <span className="text-muted-foreground">Price at Execution:</span>
+                                <span className="font-mono text-right">
                                     ${(Number(payment.executedPrice) / multiplier).toFixed(2)}
                                 </span>
 

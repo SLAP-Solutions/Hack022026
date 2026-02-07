@@ -56,10 +56,10 @@ export function PaymentsList({ payments, isLoading, onRefresh }: PaymentsListPro
                     No {filter !== "all" && filter} payments found.
                 </div>
             ) : (
-                <div className="grid gap-4 md:grid-cols-2">
+                <div className="grid gap-4 md:grid-cols-2 items-start">
                     {filteredPayments.map((payment) => (
-                        <PaymentCard 
-                            key={payment.id.toString()} 
+                        <PaymentCard
+                            key={payment.id.toString()}
                             payment={payment}
                             onRefresh={onRefresh}
                         />
