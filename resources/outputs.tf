@@ -13,21 +13,6 @@ output "resource_group_location" {
   description = "The location of the resource group"
 }
 
-output "webapp_name" {
-  value       = azurerm_linux_web_app.webapp.name
-  description = "The name of the Next.js web app"
-}
-
-output "webapp_url" {
-  value       = "https://${azurerm_linux_web_app.webapp.default_hostname}"
-  description = "The URL of the deployed Next.js application"
-}
-
-output "webapp_id" {
-  value       = azurerm_linux_web_app.webapp.id
-  description = "The ID of the Next.js web app"
-}
-
 output "static_web_app_name" {
   value       = azurerm_static_web_app.hack.name
   description = "The name of the Static Web App"
