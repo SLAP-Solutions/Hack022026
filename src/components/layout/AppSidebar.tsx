@@ -18,6 +18,7 @@ import {
   SidebarRail,
 } from "@/components/ui/sidebar"
 import { ConnectWallet } from "../wallet/ConnectWallet"
+import { PriceDashboard } from "@/components/prices/PriceDashboard"
 
 const menuItems = [
   {
@@ -88,6 +89,12 @@ export function AppSidebar() {
                 )
               })}
             </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+        <SidebarGroup className="mt-auto group-data-[collapsible=icon]:hidden">
+          <SidebarGroupLabel>Market Prices</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <PriceDashboard />
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
