@@ -5,9 +5,11 @@ import claimsData from "@/data/claims.json";
 import { PriceDashboard } from "@/components/prices/PriceDashboard";
 import { ClaimCard } from "@/components/claims/ClaimCard";
 import { Button } from "@/components/ui/button";
+import { useRouter } from "next/navigation";
 
 export default function ClaimsPage() {
     const [filter, setFilter] = useState<string>("all");
+    const router = useRouter();
 
     const filteredClaims = filter === "all"
         ? claimsData
@@ -61,6 +63,7 @@ export default function ClaimsPage() {
                             dateCreated={claim.dateCreated}
                             dateSettled={claim.dateSettled}
                             payments={claim.payments as any}
+                            onClick={() => router.push(`/claims/${claim.id}`)}
                         />
                     ))}
                 </div>
