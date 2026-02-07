@@ -71,7 +71,7 @@ export function ContactModal() {
         <Dialog open={isOpen} onOpenChange={handleClose}>
             <DialogContent className="sm:max-w-[525px]">
                 <DialogHeader>
-                    <DialogTitle className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-blue-700 bg-clip-text text-transparent">
+                    <DialogTitle className="text-2xl font-bold bg-gradient-to-r from-primary to-primary/90 bg-clip-text text-transparent">
                         {isEditing ? "Edit Contact" : "Create New Contact"}
                     </DialogTitle>
                     <DialogDescription>
@@ -120,7 +120,7 @@ export function ContactModal() {
                         </Button>
                         <Button
                             type="submit"
-                            className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800"
+                            className="bg-primary text-primary-foreground hover:bg-primary/90"
                         >
                             {isEditing ? "Update Contact" : "Create Contact"}
                         </Button>

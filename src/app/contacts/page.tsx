@@ -75,7 +75,7 @@ export default function ContactsPage() {
                     </div>
                     <Button
                         onClick={() => openModal()}
-                        className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 shadow-lg shadow-blue-500/50 hover:shadow-xl hover:shadow-blue-500/60"
+                        className="bg-[#FF67E1] hover:bg-[#FF67E1]/90 text-white"
                     >
                         <Plus className="mr-2 h-4 w-4" />
                         Add Contact
@@ -91,8 +91,8 @@ export default function ContactsPage() {
                             <CardHeader>
                                 <div className="flex items-start justify-between">
                                     <div className="flex items-center gap-3">
-                                        <div className="w-12 h-12 bg-gradient-to-r from-blue-600 to-blue-700 rounded-full flex items-center justify-center">
-                                            <User className="h-6 w-6 text-white" />
+                                        <div className="w-12 h-12 bg-primary rounded-full flex items-center justify-center">
+                                            <User className="h-6 w-6 text-primary-foreground" />
                                         </div>
                                         <div>
                                             <CardTitle className="text-lg">{contact.name}</CardTitle>
@@ -151,8 +151,8 @@ export default function ContactsPage() {
                 </div>
             ) : (
                 <div className="text-center py-16">
-                    <div className="w-20 h-20 bg-gradient-to-r from-blue-600 to-blue-700 rounded-full flex items-center justify-center mx-auto mb-4">
-                        <User className="h-10 w-10 text-white" />
+                    <div className="w-20 h-20 bg-primary rounded-full flex items-center justify-center mx-auto mb-4">
+                        <User className="h-10 w-10 text-primary-foreground" />
                     </div>
                     <h3 className="text-2xl font-bold mb-2">
                         {searchQuery ? "No contacts found" : "No contacts yet"}
@@ -165,7 +165,7 @@ export default function ContactsPage() {
                     {!searchQuery && (
                         <Button
                             onClick={() => openModal()}
-                            className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800"
+                            className="bg-primary text-primary-foreground hover:bg-primary/90"
                         >
                             <Plus className="mr-2 h-4 w-4" />
                             Add Your First Contact
