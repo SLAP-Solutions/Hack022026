@@ -19,9 +19,10 @@ import "@flarenetwork/flare-periphery-contracts/coston2/FtsoV2Interface.sol";
  * - If BTC = $70,000: Only pay 0.0143 BTC ($1,000 / $70k) ← BETTER!
  * 
  * EXECUTION LOGIC (Take Profit / Stop Loss):
- * - Upper Limit (Take Profit): When price reaches this HIGH, execute to pay MINIMAL crypto
- * - Lower Limit (Stop Loss): If price drops to this LOW, execute to prevent paying even MORE crypto
- * - Payment executes when: lowerLimit ≤ currentPrice ≤ upperLimit
+ * - Stop Loss (Lower Limit): If price drops to or below this, execute to prevent paying even MORE crypto
+ * - Take Profit (Upper Limit): When price reaches or exceeds this HIGH, execute to pay MINIMAL crypto
+ * - Payment executes when: currentPrice ≤ stopLossPrice OR currentPrice ≥ takeProfitPrice
+ * - Payment is PENDING when: stopLossPrice < currentPrice < takeProfitPrice
  */
 contract ClaimPayments {
     /// @notice Flare Time Series Oracle v2 interface
@@ -160,7 +161,7 @@ contract ClaimPayments {
      * 
      * Price Execution Logic:
      * - Queries Flare FTSO v2 for current crypto price
-     * - Checks if price is within [stopLossPrice, takeProfitPrice] range
+     * - Executes if price hits stop loss (≤ lower limit) OR take profit (≥ upper limit)
      * - Calculates crypto amount needed: (usdAmount * 10^decimals) / currentPrice
      * - Pays receiver the calculated crypto amount
      * - Refunds excess collateral to payer
@@ -170,7 +171,7 @@ contract ClaimPayments {
      * Requirements:
      * - Payment must exist and not be executed
      * - Current time must be before expiry deadline
-     * - Current FTSO price must be within trigger range
+     * - Current FTSO price must be at or beyond one of the trigger points
      * - Collateral must be sufficient to cover calculated payment amount
      * 
      * Emits ClaimPaymentExecuted event with execution details
@@ -186,17 +187,18 @@ contract ClaimPayments {
         (uint256 currentPrice, int8 decimals, uint64 timestamp) = 
             ftsoV2.getFeedById(payment.cryptoFeedId);
 
-        // Verify price is within execution range
+        // Verify price has hit a trigger point
+        // Execute if: price dropped to/below stop loss OR price reached/exceeded take profit
         require(
-            currentPrice >= payment.stopLossPrice && 
-            currentPrice <= payment.takeProfitPrice,
-            "ClaimPayments: Price outside trigger range"
+            currentPrice <= payment.stopLossPrice || 
+            currentPrice >= payment.takeProfitPrice,
+            "ClaimPayments: Price not at trigger point (still pending)"
         );
 
         // Calculate crypto amount based on current oracle price
-        // Formula: cryptoAmount = (usdAmountInCents * 10^decimals) / currentPrice
-        // Example: ($1000 * 100 cents * 10^2 decimals) / 7000000 = 0.0143 BTC
-        uint256 paymentAmount = (payment.usdAmount * (10 ** uint256(int256(decimals)))) / currentPrice;
+        // Formula: cryptoAmount = (usdAmountInCents * 10^18 Wei * 10^decimals) / (currentPrice * 100)
+        // Example with $0.32 @ $2058.44 ETH: (32 * 10^18 * 10^3) / (2058440 * 100) = 0.000155494 ETH
+        uint256 paymentAmount = (payment.usdAmount * 1e18 * (10 ** uint256(int256(decimals)))) / (currentPrice * 100);
 
         require(paymentAmount <= payment.collateralAmount, "ClaimPayments: Insufficient collateral");
 
@@ -318,6 +320,6 @@ contract ClaimPayments {
         ClaimPayment memory payment = claimPayments[_paymentId];
         require(payment.collateralAmount > 0, "ClaimPayments: Payment does not exist");
         
-        estimatedAmount = (payment.usdAmount * (10 ** uint256(int256(_decimals)))) / _estimatedPrice;
+        estimatedAmount = (payment.usdAmount * 1e18 * (10 ** uint256(int256(_decimals)))) / (_estimatedPrice * 100);
     }
 }
