@@ -4,8 +4,8 @@ import { Header } from "../components/layout/Header";
 import { WalletProvider } from "../context/WalletContext";
 
 export const metadata: Metadata = {
-  title: "Flare Insurance Claims",
-  description: "Automated insurance payouts on Flare using FTSO",
+  title: "SLAPSure - Insurance Claims",
+  description: "Automated insurance claims and payouts on Flare using FTSO",
 };
 
 export default function RootLayout({
@@ -14,13 +14,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className="dark">
-      <body className="min-h-screen bg-background font-sans antialiased">
+    <html lang="en">
+      <body className="min-h-screen bg-white dark:bg-black font-sans antialiased">
         <WalletProvider>
           <Header />
-          <main className="container mx-auto px-4 py-8">
-            {children}
-          </main>
+          {children}
         </WalletProvider>
       </body>
     </html>
