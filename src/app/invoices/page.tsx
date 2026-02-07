@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { PriceDashboard } from "@/components/prices/PriceDashboard";
 import { InvoiceCard } from "@/components/invoices/InvoiceCard";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
@@ -88,10 +87,6 @@ export default function InvoicesPage() {
                         })}
                     </div>
 
-                    {/* Price Dashboard - Same Row */}
-                    <div className="shrink-0">
-                        <PriceDashboard />
-                    </div>
                 </div>
             </div>
 
@@ -116,22 +111,24 @@ export default function InvoicesPage() {
             </div>
 
             {/* Empty State */}
-            {!isLoading && filteredClaims.length === 0 && (
-                <div className="text-center py-16">
-                    <div className="text-6xl mb-4">📋</div>
-                    <h3 className="text-2xl font-bold mb-2">
-                        No invoices found
-                    </h3>
-                    <p className="text-muted-foreground">
-                        Try adjusting your filters to see more results or create a new invoice.
-                    </p>
-                    <Button onClick={() => setIsCreateOpen(true)} className="mt-4" variant="outline">
-                        Create New Invoice
-                    </Button>
-                </div>
-            )}
+            {
+                !isLoading && filteredClaims.length === 0 && (
+                    <div className="text-center py-16">
+                        <div className="text-6xl mb-4">📋</div>
+                        <h3 className="text-2xl font-bold mb-2">
+                            No invoices found
+                        </h3>
+                        <p className="text-muted-foreground">
+                            Try adjusting your filters to see more results or create a new invoice.
+                        </p>
+                        <Button onClick={() => setIsCreateOpen(true)} className="mt-4" variant="outline">
+                            Create New Invoice
+                        </Button>
+                    </div>
+                )
+            }
 
             <CreateInvoiceModal isOpen={isCreateOpen} onClose={() => setIsCreateOpen(false)} />
-        </div>
+        </div >
     );
 }

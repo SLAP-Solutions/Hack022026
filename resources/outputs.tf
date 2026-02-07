@@ -28,3 +28,36 @@ output "static_web_app_api_key" {
   description = "The API key for deploying to the Static Web App"
   sensitive   = true
 }
+
+# Keeper Container Registry outputs
+output "keeper_registry_login_server" {
+  value       = azurerm_container_registry.keeper.login_server
+  description = "The login server URL for the keeper container registry"
+}
+
+output "keeper_registry_name" {
+  value       = azurerm_container_registry.keeper.name
+  description = "The name of the keeper container registry"
+}
+
+output "keeper_registry_username" {
+  value       = azurerm_container_registry.keeper.admin_username
+  description = "The admin username for the keeper container registry"
+  sensitive   = true
+}
+
+output "keeper_registry_password" {
+  value       = azurerm_container_registry.keeper.admin_password
+  description = "The admin password for the keeper container registry"
+  sensitive   = true
+}
+
+output "keeper_container_group_name" {
+  value       = azurerm_container_group.keeper.name
+  description = "The name of the keeper container instance"
+}
+
+output "keeper_fqdn" {
+  value       = try(azurerm_container_group.keeper.fqdn, "no-public-endpoint")
+  description = "The FQDN of the keeper container (if exposed)"
+}
