@@ -1,4 +1,4 @@
-export const CONTRACT_ADDRESS = "0x35196b8cAa900E79f0bA4a8De0C0c1F74fCcdF55";
+export const CONTRACT_ADDRESS = "0xD6659ea0fe07A6E2Fe458954609b0d2D926CA314";
 export const CHAIN_ID = 114; // Coston2
 export const CHAIN_NAME = "Flare Testnet Coston2";
 export const RPC_URL = "https://coston2-api.flare.network/ext/C/rpc";

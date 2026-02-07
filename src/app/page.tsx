@@ -54,8 +54,8 @@ export default function Home() {
 
           <div className="mt-16">
             <Button asChild size="lg" className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 shadow-lg shadow-blue-500/50 hover:shadow-xl hover:shadow-blue-500/60">
-              <Link href="/claims">
-                View Your Claims
+              <Link href="/payments">
+                Payment Dashboard
               </Link>
             </Button>
           </div>
