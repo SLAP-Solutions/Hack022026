@@ -55,9 +55,6 @@ resource "azurerm_linux_web_app" "nextjs" {
     }
 
     always_on = true
-
-    detailed_error_logging_enabled = true
-    
     app_command_line = "node_modules/.bin/next start -p 8080"
   }
 
