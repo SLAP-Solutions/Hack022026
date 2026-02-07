@@ -13,6 +13,7 @@ export interface Invoice {
     status: InvoiceStatus;
     totalCost: number;              // Sum of all payment costs in USD
     dateCreated: Date | string;     // When the invoice was created
+    dateNotified?: Date | string;   // When the client was notified of the invoice
     dateSettled?: Date | string;    // When the invoice was settled (optional, only if settled)
     payments: Payment[];            // List of associated payments
 }
@@ -25,8 +26,9 @@ export type InvoiceStatus = "pending" | "approved" | "rejected" | "processing" |
 /**
  * Display-friendly invoice data (for UI)
  */
-export interface InvoiceDisplay extends Omit<Invoice, 'dateCreated' | 'dateSettled' | 'payments'> {
+export interface InvoiceDisplay extends Omit<Invoice, 'dateCreated' | 'dateNotified' | 'dateSettled' | 'payments'> {
     dateCreated: string;            // Formatted date string
+    dateNotified?: string;          // Formatted date string
     dateSettled?: string;           // Formatted date string
     paymentCount: number;           // Number of payments
     executedPayments: number;       // Number of executed payments
@@ -41,6 +43,7 @@ export interface CreateInvoiceInput {
     claimantName: string;  // Consider renaming to clientName in future
     type: string;
     walletId: string;
+    dateNotified?: string; // Optional: when client was notified
 }
 
 /**

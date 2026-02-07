@@ -5,7 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Calendar, DollarSign, Tag, Receipt, User, Building, Plus, ShieldAlert, CreditCard } from "lucide-react";
+import { ArrowLeft, Calendar, DollarSign, Tag, Receipt, User, Building, Plus, ShieldAlert, CreditCard, Bell } from "lucide-react";
 import { usePaymentModal } from "@/stores/usePaymentModal";
 import { AddPaymentModal } from "@/components/modals/AddPaymentModal";
 import { ClaimRiskModal } from "@/components/modals/ClaimRiskModal";
@@ -146,6 +146,20 @@ export default function InvoiceDetailPage() {
                         </p>
                     </CardContent>
                 </Card>
+
+                {invoice.dateNotified && (
+                    <Card>
+                        <CardContent className="p-4">
+                            <div className="flex items-center gap-2 text-muted-foreground mb-1">
+                                <Bell className="w-4 h-4" />
+                                <span className="text-xs font-medium">Notified</span>
+                            </div>
+                            <p className="font-semibold">
+                                {new Date(invoice.dateNotified).toLocaleDateString()}
+                            </p>
+                        </CardContent>
+                    </Card>
+                )}
 
                 {invoice.dateSettled && (
                     <Card>
