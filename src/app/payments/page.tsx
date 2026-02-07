@@ -11,7 +11,7 @@ import { ConnectWallet } from "@/components/wallet/ConnectWallet";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Wallet, Plus, X, RefreshCw, CreditCard, History, Send } from "lucide-react";
+import { Wallet, Plus, X, RefreshCw } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 type TabType = "payments" | "transactions";
@@ -44,38 +44,56 @@ export default function PaymentsPage() {
 
     return (
         <div className="flex h-full -m-6">
-            <div className="flex-1 overflow-auto flex flex-col">
+            <div className="flex-1 flex flex-col overflow-hidden">
                 <PageHeader title="Payments">
                     <div className="text-sm text-muted-foreground font-mono bg-muted px-3 py-1.5 rounded-md">
                         {address?.slice(0, 6)}...{address?.slice(-4)}
                     </div>
+                    {!sidebarOpen && (
+                        <Button 
+                            onClick={() => setSidebarOpen(true)}
+                            className="bg-primary text-primary-foreground hover:bg-primary/90"
+                            size="sm"
+                        >
+                            <Plus className="w-4 h-4 mr-2" />
+                            Create Payment
+                        </Button>
+                    )}
                 </PageHeader>
 
                 <div className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
                     <div className="px-6 py-2 flex items-center gap-1">
-                        <div className="flex items-center">
+                        <div className="flex gap-2 flex-nowrap overflow-x-auto">
                             <Button
-                                variant={activeTab === "payments" ? "secondary" : "ghost"}
-                                className="rounded-full"
+                                variant={activeTab === "payments" ? "default" : "outline"}
+                                className={cn(
+                                    "rounded-full",
+                                    activeTab === "payments"
+                                        ? "bg-primary text-primary-foreground hover:bg-primary/90 border-transparent shadow-sm"
+                                        : "hover:bg-muted"
+                                )}
                                 onClick={() => setActiveTab("payments")}
                                 size="sm"
                             >
-                                <Send className="w-4 h-4 mr-2" />
                                 Payments
-                                <span className="ml-2 text-muted-foreground">{payments.length}</span>
+                                <span className={cn("ml-2", activeTab === "payments" ? "text-white" : "text-muted-foreground")}>{payments.length}</span>
                             </Button>
                             <Button
-                                variant={activeTab === "transactions" ? "secondary" : "ghost"}
-                                className="rounded-full"
+                                variant={activeTab === "transactions" ? "default" : "outline"}
+                                className={cn(
+                                    "rounded-full",
+                                    activeTab === "transactions"
+                                        ? "bg-primary text-primary-foreground hover:bg-primary/90 border-transparent shadow-sm"
+                                        : "hover:bg-muted"
+                                )}
                                 onClick={() => setActiveTab("transactions")}
                                 size="sm"
                             >
-                                <History className="w-4 h-4 mr-2" />
                                 Transactions
                             </Button>
                         </div>
-                        <div className="flex items-center gap-1 ml-auto">
-                            {activeTab === "transactions" && (
+                        {activeTab === "transactions" && (
+                            <div className="flex items-center gap-1 ml-auto">
                                 <Button
                                     onClick={refetchTx}
                                     variant="ghost"
@@ -84,23 +102,13 @@ export default function PaymentsPage() {
                                 >
                                     <RefreshCw className={`w-4 h-4 ${txLoading ? 'animate-spin' : ''}`} />
                                 </Button>
-                            )}
-                            {!sidebarOpen && (
-                                <Button 
-                                    onClick={() => setSidebarOpen(true)}
-                                    className="rounded-full"
-                                    size="sm"
-                                >
-                                    <Plus className="w-4 h-4 mr-2" />
-                                    Create Payment
-                                </Button>
-                            )}
-                        </div>
+                            </div>
+                        )}
                     </div>
                 </div>
 
                 {/* Page Content */}
-                <div className="flex-1 p-6">
+                <div className="flex-1 overflow-auto p-6">
                     <div className="max-w-7xl">
                         {activeTab === "payments" && (
                             <PaymentsList
