@@ -3,18 +3,20 @@
 import { useState } from "react";
 import { useWallet } from "@/hooks/useWallet";
 import { usePayments } from "@/hooks/usePayments";
+import { useTransactionHistory } from "@/hooks/useTransactionHistory";
 import { CreatePaymentForm } from "@/components/payments/CreatePaymentForm";
 import { PaymentsList } from "@/components/payments/PaymentsList";
 import { TransactionHistory } from "@/components/payments/TransactionHistory";
 import { ConnectWallet } from "@/components/wallet/ConnectWallet";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Wallet, Plus, X } from "lucide-react";
+import { Wallet, Plus, X, RefreshCw } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export default function PaymentsPage() {
     const { address, isConnected } = useWallet();
     const { payments, isLoading, refetch } = usePayments();
+    const { transactions, loading: txLoading, error: txError, refetch: refetchTx } = useTransactionHistory();
     const [sidebarOpen, setSidebarOpen] = useState(false);
 
     if (!isConnected) {
@@ -61,28 +63,36 @@ export default function PaymentsPage() {
                     </div>
 
                     {/* Payments List */}
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Your Payments</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <PaymentsList
-                                payments={payments}
-                                isLoading={isLoading}
-                                onRefresh={refetch}
-                            />
-                        </CardContent>
-                    </Card>
+                    <div className="space-y-4">
+                        <h2 className="text-lg font-semibold font-serif">Your Payments</h2>
+                        <PaymentsList
+                            payments={payments}
+                            isLoading={isLoading}
+                            onRefresh={refetch}
+                        />
+                    </div>
 
                     {/* Transaction History */}
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Transaction History</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <TransactionHistory />
-                        </CardContent>
-                    </Card>
+                    <div className="space-y-4">
+                        <div className="flex items-center justify-between">
+                            <h2 className="text-lg font-semibold font-serif">Transaction History</h2>
+                            <Button
+                                onClick={refetchTx}
+                                variant="outline"
+                                size="sm"
+                                disabled={txLoading}
+                            >
+                                <RefreshCw className={`w-4 h-4 mr-2 ${txLoading ? 'animate-spin' : ''}`} />
+                                {txLoading ? "Refreshing..." : "Refresh"}
+                            </Button>
+                        </div>
+                        <TransactionHistory 
+                            transactions={transactions}
+                            loading={txLoading}
+                            error={txError}
+                            onRetry={refetchTx}
+                        />
+                    </div>
                 </div>
             </div>
 

@@ -26,8 +26,8 @@ const menuItems = [
     icon: Home,
   },
   {
-    title: "Claims",
-    href: "/claims",
+    title: "Invoices",
+    href: "/invoices",
     icon: FileText,
   },
   {
