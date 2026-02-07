@@ -1,4 +1,7 @@
-export const CONTRACT_ADDRESS = "0xD6659ea0fe07A6E2Fe458954609b0d2D926CA314";
+// Load contract address from deployment file
+import deployment from "./deployment.json";
+
+export const CONTRACT_ADDRESS = deployment.address;
 export const CHAIN_ID = 114; // Coston2
 export const CHAIN_NAME = "Flare Testnet Coston2";
 export const RPC_URL = "https://coston2-api.flare.network/ext/C/rpc";
