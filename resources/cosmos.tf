@@ -55,7 +55,7 @@ resource "azurerm_cosmosdb_sql_container" "hack_claims" {
   account_name          = azurerm_cosmosdb_account.hack_account.name
   database_name         = azurerm_cosmosdb_sql_database.hack_database.name
   partition_key_version = 1
-  partition_key_paths   = ["/Id"]
+  partition_key_paths   = ["/id"]
 
   conflict_resolution_policy {
     mode                     = "LastWriterWins"
@@ -81,7 +81,7 @@ resource "azurerm_cosmosdb_sql_container" "hack_payments" {
   account_name          = azurerm_cosmosdb_account.hack_account.name
   database_name         = azurerm_cosmosdb_sql_database.hack_database.name
   partition_key_version = 1
-  partition_key_paths   = ["/ClaimId"]
+  partition_key_paths   = ["/claimId"]
 
   conflict_resolution_policy {
     mode                     = "LastWriterWins"
@@ -103,7 +103,7 @@ resource "azurerm_cosmosdb_sql_container" "hack_contacts" {
   account_name          = azurerm_cosmosdb_account.hack_account.name
   database_name         = azurerm_cosmosdb_sql_database.hack_database.name
   partition_key_version = 1
-  partition_key_paths   = ["/Id"]
+  partition_key_paths   = ["/id"]
 
   conflict_resolution_policy {
     mode                     = "LastWriterWins"
