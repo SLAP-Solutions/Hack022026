@@ -7,7 +7,7 @@ on:
 env:
   NODE_VERSION: '20.x'
   TERRAFORM_VERSION: '1.9.0'
-  WORKING_DIR: '.'
+  WORKING_DIR: './src'
   TF_DIR: './resources'
 
 jobs:
@@ -28,12 +28,14 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
-          cache-dependency-path: package-lock.json
+          cache-dependency-path: src/package-lock.json
 
       - name: Install npm dependencies
+        working-directory: ${{ env.WORKING_DIR }}
         run: npm install
 
       - name: Build Next.js application
+        working-directory: ${{ env.WORKING_DIR }}
         run: npm run build
         env:
           NODE_ENV: production
@@ -137,9 +139,9 @@ jobs:
           ARM_USE_CLI: false
 
       - name: Create deployment package
-        working-directory: ${{ env.WORKING_DIR }}
         run: |
-          # Create a zip file with all necessary files
+          # Create a zip file with all necessary files from src directory
+          cd ${{ env.WORKING_DIR }}
           zip -r ../deploy.zip .next public package.json package-lock.json next.config.ts node_modules -x "node_modules/.cache/*"
 
       - name: Deploy to Azure Web App
