@@ -44,17 +44,44 @@ export function CreateInvoiceModal({ isOpen, onClose }: CreateClaimModalProps) {
         if (!file) return;
 
         setIsLoading(true);
-        // Simulate upload/parsing
-        setTimeout(async () => {
-            await addClaim({
-                title: file.name.split('.')[0] || "Uploaded Invoice",
-                description: "Invoice uploaded from document",
-                claimantName: "Unknown Client",
-                type: "General"
+
+        const formData = new FormData();
+        formData.append("file", file);
+
+        try {
+            // Call AI agent to process invoice
+            const response = await fetch("/api/invoices/process", {
+                method: "POST",
+                body: formData,
             });
-            handleClose();
+
+            if (!response.ok) {
+                throw new Error("Failed to process document");
+            }
+
+            const result = await response.json();
+            const extractedData = result.data;
+
+            // Populate form with AI-extracted data
+            setTitle(extractedData.title || "");
+            setDescription(extractedData.description || "");
+            setClaimantName(extractedData.claimantName || "");
+            setType(extractedData.type || "");
+
+            // Switch to manual mode so user can review/edit
+            setMode("manual");
+            // Clear file so they can upload again if needed or proceed
+            setFile(null);
+
+        } catch (error) {
+            console.error("AI Processing Error:", error);
+            // Fallback if AI fails: Use filename as title
+            setTitle(file.name.split('.')[0]);
+            setDescription("Uploaded document processing failed. Please enter details manually.");
+            setMode("manual");
+        } finally {
             setIsLoading(false);
-        }, 1500);
+        }
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
