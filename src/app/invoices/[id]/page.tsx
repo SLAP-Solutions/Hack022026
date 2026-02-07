@@ -30,7 +30,7 @@ const paymentStatusConfig = {
     expired: { color: "bg-muted text-muted-foreground border-border", label: "Expired" },
 };
 
-export default function ClaimDetailPage() {
+export default function InvoiceDetailPage() {
     const params = useParams();
     const router = useRouter();
     const claimId = params.id as string;
@@ -46,13 +46,13 @@ export default function ClaimDetailPage() {
             <div className="max-w-4xl mx-auto">
                 <Card>
                     <CardContent className="pt-16 pb-16 text-center">
-                        <h1 className="text-4xl font-bold mb-4">Claim Not Found</h1>
+                        <h1 className="text-4xl font-bold mb-4">Invoice Not Found</h1>
                         <p className="text-muted-foreground mb-8">
-                            The claim you're looking for doesn't exist.
+                            The invoice you're looking for doesn't exist.
                         </p>
-                        <Button onClick={() => router.push("/claims")}>
+                        <Button onClick={() => router.push("/invoices")}>
                             <ArrowLeft className="w-4 h-4 mr-2" />
-                            Back to Claims
+                            Back to Invoices
                         </Button>
                     </CardContent>
                 </Card>
@@ -67,10 +67,10 @@ export default function ClaimDetailPage() {
             {/* Back Button */}
             <Button
                 variant="ghost"
-                onClick={() => router.push("/claims")}
+                onClick={() => router.push("/invoices")}
             >
                 <ArrowLeft className="w-4 h-4 mr-2" />
-                Back to Claims
+                Back to Invoices
             </Button>
 
             {/* Header Section */}
@@ -119,7 +119,7 @@ export default function ClaimDetailPage() {
                     <CardContent className="p-4">
                         <div className="flex items-center gap-2 text-muted-foreground mb-1">
                             <User className="w-4 h-4" />
-                            <span className="text-xs font-medium">Claimant</span>
+                            <span className="text-xs font-medium">Client</span>
                         </div>
                         <p className="font-semibold">{claim.claimantName}</p>
                     </CardContent>
