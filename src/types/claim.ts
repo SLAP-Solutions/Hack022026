@@ -9,6 +9,7 @@ export interface Claim {
     description: string;
     claimantName: string;
     type: string;         // e.g., "Auto", "Health", "Property"
+    walletId?: string;    // The wallet ID this claim belongs to
     status: ClaimStatus;
     totalCost: number;              // Sum of all payment costs in USD
     dateCreated: Date | string;     // When the claim was created
@@ -39,6 +40,7 @@ export interface CreateClaimInput {
     description: string;
     claimantName: string;
     type: string;
+    walletId: string;
 }
 
 /**

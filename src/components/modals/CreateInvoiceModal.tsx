@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { useClaimsStore } from "@/stores/useClaimsStore";
+import { useInvoicesStore } from "@/stores/useInvoicesStore";
+import { useWallet } from "@/hooks/useWallet";
 import { cn } from "@/lib/utils";
 import {
     Dialog,
@@ -25,7 +26,8 @@ interface CreateClaimModalProps {
 type ProcessingStatus = "idle" | "uploading" | "processing" | "success" | "error";
 
 export function CreateInvoiceModal({ isOpen, onClose }: CreateClaimModalProps) {
-    const { addClaim } = useClaimsStore();
+    const { addInvoice } = useInvoicesStore();
+    const { address } = useWallet();
     const [isLoading, setIsLoading] = useState(false);
 
     // Form state
@@ -117,18 +119,24 @@ export function CreateInvoiceModal({ isOpen, onClose }: CreateClaimModalProps) {
             return;
         }
 
+        if (!address) {
+            alert("Please connect your wallet to create an invoice");
+            return;
+        }
+
         try {
             setIsLoading(true);
-            await addClaim({
+            await addInvoice({
                 title,
                 description,
                 claimantName,
-                type
+                type,
+                walletId: address
             });
             handleClose();
         } catch (error) {
             console.error(error);
-            alert("Failed to create claim");
+            alert("Failed to create invoice");
         } finally {
             setIsLoading(false);
         }
