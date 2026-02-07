@@ -156,7 +156,7 @@ jobs:
 
   deploy-to-azure:
     name: Deploy to Azure Static Web Apps
-    needs: [build-and-push-keeper]
+    needs: [terraform-apply, build-and-push-keeper]
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/smart-contracts'
     environment: production
