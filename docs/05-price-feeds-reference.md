@@ -2,28 +2,32 @@
 
 ## Available FTSO Feeds
 
-Flare's FTSO v2 provides 60+ cryptocurrency price feeds. Here are the most commonly used feeds for ClaimPayments.
+Flare's FTSO v2 provides 60+ cryptocurrency price feeds updated every ~1.8 seconds by 100+ independent data providers. This reference lists the feeds supported by ClaimPayments.
 
-## Major Cryptocurrencies
+## Demo Mode (Coston2 Testnet)
 
-| Name | Feed ID (bytes21) | Category | Stability |
-|------|------------------|----------|-----------|
-| **BTC/USD** | `0x014254432f55534400000000000000000000000000` | Crypto | 🟢 Stable |
-| **ETH/USD** | `0x014554482f55534400000000000000000000000000` | Crypto | 🟢 Stable |
-| **FLR/USD** | `0x01464c522f55534400000000000000000000000000` | Crypto | 🟢 Stable |
-| **XRP/USD** | `0x015852502f55534400000000000000000000000000` | Crypto | 🟢 Stable |
+The demo contract uses **ETH/USD** and **BTC/USD** feeds for realistic price calculations but pays amounts in FLR. FLR/USD is omitted from testing as it requires ~1,000 FLR collateral for a $10 payment ($0.03 per FLR).
 
-## Layer 1 / Platform Tokens
+## Recommended Feeds
 
-| Name | Feed ID | Stability |
-|------|---------|-----------|
-| **SOL/USD** | `0x01534f4c2f55534400000000000000000000000000` | 🟢 Stable |
-| **AVAX/USD** | `0x01415641582f555344000000000000000000000000` | 🟢 Stable |
-| **DOT/USD** | `0x01444f542f55534400000000000000000000000000` | 🟡 Moderate |
-| **ATOM/USD** | `0x0141544f4d2f555344000000000000000000000000` | 🟡 Moderate |
-| **ADA/USD** | `0x014144412f55534400000000000000000000000000` | 🟢 Stable |
+| Name | Feed ID (bytes21) | Use Case | Notes |
+|------|------------------|----------|-------|
+| **ETH/USD** | `0x014554482f55534400000000000000000000000000` | Demo Default | ~$2,000, realistic amounts |
+| **BTC/USD** | `0x014254432f55534400000000000000000000000000` | Large Claims | ~$70,000, smaller fractions |
+| ~~FLR/USD~~ | ~~`0x01464c522f55534400000000000000000000000000`~~ | ~~Native Token~~ | ⚠️ Too expensive for testing |
 
-## Layer 2 / Scaling
+## Additional Major Cryptocurrencies
+
+| Name | Feed ID | Price Range | Stability |
+|------|---------|-------------|-----------|
+| **XRP/USD** | `0x015852502f55534400000000000000000000000000` | ~$0.50 | 🟢 Stable |
+| **SOL/USD** | `0x01534f4c2f55534400000000000000000000000000` | ~$100 | 🟢 Stable |
+| **AVAX/USD** | `0x01415641582f555344000000000000000000000000` | ~$30 | 🟢 Stable |
+| **DOT/USD** | `0x01444f542f55534400000000000000000000000000` | ~$6 | 🟡 Moderate |
+| **ATOM/USD** | `0x0141544f4d2f555344000000000000000000000000` | ~$7 | 🟡 Moderate |
+| **ADA/USD** | `0x014144412f55534400000000000000000000000000` | ~$0.40 | 🟢 Stable |
+
+## Layer 2 / Scaling Tokens
 
 | Name | Feed ID | Stability |
 |------|---------|-----------|
@@ -33,11 +37,11 @@ Flare's FTSO v2 provides 60+ cryptocurrency price feeds. Here are the most commo
 
 ## Stablecoins
 
-| Name | Feed ID | Stability |
-|------|---------|-----------|
-| **USDC/USD** | `0x01555344432f555344000000000000000000000000` | 🟢 Stable |
-| **USDT/USD** | `0x01555344542f555344000000000000000000000000` | 🟢 Stable |
-| **USDS/USD** | `0x01555344532f555344000000000000000000000000` | 🟢 Stable |
+| Name | Feed ID | Notes |
+|------|---------|-------|
+| **USDC/USD** | `0x01555344432f555344000000000000000000000000` | Always ~$1.00 |
+| **USDT/USD** | `0x01555344542f555344000000000000000000000000` | Always ~$1.00 |
+| **USDS/USD** | `0x01555344532f555344000000000000000000000000` | Always ~$1.00 |
 
 ## DeFi Tokens
 

@@ -4,6 +4,7 @@ import { useWallet } from "@/hooks/useWallet";
 import { usePayments } from "@/hooks/usePayments";
 import { CreatePaymentForm } from "@/components/payments/CreatePaymentForm";
 import { PaymentsList } from "@/components/payments/PaymentsList";
+import { TransactionHistory } from "@/components/payments/TransactionHistory";
 import { ConnectWallet } from "@/components/wallet/ConnectWallet";
 
 export default function PaymentsPage() {
@@ -32,7 +33,7 @@ export default function PaymentsPage() {
                     </div>
                 </div>
 
-                <div className="grid gap-6 lg:grid-cols-3">
+                <div className="grid gap-6 lg:grid-cols-3 mb-6">
                     <div className="lg:col-span-1">
                         <CreatePaymentForm />
                     </div>
@@ -40,6 +41,10 @@ export default function PaymentsPage() {
                         <h2 className="text-2xl font-bold mb-4">Your Payments</h2>
                         <PaymentsList payments={payments} isLoading={isLoading} />
                     </div>
+                </div>
+
+                <div className="mt-6">
+                    <TransactionHistory />
                 </div>
             </div>
         </div>

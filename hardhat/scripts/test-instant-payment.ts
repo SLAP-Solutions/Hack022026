@@ -14,11 +14,10 @@ import { ethers } from "hardhat";
  * Run: npx hardhat run scripts/test-instant-payment.ts --network coston2
  */
 
-// Feed IDs
+// Feed IDs (FLR/USD removed - too expensive for testing)
 const FEED_IDS = {
     'BTC/USD': '0x014254432f55534400000000000000000000000000',
     'ETH/USD': '0x014554482f55534400000000000000000000000000',
-    'FLR/USD': '0x01464c522f55534400000000000000000000000000',
 };
 
 // Helper functions

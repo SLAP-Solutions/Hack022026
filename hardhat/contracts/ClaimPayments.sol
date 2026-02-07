@@ -195,9 +195,17 @@ contract ClaimPayments {
             "ClaimPayments: Price not at trigger point (still pending)"
         );
 
-        // Calculate crypto amount based on current oracle price
+        // Calculate crypto amount based on current oracle price for the specified feed
         // Formula: cryptoAmount = (usdAmountInCents * 10^18 Wei * 10^decimals) / (currentPrice * 100)
-        // Example with $0.32 @ $2058.44 ETH: (32 * 10^18 * 10^3) / (2058440 * 100) = 0.000155494 ETH
+        // Example with $10 @ $2058.44 ETH: (1000 * 10^18 * 10^3) / (2058440 * 100) = 0.00486 ETH
+        // 
+        // DEMO MODE: We calculate the amount in the feed currency (e.g., ETH), but pay that
+        // same numeric value in FLR (native token). This allows us to:
+        // - Use real ETH/USD prices from FTSO
+        // - Calculate real savings/costs
+        // - Actually execute payments on Coston2 testnet
+        // 
+        // Example: If calculation shows 0.05 ETH, we send 0.05 FLR
         uint256 paymentAmount = (payment.usdAmount * 1e18 * (10 ** uint256(int256(decimals)))) / (currentPrice * 100);
 
         require(paymentAmount <= payment.collateralAmount, "ClaimPayments: Insufficient collateral");
@@ -208,7 +216,7 @@ contract ClaimPayments {
         payment.executedPrice = currentPrice;
         payment.paidAmount = paymentAmount;
 
-        // Transfer calculated amount to receiver
+        // Transfer calculated amount to receiver (in FLR, but amount calculated from feed price)
         (bool paymentSuccess, ) = payable(payment.receiver).call{value: paymentAmount}("");
         require(paymentSuccess, "ClaimPayments: Payment transfer failed");
 
@@ -414,5 +422,39 @@ contract ClaimPayments {
         require(payment.collateralAmount > 0, "ClaimPayments: Payment does not exist");
         
         estimatedAmount = (payment.usdAmount * 1e18 * (10 ** uint256(int256(_decimals)))) / (_estimatedPrice * 100);
+    }
+
+    /**
+     * @notice Calculates recommended collateral for a new payment
+     * @dev Uses stop loss price as worst-case scenario and applies collateral ratio buffer
+     * 
+     * Formula: collateral = (usdAmount / stopLossPrice) * collateralRatio
+     * 
+     * Example with $1000 payment:
+     * - Stop loss: $0.025/FLR (worst case price)
+     * - Worst case crypto needed: $1000 / $0.025 = 40,000 FLR
+     * - With 150% buffer: 40,000 * 1.5 = 60,000 FLR collateral
+     * 
+     * @param _usdAmount USD value to pay in cents (e.g., $1000 = 100000)
+     * @param _stopLossPrice Lower price limit (worst-case price in feed decimals)
+     * @param _decimals Number of decimal places in the price feed
+     * @param _collateralRatioPercent Collateral ratio as percentage (150 = 150%)
+     * @return requiredCollateral Minimum collateral in native token Wei
+     */
+    function calculateRequiredCollateral(
+        uint256 _usdAmount,
+        uint256 _stopLossPrice,
+        int8 _decimals,
+        uint256 _collateralRatioPercent
+    ) external pure returns (uint256 requiredCollateral) {
+        require(_usdAmount > 0, "ClaimPayments: USD amount must be positive");
+        require(_stopLossPrice > 0, "ClaimPayments: Stop loss price must be positive");
+        require(_collateralRatioPercent >= 100, "ClaimPayments: Ratio must be >= 100%");
+        
+        // Calculate max crypto needed at stop loss (worst case)
+        uint256 maxCryptoNeeded = (_usdAmount * 1e18 * (10 ** uint256(int256(_decimals)))) / (_stopLossPrice * 100);
+        
+        // Apply collateral ratio buffer
+        requiredCollateral = (maxCryptoNeeded * _collateralRatioPercent) / 100;
     }
 }

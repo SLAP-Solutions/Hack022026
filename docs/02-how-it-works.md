@@ -2,7 +2,28 @@
 
 ## Complete Payment Flow
 
-### Phase 1: Payment Creation
+### Overview
+
+The ClaimPayments system optimizes crypto payments through three phases:
+1. **Creation** - Define USD payment with price triggers and lock collateral
+2. **Monitoring** - Track FTSO prices until trigger conditions met
+3. **Execution** - Calculate and pay crypto amount when price optimal
+
+### Important: Demo Mode on Coston2
+
+The testnet demo calculates crypto amounts using chosen price feeds (ETH/USD, BTC/USD) but pays the same numeric value in FLR. This demonstrates the optimization concept using real FTSO prices without requiring expensive FLR collateral.
+
+**Example:** 
+- Input: $10 USD payment with ETH/USD feed
+- FTSO price: ETH = $2,000
+- Calculation: $10 ÷ $2,000 = 0.005 ETH-equivalent
+- Payment: Send 0.005 FLR (not 0.005 ETH)
+
+This shows real savings percentages using authentic market data.
+
+---
+
+## Phase 1: Payment Creation
 
 ```mermaid
 sequenceDiagram
@@ -10,28 +31,46 @@ sequenceDiagram
     participant UI as Web UI
     participant Wallet as MetaMask
     participant Contract as ClaimPayments Contract
-    participant FTSO as Flare FTSO
 
-    User->>UI: Fill payment form
+    User->>UI: Enter USD amount & triggers
+    User->>UI: Select price feed (ETH/USD)
+    UI->>UI: Calculate collateral (150% ratio)
     UI->>Wallet: Request transaction
-    Wallet->>User: Confirm & sign
+    Wallet->>User: Show amount & confirm
     User->>Wallet: Approve
-    Wallet->>Contract: createClaimPayment()
+    Wallet->>Contract: createClaimPayment() + FLR
     Contract->>Contract: Store payment data
     Contract->>Contract: Lock collateral
-    Contract-->>UI: Emit ClaimPaymentCreated event
-    UI->>User: Show success + payment ID
+    Contract-->>UI: Emit ClaimPaymentCreated
+    UI->>User: Show payment ID & status
 ```
 
 **What Happens:**
-1. User fills form with payment details
-2. MetaMask prompts for transaction approval
-3. User confirms and sends FLR as collateral
-4. Contract stores payment on-chain
-5. Event emitted for UI to listen
-6. Payment ID returned to user
+1. User fills form with USD amount (e.g., $10)
+2. User selects price feed (ETH/USD or BTC/USD)
+3. User sets stop loss (e.g., -5%) and take profit (e.g., +5%)
+4. UI calculates required collateral (150% of worst-case payout)
+5. MetaMask prompts for transaction with collateral amount
+6. User confirms and sends FLR to contract
+7. Contract stores payment on-chain with pending status
+8. Event emitted for UI tracking
+9. Payment assigned unique ID
 
-### Phase 2: Monitoring Phase
+**Stored Data:**
+- Payment ID (incremental)
+- Payer address
+- Receiver address  
+- USD amount (in cents)
+- Selected feed ID
+- Stop loss price
+- Take profit price
+- Collateral amount (FLR)
+- Expiry timestamp
+- Status (pending)
+
+---
+
+## Phase 2: Monitoring
 
 ```mermaid
 sequenceDiagram
@@ -39,24 +78,36 @@ sequenceDiagram
     participant Contract as ClaimPayments Contract
     participant FTSO as Flare FTSO
 
-    loop Every few seconds
+    loop Every 5 seconds
         UI->>Contract: getCurrentPrice(feedId)
         Contract->>FTSO: getFeedById()
-        FTSO-->>Contract: Return current price
+        FTSO-->>Contract: Return price + decimals
         Contract-->>UI: Return price data
-        UI->>UI: Check if price in range
-        UI->>UI: Update UI display
+        UI->>UI: Compare to triggers
+        UI->>UI: Calculate current payout
+        UI->>User: Update display
     end
 ```
 
 **What Happens:**
-1. UI polls for current price every few seconds
-2. Contract queries FTSO for live price
-3. UI compares price to trigger range
-4. UI shows status: "Below range / In range / Above range"
-5. UI calculates potential payout amount
+1. UI polls FTSO price every few seconds
+2. Contract queries feed (e.g., ETH/USD)
+3. FTSO returns current price with decimals
+4. UI calculates: `cryptoAmount = (usdAmount × 10^18 × 10^decimals) / (price × 100)`
+5. UI compares price to stop loss and take profit
+6. UI displays status:
+   - **Below Stop Loss** → Ready to execute (prevent further loss)
+   - **In Range** → Pending (waiting for optimal price)
+   - **At/Above Take Profit** → Ready to execute (maximum savings!)
 
-### Phase 3: Execution
+**Demo Mode Display:**
+- Shows calculation in selected crypto (ETH/BTC)
+- Shows actual payment will be in FLR
+- Shows potential savings vs stop loss scenario
+
+---
+
+## Phase 3: Execution
 
 ```mermaid
 sequenceDiagram
@@ -64,27 +115,35 @@ sequenceDiagram
     participant Contract as ClaimPayments Contract
     participant FTSO as Flare FTSO
     participant Receiver as Beneficiary
-    participant Payer as Insurance Company
+    participant Payer as Original Payer
 
     Executor->>Contract: executeClaimPayment(id)
-    Contract->>FTSO: getFeedById()
+    Contract->>FTSO: getFeedById(cryptoFeedId)
     FTSO-->>Contract: Return current price
-    Contract->>Contract: Verify price in range
-    Contract->>Contract: Calculate crypto amount
-    Contract->>Contract: Mark as executed
-    Contract->>Receiver: Transfer calculated amount
-    Contract->>Payer: Refund excess collateral
+    Contract->>Contract: Verify price ≤ stopLoss OR ≥ takeProfit
+    Contract->>Contract: Calculate: paymentAmount
+    Contract->>Contract: Mark executed
+    Contract->>Receiver: Transfer paymentAmount FLR
+    Contract->>Payer: Refund excessCollateral
     Contract-->>Executor: Emit ClaimPaymentExecuted
 ```
 
 **What Happens:**
-1. Anyone calls execute function (permissionless)
+1. Anyone calls `executeClaimPayment(id)` (permissionless!)
 2. Contract queries FTSO for current price
-3. Contract verifies price is within trigger range
-4. Contract calculates crypto amount: `usdAmount / currentPrice`
-5. Contract transfers calculated amount to receiver
-6. Contract refunds excess collateral to payer
-7. Event emitted for UI updates
+3. Contract verifies trigger hit: `price ≤ stopLoss OR price ≥ takeProfit`
+4. Contract calculates: `paymentAmount = (usdAmount × 10^18 × 10^decimals) / (price × 100)`
+5. Contract marks payment as executed
+6. Contract transfers `paymentAmount` in FLR to receiver
+7. Contract calculates: `excessCollateral = collateralAmount - paymentAmount`
+8. Contract refunds `excessCollateral` to original payer
+9. Event emitted with execution details
+
+**Demo Mode Execution:**
+- Queries chosen feed price (ETH/USD or BTC/USD)
+- Calculates amount using that feed's price
+- Sends calculated amount in FLR (native token)
+- This demonstrates real savings using real FTSO data
 
 ## Detailed Function Breakdown
 
