@@ -13,7 +13,7 @@ import { ConnectWallet } from "../../components/wallet/ConnectWallet";
 import { PageHeader } from "../../components/layout/PageHeader";
 import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
 import { Button } from "../../components/ui/button";
-import { Wallet, Plus, X, RefreshCw, Send, History } from "lucide-react";
+import { Wallet, Plus, X, RefreshCw, Send, History, Clock } from "lucide-react";
 import { cn } from "../../lib/utils";
 import { CopyAddressButton } from "../../components/ui/CopyAddressButton";
 
@@ -27,6 +27,20 @@ export default function PaymentsPage() {
     const { invoices, fetchInvoices } = useInvoicesStore();
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [activeTab, setActiveTab] = useState<TabType>("payments");
+    const [refreshTimer, setRefreshTimer] = useState(2);
+
+    // Reset timer when payments update
+    useEffect(() => {
+        setRefreshTimer(2);
+    }, [payments]);
+
+    // Countdown timer
+    useEffect(() => {
+        const interval = setInterval(() => {
+            setRefreshTimer((prev) => (prev > 0 ? prev - 1 : 0));
+        }, 1000);
+        return () => clearInterval(interval);
+    }, []);
 
     useEffect(() => {
         if (address) {
@@ -107,6 +121,12 @@ export default function PaymentsPage() {
                         </div>
 
                         <div className="flex items-center gap-1">
+                            {activeTab === "payments" && (
+                                <span className="flex items-center gap-1 text-xs text-muted-foreground mr-3">
+                                    <Clock className="w-3 h-3" />
+                                    Refreshes in {refreshTimer}s
+                                </span>
+                            )}
                             {activeTab === "transactions" && (
                                 <Button
                                     onClick={refetchTx}

@@ -31,11 +31,30 @@ export default function InvoicesPage() {
 
     useEffect(() => {
         if (address) {
-            fetchInvoices(address);
-            const interval = setInterval(() => {
-                fetchInvoices(address, false);
-            }, 2000);
-            return () => clearInterval(interval);
+            let mounted = true;
+            let timeoutToken: NodeJS.Timeout;
+
+            const poll = async () => {
+                try {
+                    await fetchInvoices(address, false);
+                } catch (error) {
+                    // Silent fail for polling errors
+                }
+                if (mounted) {
+                    timeoutToken = setTimeout(poll, 2000);
+                }
+            };
+
+            fetchInvoices(address).then(() => {
+                if (mounted) {
+                    timeoutToken = setTimeout(poll, 2000);
+                }
+            });
+
+            return () => {
+                mounted = false;
+                clearTimeout(timeoutToken);
+            };
         }
     }, [fetchInvoices, address]);
 
