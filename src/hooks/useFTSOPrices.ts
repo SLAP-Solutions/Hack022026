@@ -49,13 +49,13 @@ export function useFTSOPrices() {
                 }
             }));
         } catch (err: any) {
-            console.error(`Error fetching ${symbol} price:`, err);
+            console.error(`[FTSO] Error fetching ${symbol} price:`, err.message);
             setPrices(prev => ({
                 ...prev,
                 [symbol]: {
                     ...prev[symbol],
                     loading: false,
-                    error: err.message || "Failed to fetch price",
+                    error: err.message || "Oracle unreachable",
                 }
             }));
         }
