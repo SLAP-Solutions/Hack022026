@@ -174,7 +174,7 @@ export function CreatePaymentForm({ onSuccess, invoiceId }: CreatePaymentFormPro
     const payoutAtTakeProfit = calculatePayout(takeProfitPrice);
 
     const savingsAtTakeProfit = (currentPrice && takeProfitPrice > currentPrice)
-        ? (1 - (currentPrice / takeProfitPrice)) * 100
+        ? ((takeProfitPrice - currentPrice) / currentPrice) * 100
         : 0;
 
     const ticker = feed.split('/')[0];

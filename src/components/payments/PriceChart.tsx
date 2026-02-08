@@ -168,7 +168,7 @@ export function PriceBar({
                     <span className="text-[10px] font-bold text-green-600 uppercase tracking-wider">Limit</span>
                     <span className="text-xs font-mono font-medium">${tpPrice.toFixed(2)}</span>
                     <span className="text-[10px] text-green-600/80 font-mono">
-                        +{tpPercentChange.toFixed(1)}%
+                        +{tpPercentChange.toFixed(2)}%
                     </span>
                 </div>
             </motion.div>
