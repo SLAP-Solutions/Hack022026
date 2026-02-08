@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useWallet } from "../../hooks/useWallet";
 import { usePayments } from "../../hooks/usePayments";
 import { useTransactionHistory } from "../../hooks/useTransactionHistory";
 import { useFTSOPrices } from "../../hooks/useFTSOPrices";
+import { useInvoicesStore } from "../../stores/useInvoicesStore";
 import { CreatePaymentForm } from "../../components/payments/CreatePaymentForm";
 import { PaymentsList } from "../../components/payments/PaymentsList";
 import { TransactionHistory } from "../../components/payments/TransactionHistory";
@@ -14,6 +15,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/ca
 import { Button } from "../../components/ui/button";
 import { Wallet, Plus, X, RefreshCw, Send, History } from "lucide-react";
 import { cn } from "../../lib/utils";
+import { CopyAddressButton } from "../../components/ui/CopyAddressButton";
 
 type TabType = "payments" | "transactions";
 
@@ -22,8 +24,29 @@ export default function PaymentsPage() {
     const { payments, isLoading, refetch } = usePayments();
     const { transactions, loading: txLoading, error: txError, refetch: refetchTx } = useTransactionHistory();
     const { prices } = useFTSOPrices();
+    const { invoices, fetchInvoices } = useInvoicesStore();
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [activeTab, setActiveTab] = useState<TabType>("payments");
+
+    useEffect(() => {
+        if (address) {
+            fetchInvoices(address);
+        }
+    }, [address, fetchInvoices]);
+
+    const paymentToInvoiceMap = useMemo(() => {
+        const map: Record<string, { id: string; title: string }> = {};
+        invoices.forEach(inv => {
+            inv.payments?.forEach(p => {
+                map[p.id.toString()] = { id: inv.id, title: inv.title };
+            });
+        });
+        return map;
+    }, [invoices]);
+
+    const invoiceOptions = useMemo(() => {
+        return invoices.map(inv => ({ id: inv.id, title: inv.title }));
+    }, [invoices]);
 
     if (!isConnected) {
         return (
@@ -48,8 +71,12 @@ export default function PaymentsPage() {
         <div className="flex h-full">
             <div className="flex-1 flex flex-col overflow-hidden">
                 <PageHeader title="Payments">
-                    <div className="text-sm text-muted-foreground font-mono bg-muted px-3 py-1.5 rounded-md">
-                        {address?.slice(0, 6)}...{address?.slice(-4)}
+                    <div className="flex items-center gap-3">
+                        <span className="text-sm font-medium text-muted-foreground">Wallet Address:</span>
+                        <div className="flex items-center bg-muted pl-3 pr-1 py-1 rounded-md border text-sm font-mono text-muted-foreground">
+                            {address?.slice(0, 6)}...{address?.slice(-4)}
+                            <CopyAddressButton address={address || ""} className="ml-1 h-6 w-6" />
+                        </div>
                     </div>
                 </PageHeader>
 
@@ -112,6 +139,8 @@ export default function PaymentsPage() {
                                 payments={payments}
                                 isLoading={isLoading}
                                 onRefresh={refetch}
+                                paymentToInvoiceMap={paymentToInvoiceMap}
+                                invoices={invoiceOptions}
                             />
                         )}
 
@@ -128,7 +157,7 @@ export default function PaymentsPage() {
             </div>
 
             <div className={cn(
-                "border-l bg-white dark:bg-slate-950 transition-all duration-300 ease-in-out overflow-hidden shrink-0",
+                "border-l border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 transition-all duration-300 ease-in-out overflow-hidden shrink-0",
                 sidebarOpen ? "w-[380px]" : "w-0"
             )}>
                 <div className="w-[380px] h-full flex flex-col">

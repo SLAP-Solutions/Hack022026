@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { useInvoicesStore } from "@/stores/useInvoicesStore";
 import { useWallet } from "@/hooks/useWallet";
+import { usePayments } from "@/hooks/usePayments";
 import { Loader2, Plus } from "lucide-react";
 import { Invoice } from "@/types/invoice";
 import { CreateInvoiceModal } from "@/components/modals/CreateInvoiceModal";
@@ -21,8 +22,9 @@ const statusConfig = {
 };
 
 export default function InvoicesPage() {
-    const { invoices, isLoading, fetchInvoices, error: storeError } = useInvoicesStore();
-    const { address, isInitializing } = useWallet();
+    const { invoices, isLoading, fetchInvoices } = useInvoicesStore();
+    const { payments: livePayments } = usePayments();
+    const { address } = useWallet();
     const [filter, setFilter] = useState<string>("all");
     const [isCreateOpen, setIsCreateOpen] = useState(false);
     const router = useRouter();
@@ -33,17 +35,30 @@ export default function InvoicesPage() {
         }
     }, [fetchInvoices, address]);
 
-    const filteredInvoices = filter === "all"
-        ? invoices
-        : invoices.filter(invoice => invoice.status === filter);
+    // Merge live payment status into invoices
+    const mergedInvoices = invoices.map(invoice => ({
+        ...invoice,
+        payments: invoice.payments?.map(payment => {
+            const livePayment = livePayments.find(p => p.id === Number(payment.id));
+            if (livePayment) {
+                return {
+                    ...payment,
+                    status: (livePayment.executed ? 'executed' : 'pending') as 'pending' | 'executed',
+                    executedAt: BigInt(livePayment.executedAt),
+                };
+            }
+            return payment;
+        }) || []
+    }));
 
-    if (isInitializing || (isLoading && invoices.length === 0)) {
+    const filteredInvoices = filter === "all"
+        ? mergedInvoices
+        : mergedInvoices.filter(invoice => invoice.status === filter);
+
+    if (isLoading && invoices.length === 0) {
         return (
-            <div className="flex flex-col justify-center items-center h-full gap-4">
+            <div className="flex justify-center items-center h-screen">
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                <p className="text-sm text-muted-foreground animate-pulse">
-                    {isInitializing ? "Initializing wallet..." : "Fetching invoices..."}
-                </p>
             </div>
         );
     }
@@ -87,11 +102,11 @@ export default function InvoicesPage() {
                 </div>
             </div>
 
-            {storeError && (
+            {/* {error && (
                 <div className="m-6 p-4 bg-red-50 dark:bg-red-900/10 border border-red-200 dark:border-red-900/50 rounded-xl flex items-center justify-between text-red-600 dark:text-red-400">
                     <div className="flex items-center gap-2">
                         <Loader2 className="h-4 w-4" />
-                        <p className="text-sm font-medium">Error: {storeError}</p>
+                        <p className="text-sm font-medium">Error: {error}</p>
                     </div>
                     <Button
                         variant="outline"
@@ -102,7 +117,7 @@ export default function InvoicesPage() {
                         Try Again
                     </Button>
                 </div>
-            )}
+            )} */}
 
             <div className="flex-1 overflow-auto p-6">
                 <div className="max-w-7xl mx-auto space-y-6">
@@ -118,7 +133,7 @@ export default function InvoicesPage() {
                                 claimantName={invoice.claimantName}
                                 type={invoice.type}
                                 status={invoice.status as any}
-                                totalCost={invoice.payments?.reduce((acc: number, p: any) => acc + Number(p.usdAmount), 0) || 0}
+                                totalCost={(invoice.payments?.reduce((acc: number, p: any) => acc + Number(p.usdAmount), 0) || 0) / 100}
                                 dateCreated={invoice.dateCreated as string}
                                 dateSettled={invoice.dateSettled as string}
                                 payments={invoice.payments as any}
