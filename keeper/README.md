@@ -58,6 +58,7 @@ Edit `.env` and set your keeper wallet private key:
 ```env
 KEEPER_PRIVATE_KEY="your_private_key_here"
 RPC_URL="https://coston2-api.flare.network/ext/C/rpc"
+CONTRACT_ADDRESS="0xYourContractAddressHere"  # Optional for local dev
 POLL_INTERVAL=15000
 GAS_LIMIT=500000
 ```
@@ -66,6 +67,8 @@ GAS_LIMIT=500000
 - Use a dedicated keeper wallet (not your main wallet)
 - Keeper wallet needs C2FLR for gas (get from faucet)
 - Anyone can run a keeper (permissionless)
+- `CONTRACT_ADDRESS` is optional locally (auto-reads from deployment.json)
+- For production/Azure, `CONTRACT_ADDRESS` must be set via environment variable
 
 ### 3. Get Testnet Tokens
 

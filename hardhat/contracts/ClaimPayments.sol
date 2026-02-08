@@ -39,6 +39,7 @@ contract ClaimPayments {
         uint256 takeProfitPrice;    // Upper limit: execute when price reaches this (pay minimal crypto)
         uint256 collateralAmount;   // Native FLR locked as collateral & gas reserve
         uint256 createdAt;          // Block timestamp when payment was created
+        uint256 createdAtPrice;     // Crypto price when payment was created (for reference/UI display)
         uint256 expiresAt;          // Deadline timestamp - payment cannot execute after this
         bool executed;              // Whether payment has been completed
         uint256 executedAt;         // Block timestamp when payment was executed (0 if not executed)
@@ -123,6 +124,9 @@ contract ClaimPayments {
         require(msg.value > 0, "ClaimPayments: Must provide collateral");
         require(_expiryDays > 0, "ClaimPayments: Expiry days must be positive");
 
+        // Query current price from FTSO for reference (visual display in UI)
+        (uint256 currentPrice, , ) = ftsoV2.getFeedById(_cryptoFeedId);
+
         paymentId = paymentCounter++;
         uint256 expiryTimestamp = block.timestamp + (_expiryDays * 1 days);
 
@@ -136,6 +140,7 @@ contract ClaimPayments {
             takeProfitPrice: _takeProfitPrice,
             collateralAmount: msg.value,
             createdAt: block.timestamp,
+            createdAtPrice: currentPrice,
             expiresAt: expiryTimestamp,
             executed: false,
             executedAt: 0,
@@ -238,6 +243,67 @@ contract ClaimPayments {
     }
 
     /**
+     * @notice Executes a claim payment early, bypassing price trigger conditions
+     * @dev Only the original payer can execute early. Uses current price for calculation.
+     * 
+     * This function allows the payer to execute payment before triggers are hit,
+     * useful when they want immediate execution regardless of price conditions.
+     * 
+     * @param _paymentId The ID of the payment to execute early
+     * 
+     * Requirements:
+     * - Payment must exist and not be executed
+     * - Caller must be the original payer (only payer can execute early)
+     * - Current time must be before expiry deadline
+     * - Collateral must be sufficient to cover calculated payment amount
+     * 
+     * Emits ClaimPaymentExecuted event with execution details
+     */
+    function executePaymentEarly(uint256 _paymentId) external {
+        ClaimPayment storage payment = claimPayments[_paymentId];
+        
+        require(!payment.executed, "ClaimPayments: Already executed");
+        require(payment.collateralAmount > 0, "ClaimPayments: Payment does not exist");
+        require(msg.sender == payment.payer, "ClaimPayments: Only payer can execute early");
+        require(block.timestamp <= payment.expiresAt, "ClaimPayments: Payment expired");
+
+        // Query current price from Flare FTSO v2
+        (uint256 currentPrice, int8 decimals, uint64 timestamp) = 
+            ftsoV2.getFeedById(payment.cryptoFeedId);
+
+        // Calculate crypto amount based on current oracle price
+        uint256 paymentAmount = (payment.usdAmount * 1e18 * (10 ** uint256(int256(decimals)))) / (currentPrice * 100);
+
+        require(paymentAmount <= payment.collateralAmount, "ClaimPayments: Insufficient collateral");
+
+        // Update payment state before transfers (checks-effects-interactions pattern)
+        payment.executed = true;
+        payment.executedAt = block.timestamp;
+        payment.executedPrice = currentPrice;
+        payment.paidAmount = paymentAmount;
+
+        // Transfer calculated amount to receiver
+        (bool paymentSuccess, ) = payable(payment.receiver).call{value: paymentAmount}("");
+        require(paymentSuccess, "ClaimPayments: Payment transfer failed");
+
+        // Refund excess collateral to payer
+        uint256 excessCollateral = payment.collateralAmount - paymentAmount;
+        if (excessCollateral > 0) {
+            (bool refundSuccess, ) = payable(payment.payer).call{value: excessCollateral}("");
+            require(refundSuccess, "ClaimPayments: Refund transfer failed");
+        }
+
+        emit ClaimPaymentExecuted(
+            _paymentId,
+            msg.sender,
+            currentPrice,
+            paymentAmount,
+            excessCollateral,
+            timestamp
+        );
+    }
+
+    /**
      * @notice Creates and immediately executes a payment in a single transaction
      * @dev Combines createClaimPayment + executeClaimPayment for instant payments
      * 
@@ -291,6 +357,7 @@ contract ClaimPayments {
             takeProfitPrice: currentPrice, // Set to current price (already executed)
             collateralAmount: msg.value,
             createdAt: block.timestamp,
+            createdAtPrice: currentPrice,
             expiresAt: expiryTimestamp,
             executed: true, // Mark as executed immediately
             executedAt: block.timestamp,

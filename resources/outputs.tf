@@ -53,11 +53,11 @@ output "keeper_registry_password" {
 }
 
 output "keeper_container_group_name" {
-  value       = azurerm_container_group.keeper.name
-  description = "The name of the keeper container instance"
+  value       = azurecaf_name.aci.result
+  description = "The name for the keeper container instance (created by GitHub Actions)"
 }
 
 output "keeper_fqdn" {
-  value       = try(azurerm_container_group.keeper.fqdn, "no-public-endpoint")
-  description = "The FQDN of the keeper container (if exposed)"
+  value       = "${azurecaf_name.aci.result}.${azurerm_resource_group.main.location}.azurecontainer.io"
+  description = "The expected FQDN of the keeper container (once created by GitHub Actions)"
 }

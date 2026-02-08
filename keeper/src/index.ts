@@ -13,6 +13,7 @@ const RPC_URL = process.env.RPC_URL || "https://coston2-api.flare.network/ext/C/
 const privateKeyRaw = process.env.KEEPER_PRIVATE_KEY || process.env.PRIVATE_KEY;
 const POLL_INTERVAL = parseInt(process.env.POLL_INTERVAL || "15000"); // 15 seconds
 const GAS_LIMIT = process.env.GAS_LIMIT || "500000";
+const CONTRACT_ADDRESS_ENV = process.env.CONTRACT_ADDRESS;
 
 if (!privateKeyRaw) {
     throw new Error("KEEPER_PRIVATE_KEY or PRIVATE_KEY must be set in .env");
@@ -21,17 +22,34 @@ if (!privateKeyRaw) {
 const PRIVATE_KEY: string = privateKeyRaw;
 
 // Load contract info
-const deploymentPath = path.join(__dirname, "../../src/lib/contract/deployment.json");
-const abiPath = path.join(__dirname, "../../src/lib/contract/abi.json");
+let CONTRACT_ADDRESS: string;
+let abi: any;
 
-if (!fs.existsSync(deploymentPath)) {
-    throw new Error("Contract not deployed! Run: cd hardhat && npx hardhat run scripts/deploy.ts --network coston2");
+// Try to get contract address from environment first (for production)
+if (CONTRACT_ADDRESS_ENV) {
+    console.log("Loading contract address from environment variable");
+    CONTRACT_ADDRESS = CONTRACT_ADDRESS_ENV;
+    
+    // Load ABI from file (copied into Docker image)
+    const abiPath = path.join(__dirname, "../../src/lib/contract/abi.json");
+    if (!fs.existsSync(abiPath)) {
+        throw new Error("ABI file not found at " + abiPath);
+    }
+    abi = JSON.parse(fs.readFileSync(abiPath, "utf8"));
+} else {
+    // Fallback to loading from deployment file (for local development)
+    console.log("Loading contract from deployment file (local dev mode)");
+    const deploymentPath = path.join(__dirname, "../../src/lib/contract/deployment.json");
+    const abiPath = path.join(__dirname, "../../src/lib/contract/abi.json");
+
+    if (!fs.existsSync(deploymentPath)) {
+        throw new Error("Contract not deployed! Run: cd hardhat && npx hardhat run scripts/deploy.ts --network coston2");
+    }
+
+    const deployment = JSON.parse(fs.readFileSync(deploymentPath, "utf8"));
+    abi = JSON.parse(fs.readFileSync(abiPath, "utf8"));
+    CONTRACT_ADDRESS = deployment.address;
 }
-
-const deployment = JSON.parse(fs.readFileSync(deploymentPath, "utf8"));
-const abi = JSON.parse(fs.readFileSync(abiPath, "utf8"));
-
-const CONTRACT_ADDRESS = deployment.address;
 
 // ============================================================================
 // Keeper State
