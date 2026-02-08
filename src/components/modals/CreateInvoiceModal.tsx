@@ -190,7 +190,11 @@ export function CreateInvoiceModal({ isOpen, onClose }: CreateClaimModalProps) {
                 const result = await response.json();
 
                 if (!response.ok || !result.success) {
-                    throw new Error(result.error || "Failed to process document");
+                    // Include detailed error information for debugging
+                    const detailMessage = result.details 
+                        ? `${result.error}. Details: ${result.details.message}${result.details.cause ? ` (${result.details.cause})` : ''}`
+                        : (result.error || "Failed to process document");
+                    throw new Error(detailMessage);
                 }
 
                 const extractedData = result.data;
@@ -214,9 +218,13 @@ export function CreateInvoiceModal({ isOpen, onClose }: CreateClaimModalProps) {
             }
 
         } catch (error) {
-            console.error("AI Processing Error:", error);
+            const errorMessage = error instanceof Error ? error.message : "Unknown error occurred";
+            console.error("AI Processing Error:", {
+                message: errorMessage,
+                error: error
+            });
             setProcessingStatus("error");
-            setProcessingError(error instanceof Error ? error.message : "Unknown error occurred");
+            setProcessingError(errorMessage);
 
             // Fallback if AI fails: Use filename as title
             setTitle(file.name.split('.')[0]);
