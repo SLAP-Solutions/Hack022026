@@ -22,8 +22,8 @@ const manrope = Manrope({
 });
 
 export const metadata: Metadata = {
-  title: "Slapsure - Insurance Claims",
-  description: "Automated insurance claims and payouts on Flare using FTSO",
+  title: "Slapsure - A better way of paying",
+  description: "Strategic automated payments with market-aware execution bounds to optimize token efficiency.",
   icons: {
     icon: "/favicon.png",
   },

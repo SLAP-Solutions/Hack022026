@@ -65,8 +65,11 @@ export default function Home() {
     const activeInvoices = invoices.filter(c => ['pending', 'processing', 'approved'].includes(c.status)).length;
     const settledInvoices = invoices.filter(c => c.status === 'settled').length;
 
-    // Total Payments from Live Data (converting cents to USD)
-    const liveTotalPaymentsUSD = payments.reduce((acc, p) => acc + (Number(p.usdAmount) / 100), 0);
+    // Only pending payments are "Active Deposits" (locked collateral)
+    const activeDepositsUSD = payments
+      .filter(p => !p.executed)
+      .reduce((acc, p) => acc + (Number(p.usdAmount) / 100), 0);
+
     const executedPayments = payments.filter(p => p.executed).length;
     const pendingPayments = payments.filter(p => !p.executed).length;
 
@@ -74,7 +77,7 @@ export default function Home() {
       totalInvoices,
       activeInvoices,
       settledInvoices,
-      liveTotalPaymentsUSD,
+      activeDepositsUSD,
       executedPayments,
       pendingPayments,
     };
@@ -146,8 +149,8 @@ export default function Home() {
 
         {/* Top Feature Card: Risk Exposure */}
         <div className="relative group">
-          <div className="absolute -inset-1 bg-gradient-to-r from-primary/20 to-purple-500/20 rounded-2xl blur opacity-25 group-hover:opacity-50 transition duration-1000 group-hover:duration-200"></div>
-          <RiskExposureCard claims={invoices} title="Global Exposure Dashboard" />
+          <div className="absolute -inset-1 rounded-2xl blur opacity-25 group-hover:opacity-50 transition duration-1000 group-hover:duration-200"></div>
+          <RiskExposureCard claims={payments} title="Global Exposure Dashboard" />
         </div>
 
         {/* Tab Selection */}
@@ -162,7 +165,6 @@ export default function Home() {
                   : "text-muted-foreground hover:text-foreground"
               )}
             >
-              <ClipboardList className="w-4 h-4" />
               Invoice Overview
             </button>
             <button
@@ -174,7 +176,6 @@ export default function Home() {
                   : "text-muted-foreground hover:text-foreground"
               )}
             >
-              <Zap className="w-4 h-4" />
               Payments Performance
             </button>
           </div>
@@ -190,30 +191,22 @@ export default function Home() {
               <StatsCard
                 title="Total Invoices"
                 value={stats.totalInvoices}
-                icon={<FileText className="h-4 w-4" />}
                 description="Records in database"
-                trend="stable"
               />
               <StatsCard
                 title="Active Value"
                 value={`$${invoices.reduce((acc, inv) => acc + (inv.totalCost || 0), 0).toLocaleString()}`}
-                icon={<DollarSign className="h-4 w-4" />}
                 description="Total liability"
-                trend="stable"
               />
               <StatsCard
                 title="Pending Review"
                 value={stats.activeInvoices}
-                icon={<Clock className="h-4 w-4" />}
                 description="Awaiting action"
-                trend="stable"
               />
               <StatsCard
                 title="Settled Successfully"
                 value={stats.settledInvoices}
-                icon={<CheckCircle className="h-4 w-4" />}
                 description="History total"
-                trend="up"
               />
             </div>
 
@@ -286,31 +279,23 @@ export default function Home() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               <StatsCard
                 title="Active Deposits"
-                value={`$${stats.liveTotalPaymentsUSD.toLocaleString()}`}
-                icon={<DollarSign className="h-4 w-4" />}
-                description={`Across ${payments.length} objects`}
-                trend="up"
+                value={`$${stats.activeDepositsUSD.toLocaleString()}`}
+                description={`Across ${stats.pendingPayments} active objects`}
               />
               <StatsCard
                 title="Completed"
                 value={stats.executedPayments}
-                icon={<Zap className="h-4 w-4" />}
                 description="Automated settlements"
-                trend="up"
               />
               <StatsCard
                 title="Pending Execution"
                 value={stats.pendingPayments}
-                icon={<Clock className="h-4 w-4" />}
                 description="Waiting for price targets"
-                trend="stable"
               />
               <StatsCard
                 title="Live FTSO Price (FLR)"
                 value={`$${prices["FLR/USD"]?.price || "..."}`}
-                icon={<TrendingUp className="h-4 w-4" />}
                 description="Real-time Oracle feed"
-                trend={parseFloat(prices["FLR/USD"]?.price) > 0.02 ? "up" : "down"}
               />
             </div>
 
@@ -392,27 +377,19 @@ export default function Home() {
   );
 }
 
-function StatsCard({ title, value, icon, description, trend }: {
+function StatsCard({ title, value, description }: {
   title: string;
   value: string | number;
-  icon: React.ReactNode;
   description: string;
-  trend?: 'up' | 'down' | 'stable';
 }) {
   return (
     <Card className="border-none shadow-lg bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm group hover:shadow-xl transition-all duration-300 border-b-2 border-transparent hover:border-primary/20">
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+      <CardHeader className="flex flex-row items-center justify-between space-y-0">
         <CardTitle className="text-sm font-medium text-muted-foreground">{title}</CardTitle>
-        <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-white transition-colors">
-          {icon}
-        </div>
       </CardHeader>
       <CardContent>
         <div className="text-2xl font-bold tracking-tight">{value}</div>
         <div className="flex items-center mt-1 text-xs text-muted-foreground">
-          {trend === 'up' && <ArrowUpRight className="w-3 h-3 text-emerald-500 mr-1" />}
-          {trend === 'down' && <ArrowDownRight className="w-3 h-3 text-rose-500 mr-1" />}
-          {trend === 'stable' && <Activity className="w-3 h-3 text-amber-500 mr-1" />}
           {description}
         </div>
       </CardContent>
