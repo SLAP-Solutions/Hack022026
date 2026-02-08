@@ -9,9 +9,15 @@
 
 **Main Track** - Prediction Markets + DeFi
  - A new DeFi application with a new and exciting way to send payments across chain 
- 
+
 **Plasma**
  - A new DeFi application with a new and exciting way to send payments across chain, could be build and adapted to the plasma network
+
+## 🌐 Live Demo
+
+**Website:** [https://slapsure.com/](https://slapsure.com/)
+
+Try Slapsure live on Flare Coston2 testnet! Connect your MetaMask wallet and create a payment to see real-time FTSO price feeds in action.
 
 ## 👥 Team
 
