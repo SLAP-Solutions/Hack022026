@@ -303,7 +303,7 @@ export function PaymentCard({ payment, onRefresh }: PaymentCardProps) {
 
                                 {!isInstantPayment && (
                                     <div className="col-span-2 border-t pt-1 mt-1 flex justify-between items-center">
-                                        <span className="text-muted-foreground">PNL:</span>
+                                        <span className="text-muted-foreground">Market Advantage:</span>
                                         <span className={cn(
                                             "font-bold",
                                             pnlPercent > 0 ? "text-green-600" : pnlPercent < 0 ? "text-red-600" : "text-muted-foreground"

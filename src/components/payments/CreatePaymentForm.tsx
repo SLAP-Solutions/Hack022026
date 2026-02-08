@@ -175,7 +175,7 @@ export function CreatePaymentForm({ onSuccess, invoiceId }: CreatePaymentFormPro
     const payoutAtTakeProfit = calculatePayout(takeProfitPrice);
 
     const savingsAtTakeProfit = (currentPrice && takeProfitPrice > currentPrice)
-        ? ((takeProfitPrice - currentPrice) / currentPrice) * 100
+        ? (1 - (currentPrice / takeProfitPrice)) * 100
         : 0;
 
     const ticker = feed.split('/')[0];
@@ -296,7 +296,7 @@ export function CreatePaymentForm({ onSuccess, invoiceId }: CreatePaymentFormPro
                 {mode === "trigger" && (
                     <>
                         <div className="flex justify-between items-center pb-2">
-                            <h3 className="font-semibold text-sm">Trigger Settings</h3>
+                            <h3 className="font-semibold text-sm">Execution Bounds</h3>
                             <Button
                                 type="button"
                                 variant="outline"
@@ -311,7 +311,7 @@ export function CreatePaymentForm({ onSuccess, invoiceId }: CreatePaymentFormPro
                         </div>
                         <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-2">
-                                <Label htmlFor="stopLoss">Stop Loss Price ($)</Label>
+                                <Label htmlFor="stopLoss">Lower Bound ($)</Label>
                                 <div className="space-y-1">
                                     <Input
                                         id="stopLoss"
@@ -334,12 +334,12 @@ export function CreatePaymentForm({ onSuccess, invoiceId }: CreatePaymentFormPro
                                     </div>
                                 </div>
                                 <p className="text-[10px] text-muted-foreground leading-tight">
-                                    Execute if price drops to this level
+                                    Execute if price falls below this floor
                                 </p>
                             </div>
 
                             <div className="space-y-2">
-                                <Label htmlFor="takeProfit">Take Profit Price ($)</Label>
+                                <Label htmlFor="takeProfit">Upper Bound ($)</Label>
                                 <div className="space-y-1">
                                     <Input
                                         id="takeProfit"
@@ -362,7 +362,7 @@ export function CreatePaymentForm({ onSuccess, invoiceId }: CreatePaymentFormPro
                                     </div>
                                 </div>
                                 <p className="text-[10px] text-muted-foreground leading-tight">
-                                    Execute if price reaches this level
+                                    Execute if price rises to this ceiling
                                 </p>
                             </div>
                         </div>
@@ -420,7 +420,7 @@ export function CreatePaymentForm({ onSuccess, invoiceId }: CreatePaymentFormPro
 
                             {mode === "trigger" && (
                                 <>
-                                    <span className="text-muted-foreground">If Stop Loss Hits:</span>
+                                    <span className="text-muted-foreground">If Lower Bound Hit:</span>
                                     <span className="text-right">
                                         {ethers.formatEther(payoutAtStopLoss.toString()).substring(0, 10)} {ticker}
                                     </span>
@@ -430,7 +430,7 @@ export function CreatePaymentForm({ onSuccess, invoiceId }: CreatePaymentFormPro
                                         {ethers.formatEther(payoutAtCurrent.toString()).substring(0, 10)} {ticker}
                                     </span>
 
-                                    <span className="text-green-600 font-semibold">If Take Profit Hits:</span>
+                                    <span className="text-green-600 font-semibold">If Upper Bound Hit:</span>
                                     <span className="text-right font-semibold text-green-600">
                                         {ethers.formatEther(payoutAtTakeProfit.toString()).substring(0, 10)} {ticker}
                                     </span>
@@ -441,7 +441,7 @@ export function CreatePaymentForm({ onSuccess, invoiceId }: CreatePaymentFormPro
                         {mode === "trigger" && savingsAtTakeProfit > 0 && (
                             <div className="pt-2 border-t">
                                 <p className="text-sm font-semibold text-green-600">
-                                    Potential Savings: {savingsAtTakeProfit.toFixed(1)}% if take profit executes
+                                    Market Advantage: {savingsAtTakeProfit.toFixed(1)}% reduction in {ticker} cost
                                 </p>
                             </div>
                         )}

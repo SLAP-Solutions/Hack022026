@@ -56,11 +56,11 @@ export function PriceHistoryModal({
         <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
             <DialogContent className="sm:max-w-2xl overflow-visible">
                 <DialogHeader>
-                    <DialogTitle>{readOnly ? `Price Levels: ${ticker}` : `Set Triggers for ${ticker}`}</DialogTitle>
+                    <DialogTitle>{readOnly ? `Price Levels: ${ticker}` : `Set Bounds for ${ticker}`}</DialogTitle>
                     <DialogDescription>
                         {readOnly
                             ? "Visual representation of current price vs. set limits."
-                            : "Drag the sliders to adjust your Stop Loss and Take Profit levels."}
+                            : "Drag the sliders to adjust your Lower and Upper bound levels."}
                     </DialogDescription>
                 </DialogHeader>
 
@@ -83,7 +83,7 @@ export function PriceHistoryModal({
                         <>
                             <Button variant="outline" onClick={onClose}>Cancel</Button>
                             <Button onClick={handleSave} className="bg-primary text-primary-foreground">
-                                Confirm Triggers
+                                Confirm Bounds
                             </Button>
                         </>
                     )}
