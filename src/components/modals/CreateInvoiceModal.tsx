@@ -17,6 +17,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Loader2, CheckCircle2, AlertCircle, Bot } from "lucide-react";
+import { toast } from "sonner";
 
 interface CreateClaimModalProps {
     isOpen: boolean;
@@ -64,15 +65,15 @@ function parseAgentResponse(response: string, fileName: string): {
 
     // Try to extract client/claimant name
     const clientMatch = response.match(/client[:\s]+([A-Za-z\s]+?)(?:\.|,|\n|$)/i) ||
-                        response.match(/claimant[:\s]+([A-Za-z\s]+?)(?:\.|,|\n|$)/i) ||
-                        response.match(/name[:\s]+([A-Za-z\s]+?)(?:\.|,|\n|$)/i);
+        response.match(/claimant[:\s]+([A-Za-z\s]+?)(?:\.|,|\n|$)/i) ||
+        response.match(/name[:\s]+([A-Za-z\s]+?)(?:\.|,|\n|$)/i);
     if (clientMatch) {
         claimantName = clientMatch[1].trim();
     }
 
     // Try to extract type
     const typeMatch = response.match(/type[:\s]+([A-Za-z\s]+?)(?:\.|,|\n|$)/i) ||
-                      response.match(/category[:\s]+([A-Za-z\s]+?)(?:\.|,|\n|$)/i);
+        response.match(/category[:\s]+([A-Za-z\s]+?)(?:\.|,|\n|$)/i);
     if (typeMatch) {
         type = typeMatch[1].trim();
     } else if (response.toLowerCase().includes("medical") || response.toLowerCase().includes("health")) {
@@ -85,7 +86,7 @@ function parseAgentResponse(response: string, fileName: string): {
 
     // Try to extract title
     const titleMatch = response.match(/title[:\s]+([^\n]+?)(?:\.|,|\n|$)/i) ||
-                       response.match(/invoice for[:\s]+([^\n]+?)(?:\.|,|\n|$)/i);
+        response.match(/invoice for[:\s]+([^\n]+?)(?:\.|,|\n|$)/i);
     if (titleMatch) {
         title = titleMatch[1].trim();
     } else {
@@ -97,7 +98,7 @@ function parseAgentResponse(response: string, fileName: string): {
         description = response;
     } else {
         const summaryMatch = response.match(/summary[:\s]+([^\n]+)/i) ||
-                            response.match(/description[:\s]+([^\n]+)/i);
+            response.match(/description[:\s]+([^\n]+)/i);
         if (summaryMatch) {
             description = summaryMatch[1].trim();
         }
@@ -138,7 +139,7 @@ export function CreateInvoiceModal({ isOpen, onClose }: CreateClaimModalProps) {
         if (!file) return;
 
         if (!address) {
-            alert("Please connect your wallet to process invoices");
+            toast.error("Please connect your wallet to process invoices");
             return;
         }
 
@@ -177,7 +178,7 @@ export function CreateInvoiceModal({ isOpen, onClose }: CreateClaimModalProps) {
                     if (done) break;
 
                     buffer += decoder.decode(value, { stream: true });
-                    
+
                     // Process complete SSE events
                     const lines = buffer.split("\n");
                     buffer = lines.pop() || ""; // Keep incomplete line in buffer
@@ -186,27 +187,27 @@ export function CreateInvoiceModal({ isOpen, onClose }: CreateClaimModalProps) {
                         if (line.startsWith("data: ")) {
                             try {
                                 const eventData = JSON.parse(line.slice(6)) as SSEEvent;
-                                
+
                                 if (eventData.type === "text") {
                                     fullResponse += eventData.content;
                                     setStreamingText(fullResponse);
-                                    
+
                                     // Auto-scroll to bottom
                                     if (streamingTextRef.current) {
                                         streamingTextRef.current.scrollTop = streamingTextRef.current.scrollHeight;
                                     }
                                 } else if (eventData.type === "complete") {
                                     setAgentResponse(eventData.response);
-                                    
+
                                     // Parse and populate form
                                     const extractedData = parseAgentResponse(eventData.response, file.name);
                                     setTitle(extractedData.title || "");
                                     setDescription(extractedData.description || "");
                                     setClaimantName(extractedData.claimantName || "");
                                     setType(extractedData.type || "");
-                                    
+
                                     setProcessingStatus("success");
-                                    
+
                                     // After a short delay, switch to manual mode for review
                                     setTimeout(() => {
                                         setMode("manual");
@@ -269,12 +270,12 @@ export function CreateInvoiceModal({ isOpen, onClose }: CreateClaimModalProps) {
         e.preventDefault();
 
         if (!title || !description || !claimantName || !type) {
-            alert("Please fill in all fields");
+            toast.error("Please fill in all fields");
             return;
         }
 
         if (!address) {
-            alert("Please connect your wallet to create an invoice");
+            toast.error("Please connect your wallet to create an invoice");
             return;
         }
 
@@ -291,7 +292,7 @@ export function CreateInvoiceModal({ isOpen, onClose }: CreateClaimModalProps) {
             handleClose();
         } catch (error) {
             console.error(error);
-            alert("Failed to create invoice");
+            toast.error("Failed to create invoice");
         } finally {
             setIsLoading(false);
         }
@@ -454,10 +455,10 @@ export function CreateInvoiceModal({ isOpen, onClose }: CreateClaimModalProps) {
                                             <div className="flex-1 min-w-0">
                                                 <p className="font-medium text-amber-700 dark:text-amber-300">AI Agent Processing...</p>
                                                 <p className="text-sm text-amber-600 dark:text-amber-400 mb-2">Extracting invoice details from document</p>
-                                                
+
                                                 {/* Streaming Text Display */}
                                                 {streamingText && (
-                                                    <div 
+                                                    <div
                                                         ref={streamingTextRef}
                                                         className="mt-2 p-3 bg-white/50 dark:bg-black/20 rounded border border-amber-200 dark:border-amber-700 max-h-48 overflow-y-auto"
                                                     >

@@ -125,7 +125,7 @@ export function PriceBar({
                 <div className="w-4 h-8 bg-background border-2 border-destructive rounded-full shadow-sm z-20 hover:scale-110 transition-transform" />
 
                 <div className="absolute top-10 flex flex-col items-center pointer-events-none">
-                    <span className="text-[10px] font-bold text-destructive uppercase tracking-wider">Stop</span>
+                    <span className="text-[10px] font-bold text-destructive uppercase tracking-wider">LB</span>
                     <span className="text-xs font-mono font-medium">${slPrice.toFixed(2)}</span>
                     <span className="text-[10px] text-destructive/80 font-mono">
                         {slPercentChange.toFixed(1)}%
@@ -165,10 +165,10 @@ export function PriceBar({
 
                 {/* Floating Label */}
                 <div className="absolute top-10 flex flex-col items-center pointer-events-none">
-                    <span className="text-[10px] font-bold text-green-600 uppercase tracking-wider">Limit</span>
+                    <span className="text-[10px] font-bold text-green-600 uppercase tracking-wider">UB</span>
                     <span className="text-xs font-mono font-medium">${tpPrice.toFixed(2)}</span>
                     <span className="text-[10px] text-green-600/80 font-mono">
-                        +{tpPercentChange.toFixed(1)}%
+                        +{tpPercentChange.toFixed(2)}%
                     </span>
                 </div>
             </motion.div>
