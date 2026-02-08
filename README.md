@@ -69,6 +69,13 @@ Slapsure isn't just for crypto-native users. It provides fundamental improvement
 5. **Auto-Execute** - When price hits your trigger, payment executes automatically
 6. **Get Refund** - Excess collateral returned instantly, recipient gets exact USD value
 
+
+## 🌐 Deployed Contract
+
+**Coston2 Testnet:** `0x62AeFC7531d90c8E3247058c922DaD4DF10d367f`  
+[View on Explorer](https://coston2-explorer.flare.network/address/0x62AeFC7531d90c8E3247058c922DaD4DF10d367f) | [Verified Contract](https://coston2-explorer.flare.network/address/0x62AeFC7531d90c8E3247058c922DaD4DF10d367f?tab=contract)
+
+
 **Instant Payments:** Need to pay now? Skip triggers and execute immediately at current price.
 
 ## 🚀 Demo Mode (Coston2 Testnet)
@@ -187,11 +194,6 @@ npx hardhat run scripts/test-tight-trigger.ts --network coston2
 # Test all price feeds (BTC & ETH)
 npx hardhat run scripts/test-all-feeds.ts --network coston2
 ```
-
-## 🌐 Deployed Contract
-
-**Coston2 Testnet:** `0xCe7C24526501401D1A015129314493a74D93b374`  
-[View on Explorer](https://coston2-explorer.flare.network/address/0xCe7C24526501401D1A015129314493a74D93b374)
 
 ### 🔄 Deploying New Contract
 
