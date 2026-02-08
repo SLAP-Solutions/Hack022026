@@ -51,7 +51,7 @@ export function TransactionHistory({ transactions, loading, error, onRetry }: Tr
             {transactions.length === 0 ? (
                 <p className="text-muted-foreground text-center py-8">No transactions found.</p>
             ) : (
-                <div className="space-y-3 max-h-[500px] overflow-y-auto">
+                <div className="space-y-3 overflow-y-auto">
                     {transactions.map((tx) => (
                         <div
                             key={tx.hash}
