@@ -177,7 +177,11 @@ jobs:
 
       - name: Install dependencies
         working-directory: ${{ env.WORKING_DIR }}
-        run: npm ci
+        run: npm ci --include=optional
+
+      - name: Rebuild native modules
+        working-directory: ${{ env.WORKING_DIR }}
+        run: npm rebuild lightningcss
 
       - name: Build Next.js app
         working-directory: ${{ env.WORKING_DIR }}
