@@ -5,9 +5,10 @@ import { InvoiceCard } from "@/components/invoices/InvoiceCard";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { useClaimsStore } from "@/stores/useClaimsStore";
+import { useInvoicesStore } from "@/stores/useInvoicesStore";
+import { useWallet } from "@/hooks/useWallet";
 import { Loader2, Plus } from "lucide-react";
-import { Claim } from "@/types/claim";
+import { Invoice } from "@/types/invoice";
 import { CreateInvoiceModal } from "@/components/modals/CreateInvoiceModal";
 import { PageHeader } from "@/components/layout/PageHeader";
 
@@ -20,20 +21,23 @@ const statusConfig = {
 };
 
 export default function InvoicesPage() {
-    const { claims, isLoading, fetchClaims } = useClaimsStore();
+    const { invoices, isLoading, fetchInvoices } = useInvoicesStore();
+    const { address } = useWallet();
     const [filter, setFilter] = useState<string>("all");
     const [isCreateOpen, setIsCreateOpen] = useState(false);
     const router = useRouter();
 
     useEffect(() => {
-        fetchClaims();
-    }, [fetchClaims]);
+        if (address) {
+            fetchInvoices(address);
+        }
+    }, [fetchInvoices, address]);
 
-    const filteredClaims = filter === "all"
-        ? claims
-        : claims.filter(claim => claim.status === filter);
+    const filteredInvoices = filter === "all"
+        ? invoices
+        : invoices.filter(invoice => invoice.status === filter);
 
-    if (isLoading && claims.length === 0) {
+    if (isLoading && invoices.length === 0) {
         return (
             <div className="flex justify-center items-center h-screen">
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -42,7 +46,7 @@ export default function InvoicesPage() {
     }
 
     return (
-        <div className="flex flex-col h-full -m-6">
+        <div className="flex flex-col h-full">
             <PageHeader title="Invoices">
                 <Button onClick={() => setIsCreateOpen(true)} className="bg-primary text-primary-foreground hover:bg-primary/90" size="sm">
                     <Plus className="mr-2 h-4 w-4" />
@@ -83,45 +87,45 @@ export default function InvoicesPage() {
             <div className="flex-1 overflow-auto p-6">
                 <div className="max-w-7xl mx-auto space-y-6">
 
-            {/* Claims Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {filteredClaims.map((claim) => (
-                    <InvoiceCard
-                        key={claim.id}
-                        id={claim.id}
-                        title={claim.title}
-                        description={claim.description}
-                        claimantName={claim.claimantName}
-                        type={claim.type}
-                        status={claim.status as any}
-                        totalCost={claim.payments?.reduce((acc: number, p: any) => acc + Number(p.usdAmount), 0) || 0}
-                        dateCreated={claim.dateCreated as string}
-                        dateSettled={claim.dateSettled as string}
-                        payments={claim.payments as any}
-                        onClick={() => router.push(`/invoices/${claim.id}`)}
-                    />
-                ))}
-            </div>
-
-            {/* Empty State */}
-            {
-                !isLoading && filteredClaims.length === 0 && (
-                    <div className="text-center py-16">
-                        <div className="text-6xl mb-4">📋</div>
-                        <h3 className="text-2xl font-bold mb-2">
-                            No invoices found
-                        </h3>
-                        <p className="text-muted-foreground">
-                            Try adjusting your filters to see more results or create a new invoice.
-                        </p>
-                        <Button onClick={() => setIsCreateOpen(true)} className="mt-4" variant="outline">
-                            Create New Invoice
-                        </Button>
+                    {/* Invoices Grid */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {filteredInvoices.map((invoice: Invoice) => (
+                            <InvoiceCard
+                                key={invoice.id}
+                                id={invoice.id}
+                                title={invoice.title}
+                                description={invoice.description}
+                                claimantName={invoice.claimantName}
+                                type={invoice.type}
+                                status={invoice.status as any}
+                                totalCost={invoice.payments?.reduce((acc: number, p: any) => acc + Number(p.usdAmount), 0) || 0}
+                                dateCreated={invoice.dateCreated as string}
+                                dateSettled={invoice.dateSettled as string}
+                                payments={invoice.payments as any}
+                                onClick={() => router.push(`/invoices/${invoice.id}`)}
+                            />
+                        ))}
                     </div>
-                )
-            }
 
-                <CreateInvoiceModal isOpen={isCreateOpen} onClose={() => setIsCreateOpen(false)} />
+                    {/* Empty State */}
+                    {
+                        !isLoading && filteredInvoices.length === 0 && (
+                            <div className="text-center py-16">
+                                <div className="text-6xl mb-4">📋</div>
+                                <h3 className="text-2xl font-bold mb-2">
+                                    No invoices found
+                                </h3>
+                                <p className="text-muted-foreground">
+                                    Try adjusting your filters to see more results or create a new invoice.
+                                </p>
+                                <Button onClick={() => setIsCreateOpen(true)} className="mt-4" variant="outline">
+                                    Create New Invoice
+                                </Button>
+                            </div>
+                        )
+                    }
+
+                    <CreateInvoiceModal isOpen={isCreateOpen} onClose={() => setIsCreateOpen(false)} />
                 </div>
             </div>
         </div>

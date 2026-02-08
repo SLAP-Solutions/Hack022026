@@ -26,11 +26,26 @@ export default function PaymentsPage() {
     const [activeTab, setActiveTab] = useState<TabType>("payments");
 
     if (!isConnected) {
-        // ... existing auth check ...
+        return (
+            <div className="flex items-center justify-center min-h-full -m-6">
+                <Card className="w-full max-w-md text-center">
+                    <CardHeader>
+                        <div className="mx-auto w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mb-4">
+                            <Wallet className="w-6 h-6 text-primary" />
+                        </div>
+                        <CardTitle className="text-2xl font-serif">Payment Dashboard</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                        <p className="text-muted-foreground">Connect your wallet to manage payments</p>
+                        <ConnectWallet />
+                    </CardContent>
+                </Card>
+            </div>
+        );
     }
 
     return (
-        <div className="flex h-full -m-6">
+        <div className="flex h-full">
             <div className="flex-1 flex flex-col overflow-hidden">
                 <PageHeader title="Payments">
                     <div className="text-sm text-muted-foreground font-mono bg-muted px-3 py-1.5 rounded-md">

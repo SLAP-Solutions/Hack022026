@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { useClaimsStore } from "@/stores/useClaimsStore";
+import { useInvoicesStore } from "@/stores/useInvoicesStore";
+import { useWallet } from "@/hooks/useWallet";
 import { cn } from "@/lib/utils";
 import {
     Dialog,
@@ -15,14 +16,18 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Loader2, CheckCircle2, AlertCircle, Bot } from "lucide-react";
 
 interface CreateClaimModalProps {
     isOpen: boolean;
     onClose: () => void;
 }
 
+type ProcessingStatus = "idle" | "uploading" | "processing" | "success" | "error";
+
 export function CreateInvoiceModal({ isOpen, onClose }: CreateClaimModalProps) {
-    const { addClaim } = useClaimsStore();
+    const { addInvoice } = useInvoicesStore();
+    const { address } = useWallet();
     const [isLoading, setIsLoading] = useState(false);
 
     // Form state
@@ -30,8 +35,14 @@ export function CreateInvoiceModal({ isOpen, onClose }: CreateClaimModalProps) {
     const [description, setDescription] = useState("");
     const [claimantName, setClaimantName] = useState("");
     const [type, setType] = useState("");
+    const [dateNotified, setDateNotified] = useState("");
     const [mode, setMode] = useState<"manual" | "upload">("manual");
     const [file, setFile] = useState<File | null>(null);
+
+    // Agent processing state
+    const [processingStatus, setProcessingStatus] = useState<ProcessingStatus>("idle");
+    const [agentResponse, setAgentResponse] = useState<string>("");
+    const [processingError, setProcessingError] = useState<string>("");
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files[0]) {
@@ -44,23 +55,34 @@ export function CreateInvoiceModal({ isOpen, onClose }: CreateClaimModalProps) {
         if (!file) return;
 
         setIsLoading(true);
+        setProcessingStatus("uploading");
+        setProcessingError("");
+        setAgentResponse("");
 
         const formData = new FormData();
         formData.append("file", file);
 
         try {
+            setProcessingStatus("processing");
+
             // Call AI agent to process invoice
             const response = await fetch("/api/invoices/process", {
                 method: "POST",
                 body: formData,
             });
 
-            if (!response.ok) {
-                throw new Error("Failed to process document");
+            const result = await response.json();
+
+            if (!response.ok || !result.success) {
+                throw new Error(result.error || "Failed to process document");
             }
 
-            const result = await response.json();
             const extractedData = result.data;
+
+            // Store agent response for display
+            if (result.agentResponse) {
+                setAgentResponse(result.agentResponse);
+            }
 
             // Populate form with AI-extracted data
             setTitle(extractedData.title || "");
@@ -68,17 +90,23 @@ export function CreateInvoiceModal({ isOpen, onClose }: CreateClaimModalProps) {
             setClaimantName(extractedData.claimantName || "");
             setType(extractedData.type || "");
 
-            // Switch to manual mode so user can review/edit
-            setMode("manual");
-            // Clear file so they can upload again if needed or proceed
-            setFile(null);
+            setProcessingStatus("success");
+
+            // After a short delay, switch to manual mode for review
+            setTimeout(() => {
+                setMode("manual");
+                setFile(null);
+                setProcessingStatus("idle");
+            }, 2000);
 
         } catch (error) {
             console.error("AI Processing Error:", error);
+            setProcessingStatus("error");
+            setProcessingError(error instanceof Error ? error.message : "Unknown error occurred");
+
             // Fallback if AI fails: Use filename as title
             setTitle(file.name.split('.')[0]);
             setDescription("Uploaded document processing failed. Please enter details manually.");
-            setMode("manual");
         } finally {
             setIsLoading(false);
         }
@@ -92,18 +120,25 @@ export function CreateInvoiceModal({ isOpen, onClose }: CreateClaimModalProps) {
             return;
         }
 
+        if (!address) {
+            alert("Please connect your wallet to create an invoice");
+            return;
+        }
+
         try {
             setIsLoading(true);
-            await addClaim({
+            await addInvoice({
                 title,
                 description,
                 claimantName,
-                type
+                type,
+                walletId: address,
+                ...(dateNotified && { dateNotified })
             });
             handleClose();
         } catch (error) {
             console.error(error);
-            alert("Failed to create claim");
+            alert("Failed to create invoice");
         } finally {
             setIsLoading(false);
         }
@@ -114,11 +149,20 @@ export function CreateInvoiceModal({ isOpen, onClose }: CreateClaimModalProps) {
         setTitle("");
         setDescription("");
         setClaimantName("");
-        setClaimantName("");
         setType("");
+        setDateNotified("");
         setMode("manual");
         setFile(null);
+        setProcessingStatus("idle");
+        setAgentResponse("");
+        setProcessingError("");
         onClose();
+    };
+
+    const handleRetry = () => {
+        setProcessingStatus("idle");
+        setProcessingError("");
+        setMode("upload");
     };
 
     return (
@@ -194,6 +238,20 @@ export function CreateInvoiceModal({ isOpen, onClose }: CreateClaimModalProps) {
                         </div>
 
                         <div className="space-y-2">
+                            <Label htmlFor="dateNotified">Date Notified (Optional)</Label>
+                            <Input
+                                id="dateNotified"
+                                type="date"
+                                value={dateNotified}
+                                onChange={(e) => setDateNotified(e.target.value)}
+                                placeholder="When was the client notified?"
+                            />
+                            <p className="text-xs text-muted-foreground">
+                                When was the client notified of this invoice?
+                            </p>
+                        </div>
+
+                        <div className="space-y-2">
                             <Label htmlFor="description">Description</Label>
                             <Textarea
                                 id="description"
@@ -216,31 +274,118 @@ export function CreateInvoiceModal({ isOpen, onClose }: CreateClaimModalProps) {
                     </form>
                 ) : (
                     <form onSubmit={handleUploadSubmit} className="space-y-6">
-                        <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-12 text-center hover:bg-muted/50 transition-colors cursor-pointer" onClick={() => document.getElementById('file-upload')?.click()}>
-                            <input
-                                type="file"
-                                id="file-upload"
-                                className="hidden"
-                                accept=".pdf,.png,.jpg,.jpeg"
-                                onChange={handleFileChange}
-                            />
-                            <div className="flex flex-col items-center gap-2">
-                                <span className="text-4xl">📄</span>
-                                <h3 className="font-semibold text-lg">
-                                    {file ? file.name : "Click to upload document"}
-                                </h3>
-                                <p className="text-sm text-muted-foreground">
-                                    {file ? "Ready to process" : "PDF, PNG, or JPG (max 10MB)"}
-                                </p>
+                        {/* Processing Status Display */}
+                        {processingStatus !== "idle" && (
+                            <div className={cn(
+                                "rounded-lg p-4 border",
+                                processingStatus === "uploading" && "bg-blue-50 border-blue-200",
+                                processingStatus === "processing" && "bg-amber-50 border-amber-200",
+                                processingStatus === "success" && "bg-green-50 border-green-200",
+                                processingStatus === "error" && "bg-red-50 border-red-200"
+                            )}>
+                                <div className="flex items-start gap-3">
+                                    {processingStatus === "uploading" && (
+                                        <>
+                                            <Loader2 className="w-5 h-5 text-blue-500 animate-spin mt-0.5" />
+                                            <div>
+                                                <p className="font-medium text-blue-700">Uploading document...</p>
+                                                <p className="text-sm text-blue-600">Sending file to AI agent</p>
+                                            </div>
+                                        </>
+                                    )}
+                                    {processingStatus === "processing" && (
+                                        <>
+                                            <Bot className="w-5 h-5 text-amber-500 animate-pulse mt-0.5" />
+                                            <div>
+                                                <p className="font-medium text-amber-700">AI Agent Processing...</p>
+                                                <p className="text-sm text-amber-600">Extracting invoice details from document</p>
+                                            </div>
+                                        </>
+                                    )}
+                                    {processingStatus === "success" && (
+                                        <>
+                                            <CheckCircle2 className="w-5 h-5 text-green-500 mt-0.5" />
+                                            <div>
+                                                <p className="font-medium text-green-700">Processing Complete!</p>
+                                                <p className="text-sm text-green-600">Review the extracted data below</p>
+                                            </div>
+                                        </>
+                                    )}
+                                    {processingStatus === "error" && (
+                                        <>
+                                            <AlertCircle className="w-5 h-5 text-red-500 mt-0.5" />
+                                            <div className="flex-1">
+                                                <p className="font-medium text-red-700">Processing Failed</p>
+                                                <p className="text-sm text-red-600">{processingError}</p>
+                                                <Button
+                                                    type="button"
+                                                    variant="outline"
+                                                    size="sm"
+                                                    className="mt-2"
+                                                    onClick={handleRetry}
+                                                >
+                                                    Try Again
+                                                </Button>
+                                            </div>
+                                        </>
+                                    )}
+                                </div>
+
+                                {/* Agent Response Preview */}
+                                {agentResponse && processingStatus === "success" && (
+                                    <div className="mt-3 pt-3 border-t border-green-200">
+                                        <p className="text-xs font-medium text-green-700 mb-1">Agent Response:</p>
+                                        <p className="text-xs text-green-600 line-clamp-3">{agentResponse}</p>
+                                    </div>
+                                )}
                             </div>
-                        </div>
+                        )}
+
+                        {/* File Upload Area */}
+                        {processingStatus === "idle" && (
+                            <div
+                                className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-12 text-center hover:bg-muted/50 transition-colors cursor-pointer"
+                                onClick={() => document.getElementById('file-upload')?.click()}
+                            >
+                                <input
+                                    type="file"
+                                    id="file-upload"
+                                    className="hidden"
+                                    accept=".pdf,.png,.jpg,.jpeg"
+                                    onChange={handleFileChange}
+                                />
+                                <div className="flex flex-col items-center gap-2">
+                                    <span className="text-4xl">📄</span>
+                                    <h3 className="font-semibold text-lg">
+                                        {file ? file.name : "Click to upload document"}
+                                    </h3>
+                                    <p className="text-sm text-muted-foreground">
+                                        {file ? "Ready to process with AI agent" : "PDF, PNG, or JPG (max 10MB)"}
+                                    </p>
+                                </div>
+                            </div>
+                        )}
 
                         <DialogFooter>
-                            <Button type="button" variant="outline" onClick={handleClose}>
+                            <Button type="button" variant="outline" onClick={handleClose} disabled={isLoading}>
                                 Cancel
                             </Button>
-                            <Button type="submit" disabled={!file || isLoading}>
-                                {isLoading ? "Processing..." : "Process & Create"}
+                            <Button
+                                type="submit"
+                                disabled={!file || isLoading || processingStatus !== "idle"}
+                                className="gap-2"
+                            >
+                                {isLoading ? (
+                                    <>
+                                        <Loader2 className="w-4 h-4 animate-spin" />
+                                        Processing...
+                                    </>
+                                ) : (
+                                    <>
+                                        <Bot className="w-4 h-4" />
+                                        Process with AI
+                                    </>
+                                )}
                             </Button>
                         </DialogFooter>
                     </form>

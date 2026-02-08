@@ -3,7 +3,7 @@
 import Link from "next/link"
 import Image from "next/image"
 import { usePathname } from "next/navigation"
-import { Home, FileText, TrendingUp, DollarSign, Users } from "lucide-react"
+import { Home, FileText, TrendingUp, DollarSign, Users, Bot } from "lucide-react"
 import {
   Sidebar,
   SidebarContent,
@@ -19,6 +19,8 @@ import {
 } from "@/components/ui/sidebar"
 import { ConnectWallet } from "../wallet/ConnectWallet"
 import { PriceDashboard } from "@/components/prices/PriceDashboard"
+import { ThemeToggle } from "@/components/theme-toggle"
+import { useTheme } from "next-themes"
 
 const menuItems = [
   {
@@ -41,10 +43,17 @@ const menuItems = [
     href: "/contacts",
     icon: Users,
   },
+  {
+    title: "Agents",
+    href: "/agents",
+    icon: Bot,
+  },
 ]
 
 export function AppSidebar() {
   const pathname = usePathname()
+  const { theme } = useTheme()
+  const isDark = theme === "dark"
 
   return (
     <Sidebar collapsible="icon">
@@ -52,11 +61,12 @@ export function AppSidebar() {
         <div className="flex items-center gap-2 px-2 py-2 group-data-[collapsible=icon]:justify-center">
           <Link href="/" className="flex items-center justify-center gap-2 hover:opacity-80 transition-opacity group-data-[collapsible=icon]:w-full group-data-[collapsible=icon]:justify-center">
             <Image
-              src="/logo.png"
+              src={isDark ? "/logo-white.png" : "/logo.png"}
               alt="SLAPSure Logo"
               width={120}
               height={32}
-              className="h-8 w-auto group-data-[collapsible=icon]:hidden"
+              className="h-8 w-auto object-contain group-data-[collapsible=icon]:hidden"
+              style={{ maxHeight: '32px', height: '32px' }}
               priority
             />
             <Image
@@ -65,6 +75,7 @@ export function AppSidebar() {
               width={36}
               height={36}
               className="size-9 shrink-0 object-contain hidden group-data-[collapsible=icon]:block"
+              style={{ width: '36px', height: '36px' }}
               priority
             />
           </Link>
@@ -92,15 +103,19 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
         <SidebarGroup className="mt-auto group-data-[collapsible=icon]:hidden">
-          <SidebarGroupLabel>Market Prices</SidebarGroupLabel>
           <SidebarGroupContent>
             <PriceDashboard />
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
       <SidebarFooter>
-        <div className="p-2 group-data-[collapsible=icon]:flex group-data-[collapsible=icon]:justify-center">
-          <ConnectWallet />
+        <div className="flex items-center gap-2 p-2">
+          <div className="flex-1">
+            <ConnectWallet />
+          </div>
+          <div className="group-data-[collapsible=icon]:hidden">
+            <ThemeToggle />
+          </div>
         </div>
       </SidebarFooter>
       <SidebarRail />

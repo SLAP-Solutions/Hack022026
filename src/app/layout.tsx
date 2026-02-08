@@ -5,6 +5,7 @@ import { AppSidebar } from "../components/layout/AppSidebar";
 import { WalletProvider } from "../context/WalletContext";
 import { WalletGate } from "../components/wallet/WalletGate";
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import { ThemeProvider } from "@/components/theme-provider";
 
 const merriweather = Merriweather({
   weight: ["300", "400", "700", "900"],
@@ -33,20 +34,27 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={`${manrope.variable} ${merriweather.variable}`}>
+    <html lang="en" className={`${manrope.variable} ${merriweather.variable}`} suppressHydrationWarning>
       <body className={`${manrope.className} antialiased bg-sidebar`}>
-        <WalletProvider>
-          <WalletGate>
-            <SidebarProvider>
-              <AppSidebar />
-              <SidebarInset className="p-4 pl-0 h-screen overflow-hidden bg-sidebar">
-                <main className="bg-white dark:bg-slate-950 rounded-xl border border-slate-200 dark:border-slate-800 h-full overflow-auto p-6">
-                  {children}
-                </main>
-              </SidebarInset>
-            </SidebarProvider>
-          </WalletGate>
-        </WalletProvider>
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange
+        >
+          <WalletProvider>
+            <WalletGate>
+              <SidebarProvider>
+                <AppSidebar />
+                <SidebarInset className="p-4 pl-0 h-screen overflow-hidden bg-sidebar">
+                  <main className="bg-white dark:bg-neutral-950 rounded-xl border border-slate-200 dark:border-neutral-800 h-full overflow-auto">
+                    {children}
+                  </main>
+                </SidebarInset>
+              </SidebarProvider>
+            </WalletGate>
+          </WalletProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

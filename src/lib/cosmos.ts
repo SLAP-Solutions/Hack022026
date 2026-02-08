@@ -19,7 +19,10 @@ function getClient(): CosmosClient {
 }
 
 export const containerConfig = {
-  claims: {
+  invoices: {
+    partitionKey: "id",  // Current DB uses /id, will migrate to /walletId later
+  },
+  claims: {  // Deprecated alias for backward compatibility
     partitionKey: "id",
   },
   payments: {
@@ -32,8 +35,18 @@ export const containerConfig = {
 
 type ContainerName = keyof typeof containerConfig;
 
+// Map logical container names to actual database container names
+// This allows us to use "invoices" in code while DB still has "claims"
+const containerNameMap: Record<string, string> = {
+  invoices: "claims",  // Map invoices to the actual 'claims' container in DB
+  claims: "claims",
+  payments: "payments",
+  contacts: "contacts",
+};
+
 function getContainer(containerName: ContainerName) {
-  return getClient().database(databaseId).container(containerName);
+  const actualContainerName = containerNameMap[containerName] || containerName;
+  return getClient().database(databaseId).container(actualContainerName);
 }
 
 export async function getAll(containerName: ContainerName) {
@@ -80,7 +93,7 @@ export async function update(
   const { resource } = await container.item(id, partitionKeyValue).replace(item);
   return resource;
 }
-    
+
 export async function deleteItem(
   containerName: ContainerName,
   id: string,

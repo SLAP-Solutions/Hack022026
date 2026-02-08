@@ -90,7 +90,7 @@
 }
 
 .dark {
-  /* Dark mode (blue, black, white) */
+  /* Dark mode (grey tones, no blue) */
   --background: oklch(0.145 0 0);
   --foreground: oklch(0.985 0 0);
   --card: oklch(0.205 0 0);
@@ -111,14 +111,20 @@
   --border: oklch(1 0 0 / 10%);
   --input: oklch(1 0 0 / 15%);
   --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.488 0.243 264.376);
-  --chart-2: oklch(0.696 0.17 162.48);
+  --chart-1: oklch(0.488 0 0);
+  /* Dark grey instead of blue */
+  --chart-2: oklch(0.696 0 0);
+  /* Medium grey instead of cyan/teal */
   --chart-3: oklch(0.769 0.188 70.08);
-  --chart-4: oklch(0.627 0.265 303.9);
+  /* Warm yellow/gold - kept for variety */
+  --chart-4: oklch(0.627 0 0);
+  /* Dark grey instead of purple */
   --chart-5: oklch(0.645 0.246 16.439);
+  /* Warm orange/red - kept for variety */
   --sidebar: oklch(0.205 0 0);
   --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
+  --sidebar-primary: oklch(0.488 0 0);
+  /* Dark grey instead of blue */
   --sidebar-primary-foreground: oklch(0.985 0 0);
   --sidebar-accent: oklch(0.269 0 0);
   --sidebar-accent-foreground: oklch(0.985 0 0);

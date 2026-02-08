@@ -1,22 +1,42 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { getById, update, deleteItem } from "@/lib/cosmos";
 
 export async function GET(
-  request: Request,
+  request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { id } = await params;
-    const claim = await getById("claims", id, id);
+    const searchParams = request.nextUrl.searchParams;
+    const walletId = searchParams.get("walletId");
 
-    if (!claim) {
-      return NextResponse.json({ error: "Claim not found" }, { status: 404 });
+    // SECURITY: Require walletId for verification
+    if (!walletId) {
+      return NextResponse.json(
+        { error: "Wallet ID is required" },
+        { status: 400 }
+      );
     }
 
-    return NextResponse.json(claim);
+    // Use id as partition key (current DB schema)
+    const invoice = await getById("invoices", id, id);
+
+    if (!invoice) {
+      return NextResponse.json({ error: "Invoice not found" }, { status: 404 });
+    }
+
+    // SECURITY: Verify the invoice belongs to the requesting wallet
+    if (invoice.walletId !== walletId) {
+      return NextResponse.json(
+        { error: "Unauthorized: Invoice does not belong to this wallet" },
+        { status: 403 }
+      );
+    }
+
+    return NextResponse.json(invoice);
   } catch (error) {
-    console.error("Failed to fetch claim:", error);
-    return NextResponse.json({ error: "Failed to fetch claim" }, { status: 500 });
+    console.error("Failed to fetch invoice:", error);
+    return NextResponse.json({ error: "Failed to fetch invoice" }, { status: 500 });
   }
 }
 
@@ -28,52 +48,75 @@ export async function PUT(
     const { id } = await params;
     const body = await request.json();
 
-    const claim = {
-      ...body,
-      id,
-      // Ensure updatedAt is updated if not passed or just force update it?
-      // Usually good to force update it if tracking modification time
-      // But for embedded arrays (payments), we might want to preserve other fields
-      // The store should pass the full object.
-    };
+    // SECURITY: Require walletId for verification
+    if (!body.walletId) {
+      return NextResponse.json(
+        { error: "Wallet ID is required" },
+        { status: 400 }
+      );
+    }
 
-    // We don't overwrite updatedAt here to allow store to manage it? 
-    // Or we should? Contacts route creates new Date().
-    // Let's stick to consistent pattern: server updates timestamp?
-    // But if store updates payment status, 'updatedAt' of claim should change.
-    // Let's add updatedAt.
+    // First, fetch the existing invoice to verify ownership
+    const existingInvoice = await getById("invoices", id, id);
 
-    const updatedClaim = {
-      ...claim,
-      updatedAt: new Date().toISOString() // Assuming Claim has updatedAt field?
-      // Wait, Claim interface in types/claim.ts DOES NOT have updatedAt!
-      // It has dateCreated and dateSettled.
-      // So I shouldn't add updatedAt unless I add it to type.
-      // I'll skip updatedAt for now to match type or check type again.
-    };
+    if (!existingInvoice) {
+      return NextResponse.json({ error: "Invoice not found" }, { status: 404 });
+    }
 
-    // Check types/claim.ts content from step 439:
-    // export interface Claim { id... dateCreated... dateSettled... }
-    // No updatedAt.
+    // SECURITY: Verify the invoice belongs to the requesting wallet
+    if (existingInvoice.walletId !== body.walletId) {
+      return NextResponse.json(
+        { error: "Unauthorized: Invoice does not belong to this wallet" },
+        { status: 403 }
+      );
+    }
 
-    const result = await update("claims", id, id, body); // Just update with body
+    // Use id as partition key (current DB schema)
+    const result = await update("invoices", id, id, body);
     return NextResponse.json(result);
   } catch (error) {
-    console.error("Failed to update claim:", error);
-    return NextResponse.json({ error: "Failed to update claim" }, { status: 500 });
+    console.error("Failed to update invoice:", error);
+    return NextResponse.json({ error: "Failed to update invoice" }, { status: 500 });
   }
 }
 
 export async function DELETE(
-  request: Request,
+  request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { id } = await params;
-    await deleteItem("claims", id, id);
+    const searchParams = request.nextUrl.searchParams;
+    const walletId = searchParams.get("walletId");
+
+    // SECURITY: Require walletId for verification
+    if (!walletId) {
+      return NextResponse.json(
+        { error: "Wallet ID is required" },
+        { status: 400 }
+      );
+    }
+
+    // First, fetch the existing invoice to verify ownership
+    const existingInvoice = await getById("invoices", id, id);
+
+    if (!existingInvoice) {
+      return NextResponse.json({ error: "Invoice not found" }, { status: 404 });
+    }
+
+    // SECURITY: Verify the invoice belongs to the requesting wallet
+    if (existingInvoice.walletId !== walletId) {
+      return NextResponse.json(
+        { error: "Unauthorized: Invoice does not belong to this wallet" },
+        { status: 403 }
+      );
+    }
+
+    // Use id as partition key (current DB schema)
+    await deleteItem("invoices", id, id);
     return NextResponse.json({ success: true }, { status: 200 });
   } catch (error) {
-    console.error("Failed to delete claim:", error);
-    return NextResponse.json({ error: "Failed to delete claim" }, { status: 500 });
+    console.error("Failed to delete invoice:", error);
+    return NextResponse.json({ error: "Failed to delete invoice" }, { status: 500 });
   }
 }
