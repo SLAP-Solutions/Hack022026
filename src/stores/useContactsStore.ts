@@ -77,7 +77,7 @@ export const useContactsStore = create<ContactsStore>((set, get) => ({
             if (updates.receiverAddress) {
                 const duplicate = get().contacts.find(
                     c => c.id !== id && 
-                    c.receiverAddress.toLowerCase() === updates.receiverAddress.toLowerCase()
+                    c.receiverAddress.toLowerCase() === updates.receiverAddress!.toLowerCase()
                 );
                 
                 if (duplicate) {
