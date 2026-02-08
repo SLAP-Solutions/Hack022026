@@ -34,7 +34,7 @@ export default function InvoicesPage() {
             fetchInvoices(address);
             const interval = setInterval(() => {
                 fetchInvoices(address, false);
-            }, 10000);
+            }, 2000);
             return () => clearInterval(interval);
         }
     }, [fetchInvoices, address]);

@@ -50,7 +50,7 @@ export async function POST(request: Request) {
       status: "pending",
       totalCost: 0,
       payments: [],
-      dateCreated: new Date().toISOString().split('T')[0], // YYYY-MM-DD
+      dateCreated: body.dateCreated || new Date().toISOString().split('T')[0], // YYYY-MM-DD
     };
 
     const invoice = await create("invoices", newInvoice);

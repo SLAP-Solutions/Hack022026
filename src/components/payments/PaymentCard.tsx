@@ -329,29 +329,14 @@ export function PaymentCard({ payment, onRefresh, invoiceId, invoiceTitle }: Pay
                             </>
                         ) : (
                             <>
-                                {(() => {
-                                    const actualPaid = parseFloat(ethers.formatEther(payment.paidAmount.toString()));
-                                    const wouldHavePaid = amountAtCreation;
-                                    const difference = wouldHavePaid - actualPaid;
-                                    const percentageSaved = wouldHavePaid > 0 ? (difference / wouldHavePaid) * 100 : 0;
-                                    const isSavings = difference > 0;
-                                    
-                                    return (
-                                        <>
-                                            <span className="text-muted-foreground">Price at Creation:</span>
-                                            <span className="font-mono text-right">
-                                                ${createdAtPrice.toFixed(2)}
-                                            </span>
-
-                                            <span className="text-muted-foreground">Would Have Paid:</span>
-                                            <span className="font-mono text-right text-muted-foreground">
-                                                {wouldHavePaid.toFixed(6)} {ticker}
-                                            </span>
-
-                                            <span className="text-muted-foreground mt-3 border-t pt-3">Price at Execution:</span>
-                                            <span className="font-mono text-right mt-3 pt-3 border-t">
-                                                ${(Number(payment.executedPrice) / multiplier).toFixed(2)}
-                                            </span>
+                                <span className="text-muted-foreground">Executed On:</span>
+                                <span className="font-mono text-right">
+                                    {new Date(Number(payment.executedAt) * 1000).toLocaleString()}
+                                </span>
+                                <span className="text-muted-foreground">Price at Execution:</span>
+                                <span className="font-mono text-right">
+                                    ${(Number(payment.executedPrice) / multiplier).toFixed(2)}
+                                </span>
 
                                             <span className="text-muted-foreground font-semibold">Actually Paid:</span>
                                             <span className={cn(
