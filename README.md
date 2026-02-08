@@ -2,6 +2,17 @@
 
 > **ETH Oxford 2026 Hackathon** | Built on Flare Network | FTSO-Powered
 
+## 🏆 Hackathon Tracks
+
+**Flare**
+ - Build on Flare Testnet usinng Flare protocols
+
+**Main Track** - Prediction Markets + DeFi
+ - A new DeFi application with a new and exciting way to send payments across chain 
+ 
+**Plasma**
+ - A new DeFi application with a new and exciting way to send payments across chain, could be build and adapted to the plasma network
+
 ## 👥 Team
 
 **Team Size:** 3 members (Ben, Rafe & George)
