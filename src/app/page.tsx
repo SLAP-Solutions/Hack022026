@@ -19,6 +19,8 @@ import { MetricCard } from "@/components/analytics/MetricCard";
 import { ExposureSummary } from "@/components/analytics/ExposureSummary";
 import { PaymentsBreakdown } from "@/components/analytics/PaymentsBreakdown";
 import { AverageSavingsCard } from "@/components/analytics/AverageSavingsCard";
+import { useInvoicesStore } from "@/stores/useInvoicesStore";
+import { useState, useEffect, useMemo } from "react";
 
 export default function Home() {
   const { address, isConnected, isInitializing } = useWallet();
