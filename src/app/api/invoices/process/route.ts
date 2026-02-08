@@ -6,6 +6,7 @@ export async function POST(request: NextRequest) {
     try {
         const formData = await request.formData();
         const file = formData.get("file") as File;
+        const walletId = formData.get("walletId") as string;
 
         if (!file) {
             return NextResponse.json(
@@ -14,11 +15,19 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        console.log(`Processing file: ${file.name} (${file.type})`);
+        if (!walletId) {
+            return NextResponse.json(
+                { error: "No wallet ID provided. Please connect your wallet." },
+                { status: 400 }
+            );
+        }
+
+        console.log(`Processing file: ${file.name} (${file.type}) for wallet: ${walletId}`);
         console.log(`Calling Agent API at: ${AGENT_API_URL}/agents/workflows/invoice/run`);
 
         const agentFormData = new FormData();
         agentFormData.append("file", file);
+        agentFormData.append("walletId", walletId);
 
         const agentResponse = await fetch(`${AGENT_API_URL}/agents/workflows/invoice/run`, {
             method: "POST",
@@ -31,6 +40,51 @@ export async function POST(request: NextRequest) {
             throw new Error(errorData.error || "Agent API request failed");
         }
 
+        // Check if the response is SSE (streaming)
+        const contentType = agentResponse.headers.get("content-type");
+        
+        if (contentType?.includes("text/event-stream")) {
+            // Forward the SSE stream to the client
+            const encoder = new TextEncoder();
+            
+            const stream = new ReadableStream({
+                async start(controller) {
+                    const reader = agentResponse.body?.getReader();
+                    if (!reader) {
+                        controller.close();
+                        return;
+                    }
+
+                    const decoder = new TextDecoder();
+                    
+                    try {
+                        while (true) {
+                            const { done, value } = await reader.read();
+                            if (done) break;
+                            
+                            // Forward the SSE data as-is
+                            controller.enqueue(value);
+                        }
+                    } catch (error) {
+                        console.error("Stream error:", error);
+                        const errorEvent = `data: ${JSON.stringify({ type: "error", error: "Stream interrupted" })}\n\n`;
+                        controller.enqueue(encoder.encode(errorEvent));
+                    } finally {
+                        controller.close();
+                    }
+                }
+            });
+
+            return new Response(stream, {
+                headers: {
+                    "Content-Type": "text/event-stream",
+                    "Cache-Control": "no-cache",
+                    "Connection": "keep-alive",
+                },
+            });
+        }
+
+        // Fallback for non-streaming response (backward compatibility)
         const result = await agentResponse.json();
         const extractedData = parseAgentResponse(result.response, file.name);
 
