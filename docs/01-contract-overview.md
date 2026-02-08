@@ -50,7 +50,7 @@ ClaimPayments automates optimal payment execution:
 - **Individuals** - Time personal transfers to minimize crypto spent
 - **Anyone** - Hold payment obligations and release at best market conditions
 
-Like escrow accounts that earn interest by holding funds longer, FlareOptimize saves crypto by releasing funds at optimal prices.
+Like escrow accounts that earn interest by holding funds longer, Slapsure saves crypto by releasing funds at optimal prices.
 
 ## Key Concepts
 

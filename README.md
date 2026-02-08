@@ -1,4 +1,4 @@
-# FlareOptimize - Smart Crypto Payment Optimization
+# Slapsure - Smart Crypto Payment Optimization
 
 > **ETH Oxford 2026 Hackathon** | Built on Flare Network | FTSO-Powered
 
@@ -10,18 +10,18 @@
 
 ## 💡 The Idea
 
-Businesses and individuals need to make payments in volatile crypto (ETH, SOL, BTC) but want to lock in stable USD or USDC values. As crypto prices fluctuate, the amount needed to pay the same USD value changes dramatically. **FlareOptimize lets you pay invoices when crypto prices are favorable, minimizing the amount of crypto spent.**
+Businesses and individuals need to make payments in volatile crypto (ETH, SOL, BTC) but want to lock in stable USD or USDC values. As crypto prices fluctuate, the amount needed to pay the same USD value changes dramatically. **Slapsure lets you pay invoices when crypto prices are favorable, minimizing the amount of crypto spent.**
 
-Similar to how escrow accounts hold funds in high-interest accounts to maximize returns before release, **FlareOptimize holds payment obligations until market conditions are optimal** - but instead of earning interest, you save crypto by paying at the best price.
+Similar to how escrow accounts hold funds in high-interest accounts to maximize returns before release, **Slapsure holds payment obligations until market conditions are optimal** - but instead of earning interest, you save crypto by paying at the best price.
 
 ### Real Impact
 
-**Without FlareOptimize:**
+**Without Slapsure:**
 - Pay $1,000 invoice immediately when ETH = $2,000 → Costs **0.5 ETH**
 - If you had waited for ETH = $2,100 → Would only cost **0.476 ETH**
 - You spent **0.024 ETH more** ($50) by paying at the wrong time!
 
-**With FlareOptimize:**
+**With Slapsure:**
 - Create $1,000 invoice with triggers: pay when ETH ≥ $2,100 (take profit) or ETH ≤ $1,900 (stop loss)
 - Price hits $2,100 → Auto-execute → Costs **0.476 ETH**
 - **Saved 0.024 ETH ($50)** by waiting for optimal price
