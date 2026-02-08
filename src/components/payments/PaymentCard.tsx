@@ -93,9 +93,16 @@ export function PaymentCard({ payment, onRefresh }: PaymentCardProps) {
     const takeProfitHit = current > 0 && current >= takeProfit;
     const canExecute = !payment.executed && (stopLossHit || takeProfitHit);
 
+    // Calculate creation price position on the progress bar
+    const createdAtPrice = Number(payment.createdAtPrice) / multiplier;
+
     // Calculate progress bar position
     const progress = stopLoss < takeProfit
         ? ((current - stopLoss) / (takeProfit - stopLoss)) * 100
+        : 50;
+
+    const creationProgress = stopLoss < takeProfit && createdAtPrice > 0
+        ? ((createdAtPrice - stopLoss) / (takeProfit - stopLoss)) * 100
         : 50;
 
     // Calculate potential payout amounts
@@ -128,7 +135,6 @@ export function PaymentCard({ payment, onRefresh }: PaymentCardProps) {
     const currentPayoutInTicker = current > 0 ? usdAmountDollars / current : 0;
     const refundAmount = collateralAmount - currentPayoutInTicker;
 
-    const createdAtPrice = Number(payment.createdAtPrice) / multiplier;
     const amountAtCreation = createdAtPrice > 0 ? usdAmountDollars / createdAtPrice : 0;
 
     const pnlPercent = (createdAtPrice > 0 && current > 0)
@@ -212,6 +218,7 @@ export function PaymentCard({ payment, onRefresh }: PaymentCardProps) {
                             >
                                 <div className="flex justify-between text-xs mb-1">
                                     <span className="text-red-600 font-medium">SL: ${stopLoss.toFixed(2)}</span>
+                                    <span className="text-muted-foreground font-medium text-[10px]">Created: ${createdAtPrice.toFixed(2)}</span>
                                     <span className="text-green-600 font-medium">TP: ${takeProfit.toFixed(2)}</span>
                                 </div>
                                 <div className="w-full bg-muted rounded-full h-3 relative overflow-hidden ring-1 ring-transparent group-hover:ring-primary/20 transition-all">
@@ -222,10 +229,12 @@ export function PaymentCard({ payment, onRefresh }: PaymentCardProps) {
                                         )}
                                         style={{ width: `${Math.max(0, Math.min(100, progress))}%` }}
                                     />
-                                    {progress > 0 && progress < 100 && (
+                                    {/* Creation price marker */}
+                                    {creationProgress >= 0 && creationProgress <= 100 && (
                                         <div
-                                            className="absolute top-0 bottom-0 w-0.5 bg-white z-10 shadow-[0_0_4px_rgba(0,0,0,0.5)]"
-                                            style={{ left: `${payment.executed ? 100 : progress}%` }}
+                                            className="absolute -top-1 -bottom-1 w-0.5 bg-cyan-500 z-[5] shadow-sm"
+                                            style={{ left: `${creationProgress}%` }}
+                                            title={`Created at $${createdAtPrice.toFixed(2)}`}
                                         />
                                     )}
                                 </div>
