@@ -167,8 +167,16 @@ export function WalletProvider({ children }: { children: ReactNode }) {
 
     // Auto-connect on mount
     useEffect(() => {
-        const checkConnection = async () => {
-            if (typeof window !== "undefined" && window.ethereum) {
+        const checkConnection = async (retries = 3) => {
+            // Some extensions inject window.ethereum with a slight delay
+            if (typeof window === "undefined") return;
+
+            if (!window.ethereum && retries > 0) {
+                setTimeout(() => checkConnection(retries - 1), 500);
+                return;
+            }
+
+            if (window.ethereum) {
                 try {
                     const accounts = await window.ethereum.request({ method: "eth_accounts" });
                     if (accounts && accounts.length > 0) {
@@ -176,14 +184,14 @@ export function WalletProvider({ children }: { children: ReactNode }) {
                         const signer = await browserProvider.getSigner();
                         const userAddress = await signer.getAddress();
 
+                        // Detect wallet type
+                        if (window.ethereum.isMetaMask) setWalletType("metamask");
+                        else if (window.ethereum.isPhantom) setWalletType("phantom");
+
                         setProvider(browserProvider);
                         setAddress(userAddress);
 
-                        // Check network silently
-                        const network = await browserProvider.getNetwork();
-                        if (Number(network.chainId) !== CHAIN_ID) {
-                            // We don't force switch here to avoid annoying popups on load
-                        }
+                        console.log("[Wallet] Auto-connected to:", userAddress);
                     }
                 } catch (err) {
                     console.error("Failed to restore connection:", err);

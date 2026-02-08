@@ -41,6 +41,7 @@ export async function POST(request: Request) {
 
     const newInvoice = {
       ...body,
+      walletId: body.walletId.toLowerCase(),
       id,
       status: "pending",
       totalCost: 0,

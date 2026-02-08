@@ -29,6 +29,10 @@ export function useContract() {
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
+    // Dedicated provider for read-only calls to ensure high reliability
+    // regardless of the wallet's current network/provider state.
+    const publicProvider = new JsonRpcProvider(RPC_URL);
+
     const getContract = async () => {
         if (!provider || !address) throw new Error("Wallet not connected");
         const signer = await provider.getSigner();
@@ -155,15 +159,16 @@ export function useContract() {
 
     const getCurrentPrice = async (feedSymbol: keyof typeof FEED_IDS) => {
         try {
-            const contract = getReadOnlyContract();
+            // Price lookups are forced through the main Flare RPC for maximum stability
+            const contract = new Contract(CONTRACT_ADDRESS, ABI, publicProvider);
             const feedId = FEED_IDS[feedSymbol];
-            // The ABI defines this function as 'nonpayable' (write), implying a state change.
-            // Since we are using a read-only provider (no signer), we must use .staticCall()
-            // to simulate the transaction and read the return value without broadcasting a tx.
+
+            // The ABI defines this function as 'nonpayable' (write), so we use staticCall
+            // to simulate the execution and extract the price data from the oracle.
             const result = await contract.getCurrentPrice.staticCall(feedId);
             const [price, decimals, timestamp] = result;
 
-            console.log(`Fetched price for ${feedSymbol}:`, Number(price));
+            console.log(`[Contract] ${feedSymbol} price:`, Number(price));
 
             return {
                 price: Number(price),
@@ -171,8 +176,15 @@ export function useContract() {
                 timestamp: Number(timestamp),
             };
         } catch (err: any) {
-            console.error(`Error getting price for ${feedSymbol}:`, err);
-            throw err;
+            console.error(`[Contract] Failed to fetch ${feedSymbol} price:`, err.message);
+
+            // Fallback for UI if contract call fails completely
+            return {
+                price: 0,
+                decimals: 0,
+                timestamp: Math.floor(Date.now() / 1000),
+                error: err.message
+            };
         }
     };
 
