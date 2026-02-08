@@ -5,18 +5,12 @@ import { useParams, useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Calendar, DollarSign, Tag, Receipt, User, Building, Plus, ShieldAlert, CreditCard, Bell, Pen } from "lucide-react";
+import { ArrowLeft, Calendar, DollarSign, Tag, Receipt, User, Building, Plus, ShieldAlert, CreditCard, Bell, Pen, Clock } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { CreatePaymentForm } from "@/components/payments/CreatePaymentForm";
 import { useContract } from "@/hooks/useContract";
 import { PaymentCard } from "@/components/payments/PaymentCard";
 import { PendingSignaturePaymentCard } from "@/components/payments/PendingSignaturePaymentCard";
-import { FEED_IDS } from "@/lib/contract/constants";
-import { ArrowLeft, Calendar, DollarSign, Tag, Receipt, User, Building, Plus, ShieldAlert, CreditCard, Bell, Clock } from "lucide-react";
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { CreatePaymentForm } from "@/components/payments/CreatePaymentForm";
-import { useContract } from "@/hooks/useContract";
-import { PaymentCard } from "@/components/payments/PaymentCard";
 import { FEED_IDS } from "@/lib/contract/constants";
 import { ClaimRiskModal } from "@/components/modals/ClaimRiskModal";
 import { useInvoicesStore } from "@/stores/useInvoicesStore";
@@ -51,43 +45,6 @@ export default function InvoiceDetailPage() {
     const { prices } = useFTSOPrices();
     const { payments: livePayments } = usePayments();
     const [isRiskModalOpen, setIsRiskModalOpen] = useState(false);
-    const [isPaymentSidebarOpen, setIsPaymentSidebarOpen] = useState(false);
-
-    const handlePaymentSuccess = async (paymentId?: string) => {
-        if (!paymentId) {
-            setIsPaymentSidebarOpen(false);
-            return;
-        }
-
-        try {
-            const paymentDetails = await getClaimPayment(Number(paymentId));
-
-            const newPayment = {
-                id: BigInt(paymentId),
-                payer: paymentDetails.payer,
-                receiver: paymentDetails.receiver,
-                usdAmount: paymentDetails.usdAmount,
-                cryptoFeedId: paymentDetails.cryptoFeedId,
-                stopLossPrice: paymentDetails.stopLossPrice,
-                takeProfitPrice: paymentDetails.takeProfitPrice,
-                collateralAmount: paymentDetails.collateralAmount,
-                createdAt: BigInt(paymentDetails.createdAt),
-                createdAtPrice: paymentDetails.createdAtPrice,
-                expiresAt: BigInt(paymentDetails.expiresAt),
-                status: 'pending' as const,
-                executed: paymentDetails.executed,
-                executedAt: BigInt(paymentDetails.executedAt),
-                executedPrice: paymentDetails.executedPrice,
-                paidAmount: paymentDetails.paidAmount,
-                originalAmount: paymentDetails.usdAmount
-            };
-
-            await addPayment(invoiceId, newPayment);
-            setIsPaymentSidebarOpen(false);
-        } catch (error) {
-            console.error("Failed to link payment to invoice", error);
-        }
-    };
     const [isPaymentSidebarOpen, setIsPaymentSidebarOpen] = useState(false);
     const [refreshTimer, setRefreshTimer] = useState(10);
 
@@ -469,28 +426,6 @@ export default function InvoiceDetailPage() {
                                         currentPrice: currentPrice,
                                         createdAtPrice: payment.createdAtPrice || BigInt(0),
                                     };
-                    {invoice.payments && invoice.payments.length > 0 ? (
-                        <div className="columns-1 md:columns-2 gap-4 space-y-4">
-                            {invoice.payments.map((payment) => {
-                                // Find price for this payment's feed
-                                const feedSymbol = Object.keys(FEED_IDS).find(
-                                    (key) => FEED_IDS[key as keyof typeof FEED_IDS] === payment.cryptoFeedId
-                                );
-                                const priceData = feedSymbol ? prices[feedSymbol as keyof typeof FEED_IDS] : undefined;
-
-                                // PaymentCard expects price scaled by 1000 (3 decimals)
-                                const currentPrice = priceData ? Math.floor(parseFloat(priceData.price) * 1000) : 0;
-
-                                // Try to find live payment data to ensure status is up to date
-                                const livePayment = livePayments.find(p => p.id === Number(payment.id));
-
-                                // Construct ClaimPaymentWithPrice object
-                                const claimPayment = livePayment || {
-                                    ...payment,
-                                    id: Number(payment.id), // Convert bigint id to number for contract calls
-                                    currentPrice: currentPrice,
-                                    createdAtPrice: payment.createdAtPrice || BigInt(0),
-                                };
 
                                     return (
                                         <div key={payment.id.toString()} className="break-inside-avoid mb-4">
@@ -501,15 +436,6 @@ export default function InvoiceDetailPage() {
                                         </div>
                                     );
                                 })}
-                                return (
-                                    <div key={payment.id.toString()} className="break-inside-avoid mb-4">
-                                        <PaymentCard
-                                            payment={claimPayment as any}
-                                            onRefresh={() => updatePaymentStatus(invoice.id, payment.id, 'executed')}
-                                        />
-                                    </div>
-                                );
-                            })}
                         </div>
                     ) : (
                         <div className="text-center py-8 text-muted-foreground bg-muted/20 rounded-lg">
