@@ -213,11 +213,21 @@ export function CreatePaymentForm({ onSuccess, invoiceId }: CreatePaymentFormPro
                                     <SelectValue placeholder="Select contact..." />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    {contacts.map(contact => (
-                                        <SelectItem key={contact.id} value={contact.receiverAddress}>
-                                            {contact.name}
-                                        </SelectItem>
-                                    ))}
+                                    {(() => {
+                                        // Deduplicate contacts by receiverAddress to prevent duplicate keys
+                                        const uniqueContacts = contacts.reduce((acc, contact) => {
+                                            if (!acc.find(c => c.receiverAddress === contact.receiverAddress)) {
+                                                acc.push(contact);
+                                            }
+                                            return acc;
+                                        }, [] as typeof contacts);
+                                        
+                                        return uniqueContacts.map(contact => (
+                                            <SelectItem key={contact.id} value={contact.receiverAddress}>
+                                                {contact.name}
+                                            </SelectItem>
+                                        ));
+                                    })()}
                                 </SelectContent>
                             </Select>
                         )}
