@@ -2,28 +2,48 @@
 
 > **ETH Oxford 2026 Hackathon** | Built on Flare Network | FTSO-Powered
 
+## 👥 Team
+
+**Team Size:** 3 members (Ben, Rafe & George)
+
+**Note:** This repository shows 4 contributors due to one team member using an additional GitHub account after exhausting Copilot credits.
+
 ## 💡 The Idea
 
-Insurance companies hold crypto reserves but owe claims in USD. As crypto prices fluctuate, the amount needed to pay the same USD value changes dramatically. **FlareOptimize lets them pay claims when crypto prices are high, minimizing the amount of crypto spent.**
+Businesses and individuals need to make payments in volatile crypto (ETH, SOL, BTC) but want to lock in stable USD or USDC values. As crypto prices fluctuate, the amount needed to pay the same USD value changes dramatically. **FlareOptimize lets you pay invoices when crypto prices are favorable, minimizing the amount of crypto spent.**
+
+Similar to how escrow accounts hold funds in high-interest accounts to maximize returns before release, **FlareOptimize holds payment obligations until market conditions are optimal** - but instead of earning interest, you save crypto by paying at the best price.
 
 ### Real Impact
 
 **Without FlareOptimize:**
-- Pay $10 claim when ETH = $2,000 → Costs **0.005 ETH**
-- Price drops to $1,900 → Would cost **0.0053 ETH** (6% more expensive!)
+- Pay $1,000 invoice immediately when ETH = $2,000 → Costs **0.5 ETH**
+- If you had waited for ETH = $2,100 → Would only cost **0.476 ETH**
+- You spent **0.024 ETH more** ($50) by paying at the wrong time!
 
 **With FlareOptimize:**
-- Create $10 claim with triggers: execute when ETH ≥ $2,100
-- Price hits $2,100 → Auto-execute → Costs **0.0048 ETH**
-- **Saved 4% in crypto** by waiting for optimal price
+- Create $1,000 invoice with triggers: pay when ETH ≥ $2,100 (take profit) or ETH ≤ $1,900 (stop loss)
+- Price hits $2,100 → Auto-execute → Costs **0.476 ETH**
+- **Saved 0.024 ETH ($50)** by waiting for optimal price
+- Recipient gets full $1,000 USD value, you pay less crypto
+
+### Who Benefits?
+
+- **Businesses** - Pay invoices, salaries, contractors when rates are favorable
+- **Freelancers** - Optimize payment timing for client invoices
+- **DAOs** - Execute treasury payments at best market conditions
+- **Anyone** - Hold payment obligations and release at optimal prices
 
 ## 🎯 How It Works
 
-1. **Create Payment** - Enter USD amount, set price triggers (stop loss/take profit)
-2. **Lock Collateral** - Smart contract holds FLR as collateral (150% ratio)
-3. **Monitor Prices** - Flare FTSO provides real-time price feeds
-4. **Auto-Execute** - When price hits trigger, payment executes automatically
-5. **Get Refund** - Excess collateral returned instantly
+1. **Create Invoice/Payment** - Enter USD amount owed, choose payment crypto (ETH, BTC, etc.)
+2. **Set Triggers** - Define upper bound (take profit) and lower bound (stop loss) prices
+3. **Lock Collateral** - Smart contract holds crypto collateral (150% ratio for security)
+4. **Monitor Prices** - Flare FTSO provides real-time decentralized price feeds (~1.8s updates)
+5. **Auto-Execute** - When price hits your trigger, payment executes automatically
+6. **Get Refund** - Excess collateral returned instantly, recipient gets exact USD value
+
+**Instant Payments:** Need to pay now? Skip triggers and execute immediately at current price.
 
 ## 🚀 Demo Mode (Coston2 Testnet)
 
@@ -45,11 +65,15 @@ This lets us show real savings using authentic market prices while running on te
 
 ## 📊 Key Features
 
-✅ **USD-Denominated** - Define claims in familiar fiat amounts  
+✅ **USD-Denominated** - Define invoices in familiar fiat amounts (USD, USDC)  
 ✅ **Dynamic Calculation** - Crypto amount calculated at execution time  
 ✅ **Trigger-Based** - Stop loss and take profit automation  
+✅ **Instant Payments** - Option to pay immediately at current price  
 ✅ **Over-Collateralized** - Secure payments with automatic refunds  
 ✅ **Decentralized Prices** - Flare FTSO (100+ data providers, updates ~1.8s)  
+✅ **Contact Management** - Save recipients for easy repeat payments  
+✅ **Transaction History** - Complete on-chain payment records  
+✅ **Real-time PNL** - See savings vs. creation price in real-time  
 ✅ **Fully On-Chain** - No backend database required  
 
 ## 📂 Project Structure
@@ -157,22 +181,30 @@ When you deploy a new contract, update the GitHub secret:
 
 ## 💰 Real Savings Example
 
-**Scenario:** Insurance company owes $1,000 USD, holds ETH
+**Scenario:** You owe a contractor $1,000 USD, want to pay in ETH
 
-| ETH Price | ETH Needed | Difference |
-|-----------|-----------|------------|
+| ETH Price | ETH Needed | Savings vs. $2,000 |
+|-----------|-----------|--------------------|
+| $1,900 | 0.5263 ETH | **Costs $50 more** |
 | $2,000 | 0.5000 ETH | Baseline |
-| $2,100 | 0.4762 ETH | **Save 0.0238 ETH ($50)** |
-| $1,900 | 0.5263 ETH | **Costs 0.0263 ETH ($50) more** |
+| $2,100 | 0.4762 ETH | **Save $50 (5%)** |
+| $2,200 | 0.4545 ETH | **Save $100 (10%)** |
 
-By setting take profit at $2,100, the insurance company **automatically saves 5% in crypto** when the price rises.
+**Strategy:**
+- Set take profit: $2,100 (pay when ETH is high → save crypto)
+- Set stop loss: $1,950 (pay before it gets worse)
+- Lock 0.75 ETH collateral (150% of worst case)
+- Wait for optimal execution
+
+**Result:** Contractor receives exactly $1,000 USD value, you saved ~5% in ETH by waiting for the right price. Like earning interest on escrow, but through market timing instead.
 
 ## 🏆 Flare Hackathon Requirements
 
 ✅ **FTSO Integration** - Uses Flare Time Series Oracle for price feeds  
-✅ **Real-World Problem** - Solves crypto payment optimization for insurtech  
+✅ **Real-World Problem** - Solves crypto payment optimization for businesses, freelancers, and consumers  
 ✅ **Decentralized** - No centralized price oracle dependencies  
 ✅ **Production Ready** - Battle-tested over-collateralization pattern  
+✅ **Impactful** - Enables anyone to optimize payment timing, not just institutions  
 
 ## 📝 Building on Flare Feedback
 
