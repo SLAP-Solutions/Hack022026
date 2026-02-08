@@ -18,14 +18,16 @@ import {
 } from "@/components/ui/select";
 import { Info, Activity } from "lucide-react";
 import { PriceHistoryModal } from "./PriceHistoryModal";
+import { toast } from "sonner";
 
 type PaymentMode = "trigger" | "instant";
 
 interface CreatePaymentFormProps {
     onSuccess?: (paymentId?: string) => void;
+    invoiceId?: string;
 }
 
-export function CreatePaymentForm({ onSuccess }: CreatePaymentFormProps) {
+export function CreatePaymentForm({ onSuccess, invoiceId }: CreatePaymentFormProps) {
     const { createClaimPayment, createInstantPayment, getCurrentPrice, isLoading } = useContract();
     const { contacts, fetchContacts } = useContactsStore();
     const { addPayment } = useInvoicesStore();
@@ -71,6 +73,71 @@ export function CreatePaymentForm({ onSuccess }: CreatePaymentFormProps) {
         }).catch(console.error);
     }, [feed]);
 
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!currentPrice) {
+            toast.error("Waiting for price data...");
+            return;
+        }
+
+        const usdCents = Math.floor(parseFloat(usdAmount) * 100);
+
+        try {
+            if (mode === "instant") {
+                const collateralWei = calculateInstantCollateral();
+                const collateralEth = ethers.formatEther(collateralWei.toString());
+
+                await createInstantPayment(receiver, usdCents, feed, collateralEth);
+                toast.success("Instant payment executed successfully!");
+            } else {
+                const stopLoss = BigInt(Math.floor(currentPrice * (1 + stopLossPercent / 100)));
+                const takeProfit = BigInt(Math.floor(currentPrice * (1 + takeProfitPercent / 100)));
+                const collateralWei = calculateRequiredCollateral(stopLoss);
+                const collateralEth = ethers.formatEther(collateralWei.toString());
+
+                const txHash = await createClaimPayment(receiver, usdCents, feed, stopLoss, takeProfit, expiryDays, collateralEth);
+
+                // If we have an invoiceId, link this payment in the store
+                if (invoiceId) {
+                    const newPayment = {
+                        id: BigInt(Date.now()), // Mock ID for UI, in reality would use contract events or ID
+                        payer: "You", // Connected wallet
+                        receiver: receiver,
+                        usdAmount: parseFloat(usdAmount),
+                        cryptoFeedId: FEED_IDS[feed],
+                        stopLossPrice: Number(stopLossInput),
+                        takeProfitPrice: Number(takeProfitInput),
+                        collateralAmount: BigInt(ethers.parseEther(collateralEth)),
+                        createdAt: BigInt(Math.floor(Date.now() / 1000)),
+                        expiresAt: BigInt(Math.floor(Date.now() / 1000) + (expiryDays * 86400)),
+                        executed: false,
+                        executedAt: BigInt(0),
+                        executedPrice: BigInt(0),
+                        paidAmount: BigInt(0),
+                        originalAmount: parseFloat(usdAmount),
+                        status: 'pending' as const
+                    };
+                    addPayment(invoiceId, newPayment);
+                }
+
+                toast.success("Trigger-based payment created successfully!");
+            }
+
+            // Reset form
+            setReceiver("");
+            setUsdAmount("10");
+
+            // Call success callback if provided
+            onSuccess?.();
+        } catch (error: any) {
+            console.error(error);
+            toast.error(`Failed: ${error.message || "Unknown error"}`);
+        }
+    };
+
+    const stopLossPrice = currentPrice ? currentPrice * (1 + stopLossPercent / 100) : 0;
+    const takeProfitPrice = currentPrice ? currentPrice * (1 + takeProfitPercent / 100) : 0;
+
     const calculateRequiredCollateral = (stopLoss: bigint) => {
         if (!usdAmount || stopLoss <= BigInt(0)) return BigInt(0);
 
@@ -102,45 +169,7 @@ export function CreatePaymentForm({ onSuccess }: CreatePaymentFormProps) {
         return BigInt(Math.floor((usdCents * 1e18 * decimalsMultiplier) / (price * 100)));
     };
 
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!currentPrice) {
-            alert("Waiting for price data...");
-            return;
-        }
 
-        const usdCents = Math.floor(parseFloat(usdAmount) * 100);
-
-        try {
-            if (mode === "instant") {
-                const collateralWei = calculateInstantCollateral();
-                const collateralEth = ethers.formatEther(collateralWei.toString());
-
-                const result = await createInstantPayment(receiver, usdCents, feed, collateralEth);
-                alert("✅ Instant payment executed successfully!");
-                onSuccess?.(result.paymentId);
-            } else {
-                const stopLoss = BigInt(Math.floor(currentPrice * (1 + stopLossPercent / 100)));
-                const takeProfit = BigInt(Math.floor(currentPrice * (1 + takeProfitPercent / 100)));
-                const collateralWei = calculateRequiredCollateral(stopLoss);
-                const collateralEth = ethers.formatEther(collateralWei.toString());
-
-                const result = await createClaimPayment(receiver, usdCents, feed, stopLoss, takeProfit, expiryDays, collateralEth);
-                alert("✅ Trigger-based payment created successfully!");
-                onSuccess?.(result.paymentId);
-            }
-
-            // Reset form
-            setReceiver("");
-            setUsdAmount("10");
-        } catch (error: any) {
-            console.error(error);
-            alert(`Failed: ${error.message || "Unknown error"}`);
-        }
-    };
-
-    const stopLossPrice = currentPrice ? currentPrice * (1 + stopLossPercent / 100) : 0;
-    const takeProfitPrice = currentPrice ? currentPrice * (1 + takeProfitPercent / 100) : 0;
 
     const requiredCollateralWei = mode === "instant"
         ? calculateInstantCollateral()
@@ -190,11 +219,21 @@ export function CreatePaymentForm({ onSuccess }: CreatePaymentFormProps) {
                                     <SelectValue placeholder="Select contact..." />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    {uniqueContacts.map(contact => (
-                                        <SelectItem key={contact.id} value={contact.receiverAddress}>
-                                            {contact.name}
-                                        </SelectItem>
-                                    ))}
+                                    {(() => {
+                                        // Deduplicate contacts by receiverAddress to prevent duplicate keys
+                                        const uniqueContacts = contacts.reduce((acc, contact) => {
+                                            if (!acc.find(c => c.receiverAddress === contact.receiverAddress)) {
+                                                acc.push(contact);
+                                            }
+                                            return acc;
+                                        }, [] as typeof contacts);
+
+                                        return uniqueContacts.map(contact => (
+                                            <SelectItem key={contact.id} value={contact.receiverAddress}>
+                                                {contact.name}
+                                            </SelectItem>
+                                        ));
+                                    })()}
                                 </SelectContent>
                             </Select>
                         )}
@@ -262,7 +301,7 @@ export function CreatePaymentForm({ onSuccess }: CreatePaymentFormProps) {
                 {mode === "trigger" && (
                     <>
                         <div className="flex justify-between items-center pb-2">
-                            <h3 className="font-semibold text-sm">Trigger Settings</h3>
+                            <h3 className="font-semibold text-sm">Execution Bounds</h3>
                             <Button
                                 type="button"
                                 variant="outline"
@@ -277,7 +316,7 @@ export function CreatePaymentForm({ onSuccess }: CreatePaymentFormProps) {
                         </div>
                         <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-2">
-                                <Label htmlFor="stopLoss">Lower bound price ($)</Label>
+                                <Label htmlFor="stopLoss">Lower Bound ($)</Label>
                                 <div className="space-y-1">
                                     <Input
                                         id="stopLoss"
@@ -300,12 +339,12 @@ export function CreatePaymentForm({ onSuccess }: CreatePaymentFormProps) {
                                     </div>
                                 </div>
                                 <p className="text-[10px] text-muted-foreground leading-tight">
-                                    Execute if price drops to this level
+                                    Execute if price falls below this floor
                                 </p>
                             </div>
 
                             <div className="space-y-2">
-                                <Label htmlFor="takeProfit">Upper bound price ($)</Label>
+                                <Label htmlFor="takeProfit">Upper Bound ($)</Label>
                                 <div className="space-y-1">
                                     <Input
                                         id="takeProfit"
@@ -328,7 +367,7 @@ export function CreatePaymentForm({ onSuccess }: CreatePaymentFormProps) {
                                     </div>
                                 </div>
                                 <p className="text-[10px] text-muted-foreground leading-tight">
-                                    Execute if price reaches this level
+                                    Execute if price rises to this ceiling
                                 </p>
                             </div>
                         </div>
@@ -386,7 +425,7 @@ export function CreatePaymentForm({ onSuccess }: CreatePaymentFormProps) {
 
                             {mode === "trigger" && (
                                 <>
-                                    <span className="text-muted-foreground">If Stop Loss Hits:</span>
+                                    <span className="text-muted-foreground">If Lower Bound Hit:</span>
                                     <span className="text-right">
                                         {ethers.formatEther(payoutAtStopLoss.toString()).substring(0, 10)} {ticker}
                                     </span>
@@ -396,7 +435,7 @@ export function CreatePaymentForm({ onSuccess }: CreatePaymentFormProps) {
                                         {ethers.formatEther(payoutAtCurrent.toString()).substring(0, 10)} {ticker}
                                     </span>
 
-                                    <span className="text-green-600 font-semibold">If Take Profit Hits:</span>
+                                    <span className="text-green-600 font-semibold">If Upper Bound Hit:</span>
                                     <span className="text-right font-semibold text-green-600">
                                         {ethers.formatEther(payoutAtTakeProfit.toString()).substring(0, 10)} {ticker}
                                     </span>
@@ -407,7 +446,7 @@ export function CreatePaymentForm({ onSuccess }: CreatePaymentFormProps) {
                         {mode === "trigger" && savingsAtTakeProfit > 0 && (
                             <div className="pt-2 border-t">
                                 <p className="text-sm font-semibold text-green-600">
-                                    Potential Savings: {savingsAtTakeProfit.toFixed(1)}% if take profit executes
+                                    Market Advantage: {savingsAtTakeProfit.toFixed(1)}% reduction in {ticker} cost
                                 </p>
                             </div>
                         )}

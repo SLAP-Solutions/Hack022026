@@ -33,6 +33,15 @@ export const useContactsStore = create<ContactsStore>((set, get) => ({
     addContact: async (contact) => {
         set({ isLoading: true, error: null });
         try {
+            // Check for duplicate receiver address
+            const existingContact = get().contacts.find(
+                c => c.receiverAddress.toLowerCase() === contact.receiverAddress.toLowerCase()
+            );
+            
+            if (existingContact) {
+                throw new Error(`A contact with this address already exists: ${existingContact.name}`);
+            }
+
             const newContact = {
                 ...contact,
                 id: `CNT-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
@@ -63,6 +72,18 @@ export const useContactsStore = create<ContactsStore>((set, get) => ({
         try {
             const existingContact = get().contacts.find((c) => c.id === id);
             if (!existingContact) throw new Error('Contact not found');
+
+            // If updating receiver address, check for duplicates
+            if (updates.receiverAddress) {
+                const duplicate = get().contacts.find(
+                    c => c.id !== id && 
+                    c.receiverAddress.toLowerCase() === updates.receiverAddress!.toLowerCase()
+                );
+                
+                if (duplicate) {
+                    throw new Error(`A contact with this address already exists: ${duplicate.name}`);
+                }
+            }
 
             const updatedContact = {
                 ...existingContact,

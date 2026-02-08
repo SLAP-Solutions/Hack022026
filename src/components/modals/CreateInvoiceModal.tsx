@@ -17,6 +17,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Loader2, CheckCircle2, AlertCircle, Bot, ArrowRight } from "lucide-react";
+import { toast } from "sonner";
 
 interface CreateClaimModalProps {
     isOpen: boolean;
@@ -24,11 +25,6 @@ interface CreateClaimModalProps {
 }
 
 type ProcessingStatus = "idle" | "uploading" | "processing" | "success" | "error";
-
-interface StreamEvent {
-    type: "text" | "agent" | "start" | "done" | "error";
-    data: Record<string, unknown>;
-}
 
 export function CreateInvoiceModal({ isOpen, onClose }: CreateClaimModalProps) {
     const { addInvoice } = useInvoicesStore();
@@ -49,40 +45,12 @@ export function CreateInvoiceModal({ isOpen, onClose }: CreateClaimModalProps) {
     const [agentResponse, setAgentResponse] = useState<string>("");
     const [streamingText, setStreamingText] = useState<string>("");
     const [processingError, setProcessingError] = useState<string>("");
-    
-    const [currentAgent, setCurrentAgent] = useState<string>("");
-    const [agentHistory, setAgentHistory] = useState<string[]>([]);
+    const streamingTextRef = useRef<HTMLDivElement>(null);
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files[0]) {
             setFile(e.target.files[0]);
         }
-    };
-
-    // Parse SSE events from the stream
-    const parseSSE = (chunk: string): StreamEvent[] => {
-        const events: StreamEvent[] = [];
-        const lines = chunk.split('\n');
-        let currentEvent: { type?: string; data?: string } = {};
-
-        for (const line of lines) {
-            if (line.startsWith('event: ')) {
-                currentEvent.type = line.slice(7);
-            } else if (line.startsWith('data: ')) {
-                currentEvent.data = line.slice(6);
-            } else if (line === '' && currentEvent.type && currentEvent.data) {
-                try {
-                    events.push({
-                        type: currentEvent.type as StreamEvent["type"],
-                        data: JSON.parse(currentEvent.data)
-                    });
-                } catch {
-                    // Skip malformed JSON
-                }
-                currentEvent = {};
-            }
-        }
-        return events;
     };
 
     const handleUploadSubmit = async (e: React.FormEvent) => {
@@ -99,8 +67,6 @@ export function CreateInvoiceModal({ isOpen, onClose }: CreateClaimModalProps) {
         setProcessingError("");
         setAgentResponse("");
         setStreamingText("");
-        setCurrentAgent("");
-        setAgentHistory([]);
 
         const formData = new FormData();
         formData.append("file", file);
@@ -109,83 +75,102 @@ export function CreateInvoiceModal({ isOpen, onClose }: CreateClaimModalProps) {
         try {
             setProcessingStatus("processing");
 
-            // Call AI agent with streaming
+            // Call AI agent to process invoice with streaming
             const response = await fetch("/api/invoices/process", {
                 method: "POST",
                 body: formData,
-                headers: {
-                    "Accept": "text/event-stream",
-                },
             });
 
-            if (!response.ok) {
-                throw new Error("Failed to connect to AI agent");
-            }
+            const contentType = response.headers.get("content-type");
 
-            const reader = response.body?.getReader();
-            if (!reader) {
-                throw new Error("No response body");
-            }
+            if (contentType?.includes("text/event-stream")) {
+                // Handle SSE streaming response
+                const reader = response.body?.getReader();
+                if (!reader) throw new Error("No response body");
 
-            const decoder = new TextDecoder();
-            let fullText = "";
-            let finalData: Record<string, unknown> | null = null;
+                const decoder = new TextDecoder();
+                let buffer = "";
+                let fullResponse = "";
 
-            // Read the stream
-            while (true) {
-                const { done, value } = await reader.read();
-                if (done) break;
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
 
-                const chunk = decoder.decode(value, { stream: true });
-                const events = parseSSE(chunk);
+                    buffer += decoder.decode(value, { stream: true });
 
-                for (const event of events) {
-                    switch (event.type) {
-                        case "start":
-                            setCurrentAgent("workflow");
-                            break;
-                        case "text":
-                            if (event.data.content) {
-                                fullText += event.data.content as string;
-                                setStreamingText(fullText);
+                    // Process complete SSE events
+                    const lines = buffer.split("\n");
+                    buffer = lines.pop() || ""; // Keep incomplete line in buffer
+
+                    for (const line of lines) {
+                        if (line.startsWith("data: ")) {
+                            try {
+                                const eventData = JSON.parse(line.slice(6)) as SSEEvent;
+
+                                if (eventData.type === "text") {
+                                    fullResponse += eventData.content;
+                                    setStreamingText(fullResponse);
+
+                                    // Auto-scroll to bottom
+                                    if (streamingTextRef.current) {
+                                        streamingTextRef.current.scrollTop = streamingTextRef.current.scrollHeight;
+                                    }
+                                } else if (eventData.type === "complete") {
+                                    setAgentResponse(eventData.response);
+
+                                    // Parse and populate form
+                                    const extractedData = parseAgentResponse(eventData.response, file.name);
+                                    setTitle(extractedData.title || "");
+                                    setDescription(extractedData.description || "");
+                                    setClaimantName(extractedData.claimantName || "");
+                                    setType(extractedData.type || "");
+
+                                    setProcessingStatus("success");
+
+                                    // After a short delay, switch to manual mode for review
+                                    setTimeout(() => {
+                                        setMode("manual");
+                                        setFile(null);
+                                        setProcessingStatus("idle");
+                                        setStreamingText("");
+                                    }, 2000);
+                                } else if (eventData.type === "error") {
+                                    throw new Error(eventData.details || eventData.error);
+                                }
+                            } catch (parseError) {
+                                // Skip invalid JSON lines
+                                console.warn("Failed to parse SSE event:", line);
                             }
-                            break;
-                        case "agent":
-                            // Track agent switches
-                            setCurrentAgent(event.data.to as string);
-                            setAgentHistory(prev => [...prev, event.data.to as string]);
-                            break;
-                        case "done":
-                            finalData = event.data;
-                            break;
-                        case "error":
-                            throw new Error(event.data.error as string || "Stream error");
+                        }
                     }
                 }
-            }
+            } else {
+                // Fallback for non-streaming response
+                const result = await response.json();
 
-            // Process final result
-            if (finalData) {
-                setAgentResponse(finalData.response as string || fullText);
-                
-                // Parse the response to extract data (you may want to improve this)
-                const extractedData = parseAgentResponse(finalData.response as string || fullText, file.name);
+                if (!response.ok || !result.success) {
+                    throw new Error(result.error || "Failed to process document");
+                }
+
+                const extractedData = result.data;
+
+                if (result.agentResponse) {
+                    setAgentResponse(result.agentResponse);
+                }
+
                 setTitle(extractedData.title || "");
                 setDescription(extractedData.description || "");
                 setClaimantName(extractedData.claimantName || "");
                 setType(extractedData.type || "");
+
+                setProcessingStatus("success");
+
+                setTimeout(() => {
+                    setMode("manual");
+                    setFile(null);
+                    setProcessingStatus("idle");
+                }, 2000);
             }
-
-            setProcessingStatus("success");
-
-            // After a short delay, switch to manual mode for review
-            setTimeout(() => {
-                setMode("manual");
-                setFile(null);
-                setProcessingStatus("idle");
-                setStreamingText("");
-                setAgentHistory([]);
-            }, 3000);
 
         } catch (error) {
             console.error("AI Processing Error:", error);
@@ -200,71 +185,16 @@ export function CreateInvoiceModal({ isOpen, onClose }: CreateClaimModalProps) {
         }
     };
 
-    // Helper function to parse agent response into structured data
-    const parseAgentResponse = (response: string, fileName: string) => {
-        let title = fileName.split('.')[0] || "Invoice";
-        let description = "Extracted from uploaded document";
-        let claimantName = "";
-        let type = "General";
-
-        if (!response) {
-            return { title, description, claimantName, type };
-        }
-
-        // Try to extract client/claimant name
-        const clientMatch = response.match(/client[:\s]+([A-Za-z\s]+?)(?:\.|,|\n|$)/i) ||
-                            response.match(/claimant[:\s]+([A-Za-z\s]+?)(?:\.|,|\n|$)/i) ||
-                            response.match(/name[:\s]+([A-Za-z\s]+?)(?:\.|,|\n|$)/i);
-        if (clientMatch) {
-            claimantName = clientMatch[1].trim();
-        }
-
-        // Try to extract type
-        const typeMatch = response.match(/type[:\s]+([A-Za-z\s]+?)(?:\.|,|\n|$)/i) ||
-                          response.match(/category[:\s]+([A-Za-z\s]+?)(?:\.|,|\n|$)/i);
-        if (typeMatch) {
-            type = typeMatch[1].trim();
-        } else if (response.toLowerCase().includes("medical") || response.toLowerCase().includes("health")) {
-            type = "Health";
-        } else if (response.toLowerCase().includes("auto") || response.toLowerCase().includes("vehicle")) {
-            type = "Auto";
-        } else if (response.toLowerCase().includes("home") || response.toLowerCase().includes("property")) {
-            type = "Home";
-        }
-
-        // Try to extract title
-        const titleMatch = response.match(/title[:\s]+([^\n]+?)(?:\.|,|\n|$)/i) ||
-                           response.match(/invoice for[:\s]+([^\n]+?)(?:\.|,|\n|$)/i);
-        if (titleMatch) {
-            title = titleMatch[1].trim();
-        } else {
-            title = `${type} Invoice`;
-        }
-
-        // Use the full response as description if it's reasonable length
-        if (response.length < 500) {
-            description = response;
-        } else {
-            const summaryMatch = response.match(/summary[:\s]+([^\n]+)/i) ||
-                                response.match(/description[:\s]+([^\n]+)/i);
-            if (summaryMatch) {
-                description = summaryMatch[1].trim();
-            }
-        }
-
-        return { title, description, claimantName, type };
-    };
-
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
         if (!title || !description || !claimantName || !type) {
-            alert("Please fill in all fields");
+            toast.error("Please fill in all fields");
             return;
         }
 
         if (!address) {
-            alert("Please connect your wallet to create an invoice");
+            toast.error("Please connect your wallet to create an invoice");
             return;
         }
 
@@ -281,7 +211,7 @@ export function CreateInvoiceModal({ isOpen, onClose }: CreateClaimModalProps) {
             handleClose();
         } catch (error) {
             console.error(error);
-            alert("Failed to create invoice");
+            toast.error("Failed to create invoice");
         } finally {
             setIsLoading(false);
         }
@@ -440,37 +370,20 @@ export function CreateInvoiceModal({ isOpen, onClose }: CreateClaimModalProps) {
                                     )}
                                     {processingStatus === "processing" && (
                                         <>
-                                            <Bot className="w-5 h-5 text-amber-500 animate-pulse mt-0.5" />
-                                            <div className="flex-1">
-                                                <div className="flex items-center gap-2 mb-2">
-                                                    <p className="font-medium text-amber-700">AI Agent Processing...</p>
-                                                    {currentAgent && (
-                                                        <span className="text-xs bg-amber-200 text-amber-800 px-2 py-0.5 rounded-full">
-                                                            {currentAgent}
-                                                        </span>
-                                                    )}
-                                                </div>
-                                                
-                                                {/* Agent history indicator */}
-                                                {agentHistory.length > 0 && (
-                                                    <div className="flex flex-wrap items-center gap-1 mb-2">
-                                                        {agentHistory.map((agent, i) => (
-                                                            <span key={i} className="inline-flex items-center gap-1 text-xs">
-                                                                {i > 0 && <ArrowRight className="w-3 h-3 text-amber-400" />}
-                                                                <span className="bg-amber-100 text-amber-700 px-2 py-0.5 rounded">
-                                                                    {agent}
-                                                                </span>
-                                                            </span>
-                                                        ))}
-                                                    </div>
-                                                )}
-                                                
-                                                {/* Streaming text preview */}
+                                            <Bot className="w-5 h-5 text-amber-500 animate-pulse mt-0.5 flex-shrink-0" />
+                                            <div className="flex-1 min-w-0">
+                                                <p className="font-medium text-amber-700 dark:text-amber-300">AI Agent Processing...</p>
+                                                <p className="text-sm text-amber-600 dark:text-amber-400 mb-2">Extracting invoice details from document</p>
+
+                                                {/* Streaming Text Display */}
                                                 {streamingText && (
-                                                    <div className="mt-2 p-2 bg-white/50 rounded border border-amber-200 max-h-32 overflow-y-auto">
-                                                        <p className="text-xs text-amber-800 whitespace-pre-wrap">
-                                                            {streamingText.slice(-500)}
-                                                            <span className="animate-pulse">|</span>
+                                                    <div
+                                                        ref={streamingTextRef}
+                                                        className="mt-2 p-3 bg-white/50 dark:bg-black/20 rounded border border-amber-200 dark:border-amber-700 max-h-48 overflow-y-auto"
+                                                    >
+                                                        <p className="text-xs font-mono text-amber-800 dark:text-amber-200 whitespace-pre-wrap break-words">
+                                                            {streamingText}
+                                                            <span className="inline-block w-2 h-4 bg-amber-500 animate-pulse ml-0.5 align-middle" />
                                                         </p>
                                                     </div>
                                                 )}

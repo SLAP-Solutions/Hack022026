@@ -29,8 +29,6 @@ export function useContract() {
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
-    // Dedicated provider for read-only calls to ensure high reliability
-    // regardless of the wallet's current network/provider state.
     const publicProvider = new JsonRpcProvider(RPC_URL);
 
     const getContract = async () => {

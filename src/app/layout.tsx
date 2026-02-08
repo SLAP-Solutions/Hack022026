@@ -6,6 +6,7 @@ import { WalletProvider } from "../context/WalletContext";
 import { WalletGate } from "../components/wallet/WalletGate";
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { ThemeProvider } from "@/components/theme-provider";
+import { Toaster } from "@/components/ui/sonner"
 
 const merriweather = Merriweather({
   weight: ["300", "400", "700", "900"],
@@ -21,8 +22,8 @@ const manrope = Manrope({
 });
 
 export const metadata: Metadata = {
-  title: "Slapsure",
-  description: "Automated payouts on Flare using FTSO",
+  title: "Slapsure - A better way of paying",
+  description: "Strategic automated payments with market-aware execution bounds to optimize token efficiency.",
   icons: {
     icon: "/favicon.png",
   },
@@ -50,6 +51,7 @@ export default function RootLayout({
                   <main className="bg-white dark:bg-neutral-950 rounded-xl border border-slate-200 dark:border-neutral-800 h-full overflow-auto">
                     {children}
                   </main>
+                  <Toaster />
                 </SidebarInset>
               </SidebarProvider>
             </WalletGate>

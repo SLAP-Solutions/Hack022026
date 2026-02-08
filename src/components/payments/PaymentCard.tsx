@@ -17,6 +17,7 @@ import {
     HoverCardTrigger,
 } from "@/components/ui/hover-card";
 import { useMemo } from "react";
+import { toast } from "sonner";
 import Link from "next/link";
 
 interface PaymentCardProps {
@@ -70,17 +71,17 @@ export function PaymentCard({ payment, onRefresh, invoiceId, invoiceTitle }: Pay
             if (canExecute) {
                 // Triggers hit - normal execution
                 await executeClaimPayment(payment.id);
-                alert("Payment executed at trigger price! Check transaction history.");
+                toast.success("Payment executed at trigger price! Check transaction history.");
             } else {
                 // Early execution - bypass triggers
                 await executePaymentEarly(payment.id);
-                alert("Payment executed early! Check transaction history.");
+                toast.success("Payment executed early! Check transaction history.");
             }
             onRefresh?.();
         } catch (error: any) {
             console.error(error);
             const reason = error.message || "Execution failed";
-            alert(`Execution failed: ${reason}`);
+            toast.error(`Execution failed: ${reason}`);
         }
     };
 
@@ -240,9 +241,9 @@ export function PaymentCard({ payment, onRefresh, invoiceId, invoiceTitle }: Pay
                                 onClick={() => setIsModalOpen(true)}
                             >
                                 <div className="flex justify-between text-xs mb-1">
-                                    <span className="text-red-600 font-medium">SL: ${stopLoss.toFixed(2)}</span>
+                                    <span className="text-red-600 font-medium">LB: ${stopLoss.toFixed(2)}</span>
                                     <span className="text-muted-foreground font-medium text-[10px]">Created: ${createdAtPrice.toFixed(2)}</span>
-                                    <span className="text-green-600 font-medium">TP: ${takeProfit.toFixed(2)}</span>
+                                    <span className="text-green-600 font-medium">UB: ${takeProfit.toFixed(2)}</span>
                                 </div>
                                 <div className="w-full bg-muted rounded-full h-3 relative overflow-hidden ring-1 ring-transparent group-hover:ring-primary/20 transition-all">
                                     <div
@@ -306,12 +307,12 @@ export function PaymentCard({ payment, onRefresh, invoiceId, invoiceTitle }: Pay
 
                                 {!isInstantPayment && (
                                     <>
-                                        <span className="text-muted-foreground mt-3">If Stop Loss Hit:</span>
+                                        <span className="text-muted-foreground mt-3">If Lower Bound Hit:</span>
                                         <span className="font-mono text-right text-red-600 mt-3">
                                             {(usdAmountDollars / stopLoss).toFixed(6)} {ticker}
                                         </span>
 
-                                        <span className="text-muted-foreground">If Take Profit Hit:</span>
+                                        <span className="text-muted-foreground">If Upper Bound Hit:</span>
                                         <span className="font-mono text-right text-green-600">
                                             {(usdAmountDollars / takeProfit).toFixed(6)} {ticker}
                                         </span>
@@ -325,7 +326,7 @@ export function PaymentCard({ payment, onRefresh, invoiceId, invoiceTitle }: Pay
 
                                 {!isInstantPayment && (
                                     <div className="col-span-2 border-t pt-1 mt-1 flex justify-between items-center">
-                                        <span className="text-muted-foreground">PNL:</span>
+                                        <span className="text-muted-foreground">Market Advantage:</span>
                                         <span className={cn(
                                             "font-bold",
                                             pnlPercent > 0 ? "text-green-600" : pnlPercent < 0 ? "text-red-600" : "text-muted-foreground"
@@ -341,8 +342,19 @@ export function PaymentCard({ payment, onRefresh, invoiceId, invoiceTitle }: Pay
                                 <span className="font-mono text-right">
                                     {new Date(Number(payment.executedAt) * 1000).toLocaleString()}
                                 </span>
-                                <span className="text-muted-foreground">Price at Execution:</span>
+
+                                <span className="text-muted-foreground">Price at Creation:</span>
                                 <span className="font-mono text-right">
+                                    ${createdAtPrice.toFixed(2)}
+                                </span>
+
+                                <span className="text-muted-foreground">Would Have Paid:</span>
+                                <span className="font-mono text-right text-muted-foreground">
+                                    {amountAtCreation.toFixed(6)} {ticker}
+                                </span>
+
+                                <span className="text-muted-foreground mt-3 border-t pt-3">Price at Execution:</span>
+                                <span className="font-mono text-right mt-3 pt-3 border-t">
                                     ${(Number(payment.executedPrice) / multiplier).toFixed(2)}
                                 </span>
 
@@ -382,7 +394,7 @@ export function PaymentCard({ payment, onRefresh, invoiceId, invoiceTitle }: Pay
                         className="w-full"
                         variant={canExecute || isInstantPayment ? "default" : "secondary"}
                     >
-                        {isLoading ? "Executing..." : isInstantPayment ? "💰 Execute Payment" : canExecute ? "⚡ Execute Payment" : "Pay Now (Early)"}
+                        {isLoading ? "Executing..." : isInstantPayment ? "Execute Payment" : canExecute ? "Execute Payment" : "Pay Now (Early)"}
                     </Button>
                 )}
 
