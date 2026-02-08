@@ -5,7 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Calendar, DollarSign, Tag, Receipt, User, Building, Plus, ShieldAlert, CreditCard, Bell } from "lucide-react";
+import { ArrowLeft, Calendar, DollarSign, Tag, Receipt, User, Building, Plus, ShieldAlert, CreditCard, Bell, Clock } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { CreatePaymentForm } from "@/components/payments/CreatePaymentForm";
 import { useContract } from "@/hooks/useContract";
@@ -271,7 +271,8 @@ export default function InvoiceDetailPage() {
                             <Badge variant="secondary">{invoice.payments.length}</Badge>
                         </div>
                         <div className="flex gap-2">
-                            <span className="text-xs text-muted-foreground self-center mr-2">
+                            <span className="flex items-center gap-1 text-xs text-muted-foreground self-center mr-2">
+                                <Clock className="w-3 h-3" />
                                 Refreshes in {refreshTimer}s
                             </span>
                             <Button
