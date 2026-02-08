@@ -5,13 +5,13 @@
 ## 🏆 Hackathon Tracks
 
 **Flare**
- - Build on Flare Testnet usinng Flare protocols
+- Built on Flare Testnet using Flare's enshrined FTSO protocol
 
 **Main Track** - Prediction Markets + DeFi
- - A new DeFi application with a new and exciting way to send payments across chain 
+- A novel DeFi application enabling market-optimized cross-chain payment execution
 
 **Plasma**
- - A new DeFi application with a new and exciting way to send payments across chain, could be build and adapted to the plasma network
+- Demonstrating a new approach to cross-chain payments that could be deployed on Plasma network
 
 ## 🌐 Live Demo
 
