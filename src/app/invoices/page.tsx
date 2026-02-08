@@ -68,6 +68,11 @@ export default function InvoicesPage() {
                     ...payment,
                     status: (livePayment.executed ? 'executed' : 'pending') as 'pending' | 'executed',
                     executedAt: BigInt(livePayment.executedAt),
+                    currentPrice: livePayment.currentPrice,
+                    decimals: livePayment.decimals,
+                    executedPrice: livePayment.executedPrice,
+                    paidAmount: livePayment.paidAmount,
+                    expiresAt: BigInt(livePayment.expiresAt),
                 };
             }
             return payment;

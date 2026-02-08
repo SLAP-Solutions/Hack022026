@@ -7,6 +7,7 @@ interface InvoicesStore {
     isLoading: boolean;
     error: string | null;
     fetchInvoices: (walletId?: string, showLoading?: boolean) => Promise<void>;
+    fetchInvoice: (invoiceId: string, walletId: string) => Promise<Invoice | undefined>;
     addInvoice: (invoice: CreateInvoiceInput) => Promise<void>;
     getInvoice: (id: string) => Invoice | undefined;
     addPayment: (invoiceId: string, payment: Payment) => Promise<void>;
@@ -47,6 +48,45 @@ export const useInvoicesStore = create<InvoicesStore>((set, get) => ({
 
     getInvoice: (id: string) => {
         return get().invoices.find(inv => inv.id === id);
+    },
+
+    fetchInvoice: async (invoiceId: string, walletId: string) => {
+        try {
+            const normalizedWalletId = walletId?.toLowerCase();
+            const response = await fetch(`/api/invoices/${invoiceId}?walletId=${normalizedWalletId}`, { cache: 'no-store' });
+            if (!response.ok) {
+                if (response.status === 404) return undefined;
+                throw new Error('Failed to fetch invoice');
+            }
+
+            const text = await response.text();
+
+            const reviver = (key: string, value: any) => {
+                const bigIntKeys = ['id', 'collateralAmount', 'createdAt', 'expiresAt', 'executedAt', 'executedPrice', 'paidAmount'];
+                if (bigIntKeys.includes(key) && typeof value === 'string' && /^\d+$/.test(value)) {
+                    return BigInt(value);
+                }
+                return value;
+            };
+
+            const invoice = JSON.parse(text, reviver);
+            
+            // Update or add the invoice to the store
+            set((state) => {
+                const existingIndex = state.invoices.findIndex(inv => inv.id === invoiceId);
+                if (existingIndex >= 0) {
+                    const updated = [...state.invoices];
+                    updated[existingIndex] = invoice;
+                    return { invoices: updated };
+                }
+                return { invoices: [...state.invoices, invoice] };
+            });
+
+            return invoice;
+        } catch (error) {
+            console.error('Error fetching invoice:', error);
+            return undefined;
+        }
     },
 
     addInvoice: async (invoiceInput: CreateInvoiceInput) => {

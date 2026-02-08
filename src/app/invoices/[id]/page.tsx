@@ -1,24 +1,27 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Calendar, DollarSign, Tag, Receipt, User, Building, Plus, ShieldAlert, CreditCard, Bell, Pen, Clock } from "lucide-react";
+import { ArrowLeft, Calendar, DollarSign, Tag, Receipt, User, Building, Plus, CreditCard, Bell, Pen, Clock, BarChart3 } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { CreatePaymentForm } from "@/components/payments/CreatePaymentForm";
 import { useContract } from "@/hooks/useContract";
+import { useWallet } from "@/hooks/useWallet";
 import { PaymentCard } from "@/components/payments/PaymentCard";
 import { PendingSignaturePaymentCard } from "@/components/payments/PendingSignaturePaymentCard";
 import { FEED_IDS } from "@/lib/contract/constants";
-import { ClaimRiskModal } from "@/components/modals/ClaimRiskModal";
 import { useInvoicesStore } from "@/stores/useInvoicesStore";
 import { Slider } from "@/components/ui/slider";
 import { cn } from "@/lib/utils";
 import { getFeedName, getFeedSymbol } from "@/config/feeds";
 import { useFTSOPrices } from "@/hooks/useFTSOPrices";
 import { usePayments } from "@/hooks/usePayments";
+import { ExposureSummary } from "@/components/analytics/ExposureSummary";
+import { usePaymentMetrics } from "@/hooks/usePaymentMetrics";
 
 const statusConfig = {
     pending: { color: "bg-primary/10 text-primary border-primary/30" },
@@ -40,13 +43,17 @@ export default function InvoiceDetailPage() {
     const params = useParams();
     const router = useRouter();
     const invoiceId = params.id as string;
-    const { getInvoice, updatePaymentStatus, addPayment } = useInvoicesStore();
+    const { getInvoice, updatePaymentStatus, addPayment, fetchInvoice } = useInvoicesStore();
     const { getClaimPayment } = useContract();
+    const { address } = useWallet();
     const { prices } = useFTSOPrices();
     const { payments: livePayments } = usePayments();
-    const [isRiskModalOpen, setIsRiskModalOpen] = useState(false);
     const [isPaymentSidebarOpen, setIsPaymentSidebarOpen] = useState(false);
+    const [isExposureModalOpen, setIsExposureModalOpen] = useState(false);
     const [refreshTimer, setRefreshTimer] = useState(2);
+    const [isEditingDueDate, setIsEditingDueDate] = useState(false);
+    const [dueDate, setDueDate] = useState<string>('');
+    const [isLoading, setIsLoading] = useState(false);
 
     // Reset timer when payments update
     useEffect(() => {
@@ -60,6 +67,51 @@ export default function InvoiceDetailPage() {
         }, 1000);
         return () => clearInterval(interval);
     }, []);
+
+    const invoice = getInvoice(invoiceId);
+
+    // Fetch invoice if not in store
+    useEffect(() => {
+        if (!invoice && address && !isLoading) {
+            setIsLoading(true);
+            fetchInvoice(invoiceId, address).finally(() => setIsLoading(false));
+        }
+    }, [invoiceId, address, invoice, fetchInvoice, isLoading]);
+
+    // Update due date when invoice loads
+    useEffect(() => {
+        if (invoice?.dateDue) {
+            setDueDate(new Date(invoice.dateDue).toISOString().split('T')[0]);
+        }
+    }, [invoice?.dateDue]);
+
+    // Derive status and calculate metrics early (before conditional returns)
+    const updatedPayments = useMemo(() => {
+        if (!invoice) return [];
+        return invoice.payments?.map(payment => {
+            const livePayment = livePayments.find(p => p.id === Number(payment.id));
+            if (livePayment) {
+                return {
+                    ...payment,
+                    status: (livePayment.executed ? 'executed' : 'pending') as 'pending' | 'executed',
+                    executed: livePayment.executed,
+                    executedAt: BigInt(livePayment.executedAt),
+                    expiresAt: BigInt(livePayment.expiresAt),
+                    currentPrice: livePayment.currentPrice,
+                    decimals: livePayment.decimals,
+                    executedPrice: livePayment.executedPrice,
+                    paidAmount: livePayment.paidAmount,
+                };
+            }
+            return {
+                ...payment,
+                status: (payment.executed ? 'executed' : 'pending') as 'pending' | 'executed',
+            };
+        }) || [];
+    }, [invoice, livePayments]);
+
+    // Calculate metrics for invoice payments (must be called before conditional returns)
+    const invoiceMetrics = usePaymentMetrics(updatedPayments as any);
 
     const handlePaymentSuccess = async (paymentId?: string) => {
         if (!paymentId) {
@@ -97,7 +149,17 @@ export default function InvoiceDetailPage() {
         }
     };
 
-    const invoice = getInvoice(invoiceId);
+    if (isLoading) {
+        return (
+            <div className="max-w-4xl mx-auto">
+                <Card>
+                    <CardContent className="pt-16 pb-16 text-center">
+                        <h1 className="text-2xl font-bold mb-4">Loading invoice...</h1>
+                    </CardContent>
+                </Card>
+            </div>
+        );
+    }
 
     if (!invoice) {
         return (
@@ -118,23 +180,6 @@ export default function InvoiceDetailPage() {
         );
     }
 
-    // Derive status based on live payments (matches InvoicesPage logic)
-    const updatedPayments = invoice.payments?.map(payment => {
-        const livePayment = livePayments.find(p => p.id === Number(payment.id));
-        if (livePayment) {
-            return {
-                ...payment,
-                status: (livePayment.executed ? 'executed' : 'pending') as 'pending' | 'executed',
-                executed: livePayment.executed,
-                executedAt: BigInt(livePayment.executedAt),
-            };
-        }
-        return {
-            ...payment,
-            status: (payment.executed ? 'executed' : 'pending') as 'pending' | 'executed',
-        };
-    }) || [];
-
     let computedStatus = invoice.status;
     if (updatedPayments.length > 0) {
         const allExecuted = updatedPayments.every(p => p.status === 'executed');
@@ -148,6 +193,12 @@ export default function InvoiceDetailPage() {
     }
 
     const statusInfo = statusConfig[computedStatus as keyof typeof statusConfig] || statusConfig.pending;
+
+    // Get the ticker symbol for display (default to ETH if unable to determine)
+    const firstPayment = updatedPayments[0];
+    const feedSymbol = firstPayment ? Object.keys(FEED_IDS).find(
+        (key) => FEED_IDS[key as keyof typeof FEED_IDS] === firstPayment.cryptoFeedId
+    ) || "ETH" : "ETH";
 
     return (
         <div className="max-w-7xl mx-auto space-y-6 p-6">
@@ -239,6 +290,79 @@ export default function InvoiceDetailPage() {
                     </CardContent>
                 </Card>
 
+                <Card>
+                    <CardContent className="p-4">
+                        <div className="flex items-center justify-between gap-2 mb-1">
+                            <div className="flex items-center gap-2 text-muted-foreground">
+                                <Clock className="w-4 h-4" />
+                                <span className="text-xs font-medium">Due</span>
+                            </div>
+                            {!isEditingDueDate && (
+                                <button
+                                    onClick={() => setIsEditingDueDate(true)}
+                                    className="text-xs text-primary hover:underline"
+                                >
+                                    {dueDate ? 'Edit' : 'Set'}
+                                </button>
+                            )}
+                        </div>
+                        {isEditingDueDate ? (
+                            <div className="flex gap-2 mt-2">
+                                <input
+                                    type="date"
+                                    value={dueDate}
+                                    onChange={(e) => setDueDate(e.target.value)}
+                                    className="px-2 py-1 border rounded text-sm flex-1"
+                                />
+                                <Button
+                                    size="sm"
+                                    onClick={async () => {
+                                        try {
+                                            const updatedInvoice = { 
+                                                ...invoice, 
+                                                dateDue: dueDate ? new Date(dueDate).toISOString() : undefined 
+                                            };
+                                            const replacer = (key: string, value: any) => {
+                                                if (typeof value === 'bigint') {
+                                                    return value.toString();
+                                                }
+                                                return value;
+                                            };
+                                            await fetch(`/api/invoices/${invoice.id}`, {
+                                                method: 'PUT',
+                                                headers: { 'Content-Type': 'application/json' },
+                                                body: JSON.stringify(updatedInvoice, replacer),
+                                            });
+                                            setIsEditingDueDate(false);
+                                            window.location.reload();
+                                        } catch (error) {
+                                            console.error("Failed to update due date:", error);
+                                        }
+                                    }}
+                                >
+                                    Save
+                                </Button>
+                                <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => setIsEditingDueDate(false)}
+                                >
+                                    Cancel
+                                </Button>
+                            </div>
+                        ) : (
+                            <p className="font-semibold">
+                                {dueDate ? new Date(dueDate).toLocaleDateString('en-US', {
+                                    year: 'numeric',
+                                    month: 'long',
+                                    day: 'numeric',
+                                    timeZone: 'UTC'
+                                }) : 'Not set'}
+                            </p>
+                        )}
+                    </CardContent>
+                </Card>
+
                 {invoice.dateNotified && (
                     <Card>
                         <CardContent className="p-4">
@@ -298,7 +422,7 @@ export default function InvoiceDetailPage() {
                                                 // and change status to 'pending'
                                                 try {
                                                     const paymentDetails = await getClaimPayment(Number(blockchainId));
-                                                    
+
                                                     // Update the payment in the invoice
                                                     const updatedPayments = invoice.payments.map((p: any) => {
                                                         if (p.id === pendingId) {
@@ -343,7 +467,7 @@ export default function InvoiceDetailPage() {
                                                 // Remove the pending payment from the invoice
                                                 try {
                                                     const updatedPayments = invoice.payments.filter((p: any) => p.id !== pendingId);
-                                                    
+
                                                     const replacer = (key: string, value: any) => {
                                                         if (typeof value === 'bigint') {
                                                             return value.toString();
@@ -386,15 +510,17 @@ export default function InvoiceDetailPage() {
                                 <Clock className="w-3 h-3" />
                                 Refreshes in {refreshTimer}s
                             </span>
-                            <Button
-                                variant="outline"
-                                onClick={() => setIsRiskModalOpen(true)}
-                                size="sm"
-                                className="text-muted-foreground hover:text-primary"
-                            >
-                                <ShieldAlert className="w-4 h-4 mr-2" />
-                                View Risk Exposure
-                            </Button>
+                            {updatedPayments && updatedPayments.length > 0 && (
+                                <Button
+                                    onClick={() => setIsExposureModalOpen(true)}
+                                    variant="outline"
+                                    size="sm"
+                                    className="text-muted-foreground hover:text-primary"
+                                >
+                                    <BarChart3 className="w-4 h-4 mr-2" />
+                                    Active Positions
+                                </Button>
+                            )}
                             <Button
                                 onClick={() => setIsPaymentSidebarOpen(true)}
                                 size="sm"
@@ -407,9 +533,9 @@ export default function InvoiceDetailPage() {
                     </div>
                 </CardHeader>
                 <CardContent>
-                    {invoice.payments && invoice.payments.filter((p: any) => p.status !== 'pending_signature').length > 0 ? (
+                    {updatedPayments && updatedPayments.filter((p: any) => p.status !== 'pending_signature').length > 0 ? (
                         <div className="columns-1 md:columns-2 gap-4 space-y-4">
-                            {invoice.payments
+                            {updatedPayments
                                 .filter((p: any) => p.status !== 'pending_signature')
                                 .map((payment: any) => {
                                     // Find price for this payment's feed
@@ -452,6 +578,23 @@ export default function InvoiceDetailPage() {
             </Card>
 
             {/* Modals */}
+            <Dialog open={isExposureModalOpen} onOpenChange={setIsExposureModalOpen}>
+                <DialogContent className="max-w-2xl">
+                    <DialogHeader>
+                        <DialogTitle>Active Positions Overview</DialogTitle>
+                    </DialogHeader>
+                    {updatedPayments && updatedPayments.length > 0 && (
+                        <ExposureSummary
+                            worstCase={invoiceMetrics.currentExposureWorstCase}
+                            livePercent={invoiceMetrics.liveExposurePercent}
+                            isProfit={invoiceMetrics.isExposureProfit}
+                            bestCase={invoiceMetrics.bestCaseExposure}
+                            feedSymbol={feedSymbol}
+                        />
+                    )}
+                </DialogContent>
+            </Dialog>
+
             <Sheet open={isPaymentSidebarOpen} onOpenChange={setIsPaymentSidebarOpen}>
                 <SheetContent className="w-[400px] sm:w-[540px] overflow-y-auto">
                     <SheetHeader className="mb-6">
@@ -460,11 +603,6 @@ export default function InvoiceDetailPage() {
                     <CreatePaymentForm onSuccess={handlePaymentSuccess} />
                 </SheetContent>
             </Sheet>
-            <ClaimRiskModal
-                open={isRiskModalOpen}
-                onOpenChange={setIsRiskModalOpen}
-                claim={invoice}
-            />
         </div>
     );
 }

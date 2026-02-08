@@ -43,10 +43,10 @@ const FEED_ID_TO_SYMBOL: Record<string, keyof typeof FEED_IDS> = {
     "BTC/USD": "BTC/USD",
 };
 
-export function PendingSignaturePaymentCard({ 
-    payment, 
-    onSign, 
-    onCancel 
+export function PendingSignaturePaymentCard({
+    payment,
+    onSign,
+    onCancel
 }: PendingSignaturePaymentCardProps) {
     const { createClaimPayment, getCurrentPrice, isLoading } = useContract();
     const { contacts } = useContactsStore();
@@ -157,6 +157,9 @@ export function PendingSignaturePaymentCard({
                         {payment.description && (
                             <p className="text-xs italic">{payment.description}</p>
                         )}
+                        <p className="text-amber-600 dark:text-amber-500 font-medium">
+                            Est. Pay by: {new Date(Date.now() + payment.expiryDays * 86400 * 1000).toLocaleDateString()}
+                        </p>
                     </div>
                 </div>
                 <Badge

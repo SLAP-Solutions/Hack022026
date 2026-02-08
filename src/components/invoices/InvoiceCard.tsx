@@ -14,6 +14,11 @@ interface Payment {
     cryptoSymbol: string;
     status: "pending" | "executed" | "expired";
     executedAt: string | number | bigint | null;
+    expiresAt?: string | number | bigint | null;
+    currentPrice?: number;
+    decimals?: number;
+    executedPrice?: bigint | number;
+    paidAmount?: bigint | string;
 }
 
 interface InvoiceCardProps extends Omit<Claim, 'dateCreated' | 'dateSettled' | 'payments'> {
@@ -119,6 +124,24 @@ export function InvoiceCard(props: InvoiceCardProps) {
                             <div className="mt-3 space-y-2">
                                 {props.payments.map((payment) => {
                                     const paymentStatus = paymentStatusConfig[payment.status];
+
+                                    // Calculate crypto info
+                                    const decimals = payment.decimals || 3;
+                                    const multiplier = Math.pow(10, decimals);
+
+                                    let displayPrice = 0;
+                                    let cryptoAmount = "0.0000";
+
+                                    if (payment.status === 'executed' && payment.executedPrice) {
+                                        displayPrice = Number(payment.executedPrice) / multiplier;
+                                    } else if (payment.currentPrice) {
+                                        displayPrice = payment.currentPrice / multiplier;
+                                    }
+
+                                    if (displayPrice > 0) {
+                                        cryptoAmount = ((payment.usdAmount / 100) / displayPrice).toFixed(4);
+                                    }
+
                                     return (
                                         <div
                                             key={payment.id.toString()}
@@ -135,8 +158,11 @@ export function InvoiceCard(props: InvoiceCardProps) {
                                             <div className="grid grid-cols-2 gap-2 text-sm">
                                                 <div>
                                                     <p className="text-xs text-muted-foreground">Amount</p>
-                                                    <p className="font-semibold">
-                                                        ${(Number(payment.usdAmount) / 100).toFixed(2)} ({payment.cryptoSymbol})
+                                                    <p className="font-semibold whitespace-nowrap">
+                                                        ${(Number(payment.usdAmount) / 100).toFixed(2)}
+                                                        <span className="text-xs font-normal text-muted-foreground ml-1">
+                                                            ({cryptoAmount} {payment.cryptoSymbol} {displayPrice > 0 ? `@ $${displayPrice.toFixed(2)}` : ''})
+                                                        </span>
                                                     </p>
                                                 </div>
                                                 <div>
@@ -145,11 +171,18 @@ export function InvoiceCard(props: InvoiceCardProps) {
                                                         {payment.receiver.slice(0, 6)}...{payment.receiver.slice(-4)}
                                                     </p>
                                                 </div>
-                                                {payment.executedAt && (
+                                                {payment.executedAt ? (
                                                     <div className="col-span-2">
                                                         <p className="text-xs text-muted-foreground">Executed</p>
                                                         <p className="text-xs">
                                                             {new Date(Number(payment.executedAt) * 1000).toLocaleString()}
+                                                        </p>
+                                                    </div>
+                                                ) : payment.expiresAt && (
+                                                    <div className="col-span-2">
+                                                        <p className="text-xs text-muted-foreground">Pay by</p>
+                                                        <p className="text-xs font-medium text-amber-700 dark:text-amber-500">
+                                                            {new Date(Number(payment.expiresAt) * 1000).toLocaleDateString()}
                                                         </p>
                                                     </div>
                                                 )}

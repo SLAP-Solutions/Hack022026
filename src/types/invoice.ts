@@ -14,6 +14,7 @@ export interface Invoice {
     totalCost: number;              // Sum of all payment costs in USD
     dateCreated: Date | string;     // When the invoice was created
     dateNotified?: Date | string;   // When the client was notified of the invoice
+    dateDue?: Date | string;        // When the invoice is due
     dateSettled?: Date | string;    // When the invoice was settled (optional, only if settled)
     payments: Payment[];            // List of associated payments
 }

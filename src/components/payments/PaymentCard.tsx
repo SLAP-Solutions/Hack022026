@@ -19,6 +19,7 @@ import {
 import { useMemo } from "react";
 import { toast } from "sonner";
 import Link from "next/link";
+import { Clock } from "lucide-react";
 
 interface PaymentCardProps {
     payment: ClaimPaymentWithPrice;
@@ -231,7 +232,7 @@ export function PaymentCard({ payment, onRefresh, invoiceId, invoiceTitle }: Pay
                             {payment.executed ? "Executed" : canExecute ? "Ready" : "Pending"}
                         </Badge>
                     </div>
-                </div>
+                </div >
 
                 {!payment.executed && !isInstantPayment && (
                     <HoverCard openDelay={200}>
@@ -280,7 +281,8 @@ export function PaymentCard({ payment, onRefresh, invoiceId, invoiceTitle }: Pay
                             />
                         </HoverCardContent>
                     </HoverCard>
-                )}
+                )
+                }
 
                 {/* Payout breakdown */}
                 <div className="bg-muted/50 p-3 rounded text-sm space-y-2 mb-3">
@@ -387,16 +389,28 @@ export function PaymentCard({ payment, onRefresh, invoiceId, invoiceTitle }: Pay
                 </div>
 
                 {/* Action button */}
-                {!payment.executed && (
-                    <Button
-                        onClick={handleExecute}
-                        disabled={isLoading}
-                        className="w-full"
-                        variant={canExecute || isInstantPayment ? "default" : "secondary"}
-                    >
-                        {isLoading ? "Executing..." : isInstantPayment ? "Execute Payment" : canExecute ? "Execute Payment" : "Pay Now (Early)"}
-                    </Button>
-                )}
+                {
+                    !payment.executed && (
+                        <div className="flex gap-3 items-center">
+                            <div className="flex-1">
+                                <Button
+                                    onClick={handleExecute}
+                                    disabled={isLoading}
+                                    className="w-full"
+                                    variant={canExecute || isInstantPayment ? "default" : "secondary"}
+                                >
+                                    {isLoading ? "Executing..." : isInstantPayment ? "Execute Payment" : canExecute ? "Execute Payment" : "Pay Now (Early)"}
+                                </Button>
+                            </div>
+                            <div className="bg-gray-100 dark:bg-gray-800 p-3 rounded text-sm whitespace-nowrap flex items-center gap-1.5">
+                                <Clock className="w-3.5 h-3.5 flex-shrink-0 text-gray-600 dark:text-gray-400" />
+                                <span className="text-xs font-semibold text-gray-700 dark:text-gray-300">
+                                    Expiry: {new Date(Number(payment.expiresAt) * 1000).toLocaleDateString()}
+                                </span>
+                            </div>
+                        </div>
+                    )
+                }
 
                 {/* Link to view modal */}
                 <PriceHistoryModal

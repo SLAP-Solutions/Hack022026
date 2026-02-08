@@ -73,67 +73,7 @@ export function CreatePaymentForm({ onSuccess, invoiceId }: CreatePaymentFormPro
         }).catch(console.error);
     }, [feed]);
 
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!currentPrice) {
-            toast.error("Waiting for price data...");
-            return;
-        }
 
-        const usdCents = Math.floor(parseFloat(usdAmount) * 100);
-
-        try {
-            if (mode === "instant") {
-                const collateralWei = calculateInstantCollateral();
-                const collateralEth = ethers.formatEther(collateralWei.toString());
-
-                await createInstantPayment(receiver, usdCents, feed, collateralEth);
-                toast.success("Instant payment executed successfully!");
-            } else {
-                const stopLoss = BigInt(Math.floor(currentPrice * (1 + stopLossPercent / 100)));
-                const takeProfit = BigInt(Math.floor(currentPrice * (1 + takeProfitPercent / 100)));
-                const collateralWei = calculateRequiredCollateral(stopLoss);
-                const collateralEth = ethers.formatEther(collateralWei.toString());
-
-                const txHash = await createClaimPayment(receiver, usdCents, feed, stopLoss, takeProfit, expiryDays, collateralEth);
-
-                // If we have an invoiceId, link this payment in the store
-                if (invoiceId) {
-                    const newPayment = {
-                        id: BigInt(Date.now()), // Mock ID for UI, in reality would use contract events or ID
-                        payer: "You", // Connected wallet
-                        receiver: receiver,
-                        usdAmount: parseFloat(usdAmount),
-                        cryptoFeedId: FEED_IDS[feed],
-                        stopLossPrice: Number(stopLossInput),
-                        takeProfitPrice: Number(takeProfitInput),
-                        collateralAmount: BigInt(ethers.parseEther(collateralEth)),
-                        createdAt: BigInt(Math.floor(Date.now() / 1000)),
-                        expiresAt: BigInt(Math.floor(Date.now() / 1000) + (expiryDays * 86400)),
-                        executed: false,
-                        executedAt: BigInt(0),
-                        executedPrice: BigInt(0),
-                        paidAmount: BigInt(0),
-                        originalAmount: parseFloat(usdAmount),
-                        status: 'pending' as const
-                    };
-                    addPayment(invoiceId, newPayment);
-                }
-
-                toast.success("Trigger-based payment created successfully!");
-            }
-
-            // Reset form
-            setReceiver("");
-            setUsdAmount("10");
-
-            // Call success callback if provided
-            onSuccess?.();
-        } catch (error: any) {
-            console.error(error);
-            toast.error(`Failed: ${error.message || "Unknown error"}`);
-        }
-    };
 
     const stopLossPrice = currentPrice ? currentPrice * (1 + stopLossPercent / 100) : 0;
     const takeProfitPrice = currentPrice ? currentPrice * (1 + takeProfitPercent / 100) : 0;
@@ -167,6 +107,77 @@ export function CreatePaymentForm({ onSuccess, invoiceId }: CreatePaymentFormPro
         const usdCents = parseFloat(usdAmount) * 100;
         const decimalsMultiplier = Math.pow(10, decimals);
         return BigInt(Math.floor((usdCents * 1e18 * decimalsMultiplier) / (price * 100)));
+    };
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!currentPrice) {
+            toast.error("Waiting for price data...");
+            return;
+        }
+
+        const usdCents = Math.floor(parseFloat(usdAmount) * 100);
+
+        try {
+            if (mode === "instant") {
+                const collateralWei = calculateInstantCollateral();
+                const collateralEth = ethers.formatEther(collateralWei.toString());
+
+                const result = await createInstantPayment(receiver, usdCents, feed, collateralEth);
+                toast.success("Instant payment executed successfully!");
+                onSuccess?.(result.paymentId);
+            } else {
+                const stopLoss = BigInt(Math.floor(currentPrice * (1 + stopLossPercent / 100)));
+                const takeProfit = BigInt(Math.floor(currentPrice * (1 + takeProfitPercent / 100)));
+                const collateralWei = calculateRequiredCollateral(stopLoss);
+                const collateralEth = ethers.formatEther(collateralWei.toString());
+
+                const result = await createClaimPayment(receiver, usdCents, feed, stopLoss, takeProfit, expiryDays, collateralEth);
+
+                // If we have an invoiceId, link this payment in the store
+                if (invoiceId) {
+                    console.log(`Linking payment to invoice ${invoiceId}:`, result);
+                    const newPayment = {
+                        id: result.paymentId ? BigInt(result.paymentId) : BigInt(Date.now()),
+                        payer: "You", // Connected wallet
+                        receiver: receiver,
+                        usdAmount: Math.floor(parseFloat(usdAmount) * 100),
+                        cryptoFeedId: FEED_IDS[feed],
+                        stopLossPrice: BigInt(Math.floor(parseFloat(stopLossInput) * Math.pow(10, decimals))),
+                        takeProfitPrice: BigInt(Math.floor(parseFloat(takeProfitInput) * Math.pow(10, decimals))),
+                        collateralAmount: BigInt(ethers.parseEther(collateralEth)),
+                        createdAt: BigInt(Math.floor(Date.now() / 1000)),
+                        createdAtPrice: BigInt(currentPrice || 0),
+                        expiresAt: BigInt(Math.floor(Date.now() / 1000) + (expiryDays * 86400)),
+                        executed: false,
+                        executedAt: BigInt(0),
+                        executedPrice: BigInt(0),
+                        paidAmount: BigInt(0),
+                        originalAmount: parseFloat(usdAmount),
+                        status: 'pending' as const
+                    };
+
+                    try {
+                        await addPayment(invoiceId, newPayment);
+                        console.log("Payment linked successfully");
+                    } catch (err) {
+                        console.error("Failed to link payment:", err);
+                        toast.error("Payment created but failed to link to invoice locally");
+                    }
+                }
+
+                toast.success("Trigger-based payment created successfully!");
+                onSuccess?.(result.paymentId);
+            }
+
+            // Reset form
+            setReceiver("");
+            setUsdAmount("10");
+
+        } catch (error: any) {
+            console.error(error);
+            toast.error(`Failed: ${error.message || "Unknown error"}`);
+        }
     };
 
 

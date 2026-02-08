@@ -48,8 +48,8 @@ export function PaymentsList({ payments, isLoading, onRefresh, paymentToInvoiceM
 
     return (
         <div>
-            <div className="flex flex-col sm:flex-row gap-4 mb-4 justify-between items-start sm:items-center">
-                <div className="flex gap-2">
+            <div className="flex flex-col sm:flex-row gap-4 mb-4 items-start sm:items-center flex-wrap">
+                <div className="flex gap-2 flex-wrap">
                     <Button
                         onClick={() => setFilter("all")}
                         variant={filter === "all" ? "default" : "outline"}
@@ -71,25 +71,25 @@ export function PaymentsList({ payments, isLoading, onRefresh, paymentToInvoiceM
                     >
                         Executed ({payments.filter((p) => p.executed).length})
                     </Button>
-                </div>
 
-                <div className="w-full sm:w-[250px]">
-                    <Select value={invoiceFilter} onValueChange={setInvoiceFilter}>
-                        <SelectTrigger>
-                            <SelectValue placeholder="Filter by Invoice" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="all">All Invoices</SelectItem>
-                            <SelectItem value="none">No Invoice</SelectItem>
-                            {invoices?.map((invoice) => (
-                                <SelectItem key={invoice.id} value={invoice.id}>
-                                    <span className="truncate block max-w-[200px]">
-                                        {invoice.title || `Invoice #${invoice.id}`}
-                                    </span>
-                                </SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
+                    <div className="sm:w-[250px] w-full">
+                        <Select value={invoiceFilter} onValueChange={setInvoiceFilter}>
+                            <SelectTrigger className="h-9 text-sm">
+                                <SelectValue placeholder="Filter by Invoice" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="all">All Invoices</SelectItem>
+                                <SelectItem value="none">No Invoice</SelectItem>
+                                {invoices?.map((invoice) => (
+                                    <SelectItem key={invoice.id} value={invoice.id}>
+                                        <span className="truncate block max-w-[200px]">
+                                            {invoice.title || `Invoice #${invoice.id}`}
+                                        </span>
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </div>
                 </div>
             </div>
 
