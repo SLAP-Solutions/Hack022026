@@ -1,6 +1,5 @@
 "use client";
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatUSD, formatPercent, cn } from "@/lib/utils";
 
 interface ExposureSummaryProps {
@@ -21,12 +20,8 @@ export function ExposureSummary({
   className,
 }: ExposureSummaryProps) {
   return (
-    <Card className={cn("", className)}>
-      <CardHeader>
-        <CardTitle>Active Positions Overview (Pending Transactions)</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+    <div className={cn("", className)}>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {/* Worst Case */}
           <div className="flex flex-col space-y-1 p-4 rounded-lg bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800">
             <div className="text-sm text-muted-foreground">
@@ -80,7 +75,6 @@ export function ExposureSummary({
             </div>
           </div>
         </div>
-      </CardContent>
-    </Card>
+    </div>
   );
 }

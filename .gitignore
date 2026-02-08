@@ -156,3 +156,4 @@ Desktop.ini
 
 ## JetBrains Rider
 *.sln.iml
+.vscode/settings.json

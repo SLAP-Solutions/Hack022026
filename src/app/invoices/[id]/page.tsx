@@ -579,7 +579,7 @@ export default function InvoiceDetailPage() {
 
             {/* Modals */}
             <Dialog open={isExposureModalOpen} onOpenChange={setIsExposureModalOpen}>
-                <DialogContent className="max-w-2xl">
+                <DialogContent className="max-w-6xl">
                     <DialogHeader>
                         <DialogTitle>Active Positions Overview</DialogTitle>
                     </DialogHeader>
