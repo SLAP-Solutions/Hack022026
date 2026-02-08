@@ -14,10 +14,14 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    // Normalize wallet ID to lowercase for consistent querying
+    // (wallet addresses are stored lowercase in the database)
+    const normalizedWalletId = walletId.toLowerCase();
+
     // Only retrieve invoices for the specified wallet - ensures data isolation
     const invoices = await query("invoices", {
       query: "SELECT * FROM c WHERE c.walletId = @walletId",
-      parameters: [{ name: "@walletId", value: walletId }]
+      parameters: [{ name: "@walletId", value: normalizedWalletId }]
     });
 
     return NextResponse.json(invoices);
@@ -41,6 +45,7 @@ export async function POST(request: Request) {
 
     const newInvoice = {
       ...body,
+      walletId: body.walletId.toLowerCase(),
       id,
       status: "pending",
       totalCost: 0,

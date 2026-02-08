@@ -23,8 +23,13 @@ export interface Payment {
 
 /**
  * Payment status derived from the payment data
+ * - pending_signature: Created by agent, awaiting user to sign the transaction
+ * - pending: Signed and submitted to blockchain, awaiting execution
+ * - committed: Collateral locked, waiting for price trigger
+ * - executed: Payment completed
+ * - expired: Payment expired without execution
  */
-export type PaymentStatus = "pending" | "committed" | "executed" | "expired";
+export type PaymentStatus = "pending_signature" | "pending" | "committed" | "executed" | "expired";
 
 /**
  * Helper type for creating new payments (before blockchain submission)
@@ -57,4 +62,8 @@ export interface PaymentDisplay {
     executedAt?: Date;
     executedPrice?: number;
     paidAmount?: string;            // Formatted crypto amount
+    // Agent-created payment fields
+    createdByAgent?: boolean;       // True if created by the agent API
+    agentCreatedAt?: string;        // ISO timestamp when agent created this
+    description?: string;           // Description of the payment
 }

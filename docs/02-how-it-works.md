@@ -5,7 +5,7 @@
 ### Overview
 
 The ClaimPayments system optimizes crypto payments through three phases:
-1. **Creation** - Define USD payment with price triggers and lock collateral
+1. **Creation** - Define USD invoice/payment with price triggers and lock collateral
 2. **Monitoring** - Track FTSO prices until trigger conditions met
 3. **Execution** - Calculate and pay crypto amount when price optimal
 
@@ -14,7 +14,7 @@ The ClaimPayments system optimizes crypto payments through three phases:
 The testnet demo calculates crypto amounts using chosen price feeds (ETH/USD, BTC/USD) but pays the same numeric value in FLR. This demonstrates the optimization concept using real FTSO prices without requiring expensive FLR collateral.
 
 **Example:** 
-- Input: $10 USD payment with ETH/USD feed
+- Input: $10 USD invoice with ETH/USD feed
 - FTSO price: ETH = $2,000
 - Calculation: $10 ÷ $2,000 = 0.005 ETH-equivalent
 - Payment: Send 0.005 FLR (not 0.005 ETH)
@@ -27,7 +27,7 @@ This shows real savings percentages using authentic market data.
 
 ```mermaid
 sequenceDiagram
-    participant User as Insurance Company
+    participant User as Payer
     participant UI as Web UI
     participant Wallet as MetaMask
     participant Contract as ClaimPayments Contract
@@ -46,15 +46,16 @@ sequenceDiagram
 ```
 
 **What Happens:**
-1. User fills form with USD amount (e.g., $10)
-2. User selects price feed (ETH/USD or BTC/USD)
-3. User sets stop loss (e.g., -5%) and take profit (e.g., +5%)
-4. UI calculates required collateral (150% of worst-case payout)
-5. MetaMask prompts for transaction with collateral amount
-6. User confirms and sends FLR to contract
-7. Contract stores payment on-chain with pending status
-8. Event emitted for UI tracking
-9. Payment assigned unique ID
+1. User fills form with USD amount (e.g., $1,000 invoice)
+2. User enters recipient address (or selects from contacts)
+3. User selects price feed (ETH/USD or BTC/USD)
+4. User sets stop loss (e.g., -5%) and take profit (e.g., +5%)
+5. UI calculates required collateral (150% of worst-case payout)
+6. MetaMask prompts for transaction with collateral amount
+7. User confirms and sends FLR to contract
+8. Contract stores payment on-chain with pending status
+9. Event emitted for UI tracking
+10. Payment assigned unique ID
 
 **Stored Data:**
 - Payment ID (incremental)

@@ -1,23 +1,24 @@
 # Examples & Use Cases
 
-Real-world scenarios demonstrating how to use the ClaimPayments contract.
+Real-world scenarios demonstrating how to use the ClaimPayments contract for crypto payment optimization.
 
-## Use Case 1: Basic Insurance Claim Payment
+## Use Case 1: Contractor Invoice Payment
 
 ### Scenario
-Insurance company owes $1,000 to Alice for a approved claim. Company holds BTC and wants to pay when BTC price is favorable.
+You owe $1,000 to a freelance developer. You hold BTC and want to pay when BTC price is favorable to minimize crypto spent.
 
 ### Goals
 - Pay minimum BTC possible
 - Avoid market timing risk
 - Automate execution
+- Ensure contractor receives exact $1,000 USD value
 
 ### Implementation
 
 ```javascript
 // Create payment
 const tx = await contract.createClaimPayment(
-    "0xAliceAddress",                               // receiver
+    "0xContractorAddress",                          // receiver
     100000,                                         // $1,000 USD
     "0x014254432f55534400000000000000000000000000", // BTC/USD
     6000000,                                        // Stop loss: $60,000
@@ -38,9 +39,9 @@ console.log(`Payment created: #${paymentId}`);
 Execution:
   - Price in range ✅
   - Payment amount: $1,000 / $72,000 = 0.0139 BTC
-  - Alice receives: 0.0139 BTC
-  - Company refunded: 0.0111 BTC
-  - Company saved: ~$200 vs paying at $60k
+  - Contractor receives: 0.0139 BTC (worth exactly $1,000)
+  - You get refunded: 0.0111 BTC
+  - You saved: ~$200 vs paying at $60k
 ```
 
 **Scenario B: BTC drops to $61,000 (stop loss)**
@@ -48,8 +49,8 @@ Execution:
 Execution:
   - Price hit stop loss ✅
   - Payment amount: $1,000 / $61,000 = 0.0164 BTC
-  - Alice receives: 0.0164 BTC
-  - Company refunded: 0.0086 BTC
+  - Contractor receives: 0.0164 BTC (worth exactly $1,000)
+  - You get refunded: 0.0086 BTC
   - Protected from further drops
 ```
 
@@ -59,23 +60,24 @@ No Execution:
   - Price below stop loss ❌
   - Payment remains pending
   - After 30 days: Can cancel and recreate
+  - Or execute early manually
 ```
 
 ---
 
-## Use Case 2: Bulk Claims Processing
+## Use Case 2: Business Vendor Payments
 
 ### Scenario
-Insurance company has 100 approved claims totaling $50,000. Create multiple payments with different price targets.
+Your business has 10 vendors to pay this month totaling $50,000. Create multiple payments with different price targets to optimize each one.
 
 ### Implementation
 
 ```javascript
-const claims = [
-    { receiver: "0xAlice", amount: 500, target: 70000 },
-    { receiver: "0xBob", amount: 1000, target: 72000 },
-    { receiver: "0xCarol", amount: 750, target: 68000 },
-    // ... 97 more claims
+const vendors = [
+    { receiver: "0xVendorA", amount: 5000, target: 70000 },
+    { receiver: "0xVendorB", amount: 10000, target: 72000 },
+    { receiver: "0xVendorC", amount: 7500, target: 68000 },
+    // ... 7 more vendors
 ];
 
 async function createBulkPayments(claims) {

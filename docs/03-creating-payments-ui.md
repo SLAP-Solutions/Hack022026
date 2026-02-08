@@ -1,5 +1,7 @@
 # Creating Payments via UI
 
+Complete guide to creating optimized crypto payments and invoices.
+
 ## Prerequisites
 
 ### 1. Install MetaMask
@@ -26,7 +28,7 @@
 
 ### Step 1: Connect Your Wallet
 
-1. Visit the ClaimPayments dApp
+1. Visit the Slapsure dApp
 2. Click **"Connect Wallet"** button
 3. MetaMask popup appears
 4. Select your account
@@ -42,19 +44,33 @@ Balance: 1000 C2FLR
 
 ### Step 2: Navigate to Create Payment
 
-1. Click **"Create Payment"** in navigation
-2. You'll see the payment creation form
+1. Click **"Payments"** in navigation
+2. Click **"Create Payment"** or **"New Invoice"** button
+3. You'll see the payment creation form
 
-### Step 3: Fill Payment Details
+### Step 3: Choose Payment Type
+
+**⚡ Instant Payment** - Pay immediately at current price
+- Best for urgent payments
+- No waiting for triggers
+- Executes in single transaction
+
+**🎯 Trigger Payment** - Set price conditions and wait for optimal execution
+- Best for non-urgent payments
+- Maximize savings by timing the market
+- Automates execution when conditions met
+
+### Step 4: Fill Payment Details
 
 #### Receiver Address
 ```
-Field: Receiver Wallet Address
+Field: Receiver Wallet Address or Select Contact
 Example: 0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb5
-Description: Beneficiary who will receive the payment
+Description: Person or business receiving the payment
 ```
 
 **Tips:**
+- ✅ Use Contacts feature to save recipients
 - ✅ Copy exact address from recipient
 - ✅ Verify address on Coston2 explorer
 - ⚠️ Double-check - transactions are irreversible

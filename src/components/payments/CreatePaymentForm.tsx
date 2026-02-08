@@ -5,6 +5,7 @@ import { useContract } from "@/hooks/useContract";
 import { useContactsStore } from "@/stores/useContactsStore";
 import { FEED_IDS } from "@/lib/contract/constants";
 import { ethers } from "ethers";
+import { useInvoicesStore } from "@/stores/useInvoicesStore";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -27,6 +28,7 @@ interface CreatePaymentFormProps {
 export function CreatePaymentForm({ onSuccess }: CreatePaymentFormProps) {
     const { createClaimPayment, createInstantPayment, getCurrentPrice, isLoading } = useContract();
     const { contacts, fetchContacts } = useContactsStore();
+    const { addPayment } = useInvoicesStore();
 
     useEffect(() => {
         fetchContacts();

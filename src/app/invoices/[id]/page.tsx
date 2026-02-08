@@ -5,11 +5,12 @@ import { useParams, useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Calendar, DollarSign, Tag, Receipt, User, Building, Plus, ShieldAlert, CreditCard, Bell, Clock } from "lucide-react";
+import { ArrowLeft, Calendar, DollarSign, Tag, Receipt, User, Building, Plus, ShieldAlert, CreditCard, Bell, Pen, Clock } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { CreatePaymentForm } from "@/components/payments/CreatePaymentForm";
 import { useContract } from "@/hooks/useContract";
 import { PaymentCard } from "@/components/payments/PaymentCard";
+import { PendingSignaturePaymentCard } from "@/components/payments/PendingSignaturePaymentCard";
 import { FEED_IDS } from "@/lib/contract/constants";
 import { ClaimRiskModal } from "@/components/modals/ClaimRiskModal";
 import { useInvoicesStore } from "@/stores/useInvoicesStore";
@@ -28,6 +29,7 @@ const statusConfig = {
 };
 
 const paymentStatusConfig = {
+    pending_signature: { color: "bg-amber-500/20 text-amber-600 border-amber-500/40", label: "Awaiting Signature" },
     pending: { color: "bg-primary/10 text-primary border-primary/30", label: "Pending" },
     committed: { color: "bg-primary/20 text-primary border-primary/40", label: "Committed" },
     executed: { color: "bg-primary/30 text-primary border-primary/50", label: "Executed" },
@@ -266,6 +268,108 @@ export default function InvoiceDetailPage() {
                 )}
             </div>
 
+            {/* Pending Signature Payments Section */}
+            {invoice.payments && invoice.payments.filter((p: any) => p.status === 'pending_signature').length > 0 && (
+                <Card className="border-amber-500/40 bg-amber-50/30 dark:bg-amber-950/10">
+                    <CardHeader>
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                                <Pen className="w-5 h-5 text-amber-600" />
+                                <h3 className="text-xl font-semibold text-amber-700 dark:text-amber-500">Payments Awaiting Signature</h3>
+                                <Badge className="bg-amber-500 text-white">
+                                    {invoice.payments.filter((p: any) => p.status === 'pending_signature').length}
+                                </Badge>
+                            </div>
+                        </div>
+                        <p className="text-sm text-muted-foreground mt-1">
+                            These payments were created by the AI agent and require your signature to execute.
+                        </p>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="columns-1 md:columns-2 gap-4 space-y-4">
+                            {invoice.payments
+                                .filter((p: any) => p.status === 'pending_signature')
+                                .map((payment: any) => (
+                                    <div key={payment.id.toString()} className="break-inside-avoid mb-4">
+                                        <PendingSignaturePaymentCard
+                                            payment={payment}
+                                            onSign={async (pendingId, blockchainId) => {
+                                                // After signing, update the payment with the blockchain ID
+                                                // and change status to 'pending'
+                                                try {
+                                                    const paymentDetails = await getClaimPayment(Number(blockchainId));
+                                                    
+                                                    // Update the payment in the invoice
+                                                    const updatedPayments = invoice.payments.map((p: any) => {
+                                                        if (p.id === pendingId) {
+                                                            return {
+                                                                ...p,
+                                                                id: BigInt(blockchainId),
+                                                                status: 'pending',
+                                                                payer: paymentDetails.payer,
+                                                                stopLossPrice: paymentDetails.stopLossPrice,
+                                                                takeProfitPrice: paymentDetails.takeProfitPrice,
+                                                                collateralAmount: paymentDetails.collateralAmount,
+                                                                createdAt: BigInt(paymentDetails.createdAt),
+                                                                createdAtPrice: paymentDetails.createdAtPrice,
+                                                                expiresAt: BigInt(paymentDetails.expiresAt),
+                                                                executed: false,
+                                                            };
+                                                        }
+                                                        return p;
+                                                    });
+
+                                                    // Update via API
+                                                    const replacer = (key: string, value: any) => {
+                                                        if (typeof value === 'bigint') {
+                                                            return value.toString();
+                                                        }
+                                                        return value;
+                                                    };
+
+                                                    await fetch(`/api/invoices/${invoice.id}`, {
+                                                        method: 'PUT',
+                                                        headers: { 'Content-Type': 'application/json' },
+                                                        body: JSON.stringify({ ...invoice, payments: updatedPayments }, replacer),
+                                                    });
+
+                                                    // Refresh the page to show updated data
+                                                    window.location.reload();
+                                                } catch (error) {
+                                                    console.error("Failed to update payment after signing:", error);
+                                                }
+                                            }}
+                                            onCancel={async (pendingId) => {
+                                                // Remove the pending payment from the invoice
+                                                try {
+                                                    const updatedPayments = invoice.payments.filter((p: any) => p.id !== pendingId);
+                                                    
+                                                    const replacer = (key: string, value: any) => {
+                                                        if (typeof value === 'bigint') {
+                                                            return value.toString();
+                                                        }
+                                                        return value;
+                                                    };
+
+                                                    await fetch(`/api/invoices/${invoice.id}`, {
+                                                        method: 'PUT',
+                                                        headers: { 'Content-Type': 'application/json' },
+                                                        body: JSON.stringify({ ...invoice, payments: updatedPayments }, replacer),
+                                                    });
+
+                                                    window.location.reload();
+                                                } catch (error) {
+                                                    console.error("Failed to cancel pending payment:", error);
+                                                }
+                                            }}
+                                        />
+                                    </div>
+                                ))}
+                        </div>
+                    </CardContent>
+                </Card>
+            )}
+
             {/* Payments Section */}
             <Card>
                 <CardHeader>
@@ -273,7 +377,9 @@ export default function InvoiceDetailPage() {
                         <div className="flex items-center gap-2">
                             <Receipt className="w-5 h-5" />
                             <h3 className="text-xl font-semibold">Payments</h3>
-                            <Badge variant="secondary">{invoice.payments.length}</Badge>
+                            <Badge variant="secondary">
+                                {invoice.payments.filter((p: any) => p.status !== 'pending_signature').length}
+                            </Badge>
                         </div>
                         <div className="flex gap-2">
                             <span className="flex items-center gap-1 text-xs text-muted-foreground self-center mr-2">
@@ -301,38 +407,40 @@ export default function InvoiceDetailPage() {
                     </div>
                 </CardHeader>
                 <CardContent>
-                    {invoice.payments && invoice.payments.length > 0 ? (
+                    {invoice.payments && invoice.payments.filter((p: any) => p.status !== 'pending_signature').length > 0 ? (
                         <div className="columns-1 md:columns-2 gap-4 space-y-4">
-                            {invoice.payments.map((payment) => {
-                                // Find price for this payment's feed
-                                const feedSymbol = Object.keys(FEED_IDS).find(
-                                    (key) => FEED_IDS[key as keyof typeof FEED_IDS] === payment.cryptoFeedId
-                                );
-                                const priceData = feedSymbol ? prices[feedSymbol as keyof typeof FEED_IDS] : undefined;
+                            {invoice.payments
+                                .filter((p: any) => p.status !== 'pending_signature')
+                                .map((payment: any) => {
+                                    // Find price for this payment's feed
+                                    const feedSymbol = Object.keys(FEED_IDS).find(
+                                        (key) => FEED_IDS[key as keyof typeof FEED_IDS] === payment.cryptoFeedId
+                                    );
+                                    const priceData = feedSymbol ? prices[feedSymbol as keyof typeof FEED_IDS] : undefined;
 
-                                // PaymentCard expects price scaled by 1000 (3 decimals)
-                                const currentPrice = priceData ? Math.floor(parseFloat(priceData.price) * 1000) : 0;
+                                    // PaymentCard expects price scaled by 1000 (3 decimals)
+                                    const currentPrice = priceData ? Math.floor(parseFloat(priceData.price) * 1000) : 0;
 
-                                // Try to find live payment data to ensure status is up to date
-                                const livePayment = livePayments.find(p => p.id === Number(payment.id));
+                                    // Try to find live payment data to ensure status is up to date
+                                    const livePayment = livePayments.find(p => p.id === Number(payment.id));
 
-                                // Construct ClaimPaymentWithPrice object
-                                const claimPayment = livePayment || {
-                                    ...payment,
-                                    id: Number(payment.id), // Convert bigint id to number for contract calls
-                                    currentPrice: currentPrice,
-                                    createdAtPrice: payment.createdAtPrice || BigInt(0),
-                                };
+                                    // Construct ClaimPaymentWithPrice object
+                                    const claimPayment = livePayment || {
+                                        ...payment,
+                                        id: Number(payment.id), // Convert bigint id to number for contract calls
+                                        currentPrice: currentPrice,
+                                        createdAtPrice: payment.createdAtPrice || BigInt(0),
+                                    };
 
-                                return (
-                                    <div key={payment.id.toString()} className="break-inside-avoid mb-4">
-                                        <PaymentCard
-                                            payment={claimPayment as any}
-                                            onRefresh={() => updatePaymentStatus(invoice.id, payment.id, 'executed')}
-                                        />
-                                    </div>
-                                );
-                            })}
+                                    return (
+                                        <div key={payment.id.toString()} className="break-inside-avoid mb-4">
+                                            <PaymentCard
+                                                payment={claimPayment as any}
+                                                onRefresh={() => updatePaymentStatus(invoice.id, payment.id, 'executed')}
+                                            />
+                                        </div>
+                                    );
+                                })}
                         </div>
                     ) : (
                         <div className="text-center py-8 text-muted-foreground bg-muted/20 rounded-lg">

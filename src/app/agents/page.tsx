@@ -211,15 +211,15 @@ export default function AgentsPage() {
                             <p>No activities found matching your filters.</p>
                         </div>
                     ) : (
-                        Object.entries(groupedData).map(([walletId, invoiceGroups]) => (
-                            <div key={walletId} className="space-y-4">
+                        Object.entries(groupedData).map(([walletId, invoiceGroups], walletIndex) => (
+                            <div key={`wallet-${walletId}-${walletIndex}`} className="space-y-4">
                                 <div className="flex items-center gap-2 text-sm font-semibold text-muted-foreground px-1">
                                     <Wallet className="w-4 h-4" />
                                     <span>Wallet: <span className="font-mono text-foreground">{walletId}</span></span>
                                 </div>
 
-                                {Object.entries(invoiceGroups).map(([groupTitle, activities]) => (
-                                    <Card key={groupTitle} className="overflow-hidden border-none shadow-sm bg-background/50 backdrop-blur-sm">
+                                {Object.entries(invoiceGroups).map(([groupTitle, activities], groupIndex) => (
+                                    <Card key={`${walletId}-${groupTitle}-${groupIndex}`} className="overflow-hidden border-none shadow-sm bg-background/50 backdrop-blur-sm">
                                         <CardHeader className="bg-background pb-3 py-3 border-b flex flex-row items-center justify-between space-y-0">
                                             <div className="flex items-center gap-3">
                                                 <div className="p-1.5 bg-background rounded-md border shadow-sm">

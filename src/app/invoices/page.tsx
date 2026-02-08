@@ -59,41 +59,20 @@ export default function InvoicesPage() {
     }, [fetchInvoices, address]);
 
     // Merge live payment status into invoices
-    const mergedInvoices = invoices.map(invoice => {
-        const updatedPayments = invoice.payments?.map(payment => {
+    const mergedInvoices = invoices.map(invoice => ({
+        ...invoice,
+        payments: invoice.payments?.map(payment => {
             const livePayment = livePayments.find(p => p.id === Number(payment.id));
             if (livePayment) {
                 return {
                     ...payment,
                     status: (livePayment.executed ? 'executed' : 'pending') as 'pending' | 'executed',
-                    executed: livePayment.executed,
                     executedAt: BigInt(livePayment.executedAt),
                 };
             }
-            return {
-                ...payment,
-                status: (payment.executed ? 'executed' : 'pending') as 'pending' | 'executed',
-            };
-        }) || [];
-
-        let computedStatus = invoice.status;
-        if (updatedPayments.length > 0) {
-            const allExecuted = updatedPayments.every(p => p.status === 'executed');
-
-            if (allExecuted) {
-                computedStatus = 'settled';
-            } else {
-                const someExecuted = updatedPayments.some(p => p.status === 'executed');
-                computedStatus = someExecuted ? 'processing' : 'pending';
-            }
-        }
-
-        return {
-            ...invoice,
-            payments: updatedPayments,
-            status: computedStatus,
-        };
-    });
+            return payment;
+        }) || []
+    }));
 
     const filteredInvoices = filter === "all"
         ? mergedInvoices
@@ -117,9 +96,9 @@ export default function InvoicesPage() {
             </PageHeader>
 
             <div className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-                <div className="px-6 py-2 flex items-center gap-1">
+                <div className="px-6 py-2 flex items-center justify-between gap-4">
                     {/* Filter Buttons */}
-                    <div className="flex gap-2 flex-nowrap overflow-x-auto">
+                    <div className="flex gap-2 flex-nowrap overflow-x-auto py-1">
                         {["all", "pending", "processing", "approved", "settled", "rejected"].map((status) => {
                             const activeStyle = status === "all"
                                 ? "bg-primary text-primary-foreground hover:bg-primary/90"
@@ -132,7 +111,7 @@ export default function InvoicesPage() {
                                     variant={filter === status ? "default" : "outline"}
                                     size="sm"
                                     className={cn(
-                                        "capitalize whitespace-nowrap rounded-full",
+                                        "capitalize whitespace-nowrap rounded-full px-4",
                                         filter === status
                                             ? cn(activeStyle, "border-transparent shadow-sm")
                                             : "hover:bg-muted"
@@ -145,6 +124,23 @@ export default function InvoicesPage() {
                     </div>
                 </div>
             </div>
+
+            {/* {error && (
+                <div className="m-6 p-4 bg-red-50 dark:bg-red-900/10 border border-red-200 dark:border-red-900/50 rounded-xl flex items-center justify-between text-red-600 dark:text-red-400">
+                    <div className="flex items-center gap-2">
+                        <Loader2 className="h-4 w-4" />
+                        <p className="text-sm font-medium">Error: {error}</p>
+                    </div>
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => address && fetchInvoices(address)}
+                        className="bg-white hover:bg-red-50 border-red-200 text-red-600"
+                    >
+                        Try Again
+                    </Button>
+                </div>
+            )} */}
 
             <div className="flex-1 overflow-auto p-6">
                 <div className="max-w-7xl mx-auto space-y-6">

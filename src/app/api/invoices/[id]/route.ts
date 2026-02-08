@@ -26,7 +26,8 @@ export async function GET(
     }
 
     // SECURITY: Verify the invoice belongs to the requesting wallet
-    if (invoice.walletId !== walletId) {
+    // Normalize both to lowercase for comparison (wallet addresses are case-insensitive)
+    if (invoice.walletId?.toLowerCase() !== walletId?.toLowerCase()) {
       return NextResponse.json(
         { error: "Unauthorized: Invoice does not belong to this wallet" },
         { status: 403 }
@@ -64,7 +65,8 @@ export async function PUT(
     }
 
     // SECURITY: Verify the invoice belongs to the requesting wallet
-    if (existingInvoice.walletId !== body.walletId) {
+    // Normalize both to lowercase for comparison (wallet addresses are case-insensitive)
+    if (existingInvoice.walletId?.toLowerCase() !== body.walletId?.toLowerCase()) {
       return NextResponse.json(
         { error: "Unauthorized: Invoice does not belong to this wallet" },
         { status: 403 }
@@ -105,7 +107,8 @@ export async function DELETE(
     }
 
     // SECURITY: Verify the invoice belongs to the requesting wallet
-    if (existingInvoice.walletId !== walletId) {
+    // Normalize both to lowercase for comparison (wallet addresses are case-insensitive)
+    if (existingInvoice.walletId?.toLowerCase() !== walletId?.toLowerCase()) {
       return NextResponse.json(
         { error: "Unauthorized: Invoice does not belong to this wallet" },
         { status: 403 }

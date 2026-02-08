@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useInvoicesStore } from "@/stores/useInvoicesStore";
 import { useWallet } from "@/hooks/useWallet";
 import { cn } from "@/lib/utils";
@@ -16,7 +16,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Loader2, CheckCircle2, AlertCircle, Bot } from "lucide-react";
+import { Loader2, CheckCircle2, AlertCircle, Bot, ArrowRight } from "lucide-react";
 
 interface CreateClaimModalProps {
     isOpen: boolean;
@@ -24,6 +24,11 @@ interface CreateClaimModalProps {
 }
 
 type ProcessingStatus = "idle" | "uploading" | "processing" | "success" | "error";
+
+interface StreamEvent {
+    type: "text" | "agent" | "start" | "done" | "error";
+    data: Record<string, unknown>;
+}
 
 export function CreateInvoiceModal({ isOpen, onClose }: CreateClaimModalProps) {
     const { addInvoice } = useInvoicesStore();
@@ -42,7 +47,11 @@ export function CreateInvoiceModal({ isOpen, onClose }: CreateClaimModalProps) {
     // Agent processing state
     const [processingStatus, setProcessingStatus] = useState<ProcessingStatus>("idle");
     const [agentResponse, setAgentResponse] = useState<string>("");
+    const [streamingText, setStreamingText] = useState<string>("");
     const [processingError, setProcessingError] = useState<string>("");
+    
+    const [currentAgent, setCurrentAgent] = useState<string>("");
+    const [agentHistory, setAgentHistory] = useState<string[]>([]);
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files[0]) {
@@ -50,45 +59,122 @@ export function CreateInvoiceModal({ isOpen, onClose }: CreateClaimModalProps) {
         }
     };
 
+    // Parse SSE events from the stream
+    const parseSSE = (chunk: string): StreamEvent[] => {
+        const events: StreamEvent[] = [];
+        const lines = chunk.split('\n');
+        let currentEvent: { type?: string; data?: string } = {};
+
+        for (const line of lines) {
+            if (line.startsWith('event: ')) {
+                currentEvent.type = line.slice(7);
+            } else if (line.startsWith('data: ')) {
+                currentEvent.data = line.slice(6);
+            } else if (line === '' && currentEvent.type && currentEvent.data) {
+                try {
+                    events.push({
+                        type: currentEvent.type as StreamEvent["type"],
+                        data: JSON.parse(currentEvent.data)
+                    });
+                } catch {
+                    // Skip malformed JSON
+                }
+                currentEvent = {};
+            }
+        }
+        return events;
+    };
+
     const handleUploadSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!file) return;
+
+        if (!address) {
+            alert("Please connect your wallet to process invoices");
+            return;
+        }
 
         setIsLoading(true);
         setProcessingStatus("uploading");
         setProcessingError("");
         setAgentResponse("");
+        setStreamingText("");
+        setCurrentAgent("");
+        setAgentHistory([]);
 
         const formData = new FormData();
         formData.append("file", file);
+        formData.append("walletId", address);
 
         try {
             setProcessingStatus("processing");
 
-            // Call AI agent to process invoice
+            // Call AI agent with streaming
             const response = await fetch("/api/invoices/process", {
                 method: "POST",
                 body: formData,
+                headers: {
+                    "Accept": "text/event-stream",
+                },
             });
 
-            const result = await response.json();
-
-            if (!response.ok || !result.success) {
-                throw new Error(result.error || "Failed to process document");
+            if (!response.ok) {
+                throw new Error("Failed to connect to AI agent");
             }
 
-            const extractedData = result.data;
-
-            // Store agent response for display
-            if (result.agentResponse) {
-                setAgentResponse(result.agentResponse);
+            const reader = response.body?.getReader();
+            if (!reader) {
+                throw new Error("No response body");
             }
 
-            // Populate form with AI-extracted data
-            setTitle(extractedData.title || "");
-            setDescription(extractedData.description || "");
-            setClaimantName(extractedData.claimantName || "");
-            setType(extractedData.type || "");
+            const decoder = new TextDecoder();
+            let fullText = "";
+            let finalData: Record<string, unknown> | null = null;
+
+            // Read the stream
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+
+                const chunk = decoder.decode(value, { stream: true });
+                const events = parseSSE(chunk);
+
+                for (const event of events) {
+                    switch (event.type) {
+                        case "start":
+                            setCurrentAgent("workflow");
+                            break;
+                        case "text":
+                            if (event.data.content) {
+                                fullText += event.data.content as string;
+                                setStreamingText(fullText);
+                            }
+                            break;
+                        case "agent":
+                            // Track agent switches
+                            setCurrentAgent(event.data.to as string);
+                            setAgentHistory(prev => [...prev, event.data.to as string]);
+                            break;
+                        case "done":
+                            finalData = event.data;
+                            break;
+                        case "error":
+                            throw new Error(event.data.error as string || "Stream error");
+                    }
+                }
+            }
+
+            // Process final result
+            if (finalData) {
+                setAgentResponse(finalData.response as string || fullText);
+                
+                // Parse the response to extract data (you may want to improve this)
+                const extractedData = parseAgentResponse(finalData.response as string || fullText, file.name);
+                setTitle(extractedData.title || "");
+                setDescription(extractedData.description || "");
+                setClaimantName(extractedData.claimantName || "");
+                setType(extractedData.type || "");
+            }
 
             setProcessingStatus("success");
 
@@ -97,7 +183,9 @@ export function CreateInvoiceModal({ isOpen, onClose }: CreateClaimModalProps) {
                 setMode("manual");
                 setFile(null);
                 setProcessingStatus("idle");
-            }, 2000);
+                setStreamingText("");
+                setAgentHistory([]);
+            }, 3000);
 
         } catch (error) {
             console.error("AI Processing Error:", error);
@@ -110,6 +198,61 @@ export function CreateInvoiceModal({ isOpen, onClose }: CreateClaimModalProps) {
         } finally {
             setIsLoading(false);
         }
+    };
+
+    // Helper function to parse agent response into structured data
+    const parseAgentResponse = (response: string, fileName: string) => {
+        let title = fileName.split('.')[0] || "Invoice";
+        let description = "Extracted from uploaded document";
+        let claimantName = "";
+        let type = "General";
+
+        if (!response) {
+            return { title, description, claimantName, type };
+        }
+
+        // Try to extract client/claimant name
+        const clientMatch = response.match(/client[:\s]+([A-Za-z\s]+?)(?:\.|,|\n|$)/i) ||
+                            response.match(/claimant[:\s]+([A-Za-z\s]+?)(?:\.|,|\n|$)/i) ||
+                            response.match(/name[:\s]+([A-Za-z\s]+?)(?:\.|,|\n|$)/i);
+        if (clientMatch) {
+            claimantName = clientMatch[1].trim();
+        }
+
+        // Try to extract type
+        const typeMatch = response.match(/type[:\s]+([A-Za-z\s]+?)(?:\.|,|\n|$)/i) ||
+                          response.match(/category[:\s]+([A-Za-z\s]+?)(?:\.|,|\n|$)/i);
+        if (typeMatch) {
+            type = typeMatch[1].trim();
+        } else if (response.toLowerCase().includes("medical") || response.toLowerCase().includes("health")) {
+            type = "Health";
+        } else if (response.toLowerCase().includes("auto") || response.toLowerCase().includes("vehicle")) {
+            type = "Auto";
+        } else if (response.toLowerCase().includes("home") || response.toLowerCase().includes("property")) {
+            type = "Home";
+        }
+
+        // Try to extract title
+        const titleMatch = response.match(/title[:\s]+([^\n]+?)(?:\.|,|\n|$)/i) ||
+                           response.match(/invoice for[:\s]+([^\n]+?)(?:\.|,|\n|$)/i);
+        if (titleMatch) {
+            title = titleMatch[1].trim();
+        } else {
+            title = `${type} Invoice`;
+        }
+
+        // Use the full response as description if it's reasonable length
+        if (response.length < 500) {
+            description = response;
+        } else {
+            const summaryMatch = response.match(/summary[:\s]+([^\n]+)/i) ||
+                                response.match(/description[:\s]+([^\n]+)/i);
+            if (summaryMatch) {
+                description = summaryMatch[1].trim();
+            }
+        }
+
+        return { title, description, claimantName, type };
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -155,6 +298,7 @@ export function CreateInvoiceModal({ isOpen, onClose }: CreateClaimModalProps) {
         setFile(null);
         setProcessingStatus("idle");
         setAgentResponse("");
+        setStreamingText("");
         setProcessingError("");
         onClose();
     };
@@ -162,6 +306,7 @@ export function CreateInvoiceModal({ isOpen, onClose }: CreateClaimModalProps) {
     const handleRetry = () => {
         setProcessingStatus("idle");
         setProcessingError("");
+        setStreamingText("");
         setMode("upload");
     };
 
@@ -278,27 +423,57 @@ export function CreateInvoiceModal({ isOpen, onClose }: CreateClaimModalProps) {
                         {processingStatus !== "idle" && (
                             <div className={cn(
                                 "rounded-lg p-4 border",
-                                processingStatus === "uploading" && "bg-blue-50 border-blue-200",
-                                processingStatus === "processing" && "bg-amber-50 border-amber-200",
-                                processingStatus === "success" && "bg-green-50 border-green-200",
-                                processingStatus === "error" && "bg-red-50 border-red-200"
+                                processingStatus === "uploading" && "bg-blue-50 border-blue-200 dark:bg-blue-950 dark:border-blue-800",
+                                processingStatus === "processing" && "bg-amber-50 border-amber-200 dark:bg-amber-950 dark:border-amber-800",
+                                processingStatus === "success" && "bg-green-50 border-green-200 dark:bg-green-950 dark:border-green-800",
+                                processingStatus === "error" && "bg-red-50 border-red-200 dark:bg-red-950 dark:border-red-800"
                             )}>
                                 <div className="flex items-start gap-3">
                                     {processingStatus === "uploading" && (
                                         <>
                                             <Loader2 className="w-5 h-5 text-blue-500 animate-spin mt-0.5" />
                                             <div>
-                                                <p className="font-medium text-blue-700">Uploading document...</p>
-                                                <p className="text-sm text-blue-600">Sending file to AI agent</p>
+                                                <p className="font-medium text-blue-700 dark:text-blue-300">Uploading document...</p>
+                                                <p className="text-sm text-blue-600 dark:text-blue-400">Sending file to AI agent</p>
                                             </div>
                                         </>
                                     )}
                                     {processingStatus === "processing" && (
                                         <>
                                             <Bot className="w-5 h-5 text-amber-500 animate-pulse mt-0.5" />
-                                            <div>
-                                                <p className="font-medium text-amber-700">AI Agent Processing...</p>
-                                                <p className="text-sm text-amber-600">Extracting invoice details from document</p>
+                                            <div className="flex-1">
+                                                <div className="flex items-center gap-2 mb-2">
+                                                    <p className="font-medium text-amber-700">AI Agent Processing...</p>
+                                                    {currentAgent && (
+                                                        <span className="text-xs bg-amber-200 text-amber-800 px-2 py-0.5 rounded-full">
+                                                            {currentAgent}
+                                                        </span>
+                                                    )}
+                                                </div>
+                                                
+                                                {/* Agent history indicator */}
+                                                {agentHistory.length > 0 && (
+                                                    <div className="flex flex-wrap items-center gap-1 mb-2">
+                                                        {agentHistory.map((agent, i) => (
+                                                            <span key={i} className="inline-flex items-center gap-1 text-xs">
+                                                                {i > 0 && <ArrowRight className="w-3 h-3 text-amber-400" />}
+                                                                <span className="bg-amber-100 text-amber-700 px-2 py-0.5 rounded">
+                                                                    {agent}
+                                                                </span>
+                                                            </span>
+                                                        ))}
+                                                    </div>
+                                                )}
+                                                
+                                                {/* Streaming text preview */}
+                                                {streamingText && (
+                                                    <div className="mt-2 p-2 bg-white/50 rounded border border-amber-200 max-h-32 overflow-y-auto">
+                                                        <p className="text-xs text-amber-800 whitespace-pre-wrap">
+                                                            {streamingText.slice(-500)}
+                                                            <span className="animate-pulse">|</span>
+                                                        </p>
+                                                    </div>
+                                                )}
                                             </div>
                                         </>
                                     )}
@@ -306,8 +481,8 @@ export function CreateInvoiceModal({ isOpen, onClose }: CreateClaimModalProps) {
                                         <>
                                             <CheckCircle2 className="w-5 h-5 text-green-500 mt-0.5" />
                                             <div>
-                                                <p className="font-medium text-green-700">Processing Complete!</p>
-                                                <p className="text-sm text-green-600">Review the extracted data below</p>
+                                                <p className="font-medium text-green-700 dark:text-green-300">Processing Complete!</p>
+                                                <p className="text-sm text-green-600 dark:text-green-400">Review the extracted data below</p>
                                             </div>
                                         </>
                                     )}
@@ -315,8 +490,8 @@ export function CreateInvoiceModal({ isOpen, onClose }: CreateClaimModalProps) {
                                         <>
                                             <AlertCircle className="w-5 h-5 text-red-500 mt-0.5" />
                                             <div className="flex-1">
-                                                <p className="font-medium text-red-700">Processing Failed</p>
-                                                <p className="text-sm text-red-600">{processingError}</p>
+                                                <p className="font-medium text-red-700 dark:text-red-300">Processing Failed</p>
+                                                <p className="text-sm text-red-600 dark:text-red-400">{processingError}</p>
                                                 <Button
                                                     type="button"
                                                     variant="outline"
@@ -333,9 +508,9 @@ export function CreateInvoiceModal({ isOpen, onClose }: CreateClaimModalProps) {
 
                                 {/* Agent Response Preview */}
                                 {agentResponse && processingStatus === "success" && (
-                                    <div className="mt-3 pt-3 border-t border-green-200">
-                                        <p className="text-xs font-medium text-green-700 mb-1">Agent Response:</p>
-                                        <p className="text-xs text-green-600 line-clamp-3">{agentResponse}</p>
+                                    <div className="mt-3 pt-3 border-t border-green-200 dark:border-green-700">
+                                        <p className="text-xs font-medium text-green-700 dark:text-green-300 mb-1">Agent Response:</p>
+                                        <p className="text-xs text-green-600 dark:text-green-400 line-clamp-3">{agentResponse}</p>
                                     </div>
                                 )}
                             </div>
