@@ -2,7 +2,7 @@
 
 import React, { useRef, useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
-import { motion, useMotionValue, useTransform } from "framer-motion";
+import { motion } from "framer-motion";
 
 interface PriceBarProps {
     currentPrice: number;
