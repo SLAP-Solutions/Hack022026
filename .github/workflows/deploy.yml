@@ -168,33 +168,69 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: '${{ env.WORKING_DIR }}/package-lock.json'
+
+      - name: Install dependencies
+        working-directory: ${{ env.WORKING_DIR }}
+        run: npm ci
+
+      - name: Build Next.js app
+        working-directory: ${{ env.WORKING_DIR }}
+        run: npm run build
+        env:
+          COSMOSDB_ENDPOINT: ${{ secrets.COSMOSDB_ENDPOINT }}
+          COSMOSDB_KEY: ${{ secrets.COSMOSDB_KEY }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TERRAFORM_VERSION }}
+          terraform_wrapper: false
+
       - name: Azure Login
         uses: azure/login@v2
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-      - name: Get Deployment Token
-        id: get-token
+      - name: Get Static Web App Details
+        id: get-swa
+        working-directory: ${{ env.TF_DIR }}
         run: |
-          SWA_API_KEY=$(az staticwebapp secrets list --name ${{ needs.terraform-apply.outputs.swa_name }} --resource-group ${{ needs.terraform-apply.outputs.rg_name }} --query "properties.apiKey" -o tsv)
-          echo "::add-mask::$SWA_API_KEY"
-          echo "token=$SWA_API_KEY" >> $GITHUB_OUTPUT
+          # Re-initialize terraform to get outputs
+          terraform init
+          SWA_NAME=$(terraform output -raw static_web_app_name)
+          SWA_HOSTNAME=$(terraform output -raw static_web_app_default_host_name)
+          SWA_API_KEY=$(terraform output -raw static_web_app_api_key)
+          echo "swa_name=$SWA_NAME" >> $GITHUB_OUTPUT
+          echo "swa_hostname=$SWA_HOSTNAME" >> $GITHUB_OUTPUT
+          echo "swa_api_key=$SWA_API_KEY" >> $GITHUB_OUTPUT
+        env:
+          ARM_CLIENT_ID: ${{ fromJSON(secrets.AZURE_CREDENTIALS).clientId }}
+          ARM_CLIENT_SECRET: ${{ fromJSON(secrets.AZURE_CREDENTIALS).clientSecret }}
+          ARM_SUBSCRIPTION_ID: ${{ fromJSON(secrets.AZURE_CREDENTIALS).subscriptionId }}
+          ARM_TENANT_ID: ${{ fromJSON(secrets.AZURE_CREDENTIALS).tenantId }}
+          ARM_USE_CLI: false
 
       - name: Deploy to Static Web App
         uses: Azure/static-web-apps-deploy@v1
         with:
-          azure_static_web_apps_api_token: ${{ steps.get-token.outputs.token }}
+          azure_static_web_apps_api_token: ${{ steps.get-swa.outputs.swa_api_key }}
           repo_token: ${{ secrets.GITHUB_TOKEN }}
-          action: "upload"
-          app_location: "${{ env.WORKING_DIR }}"
-          output_location: ""
-          skip_app_build: false
+          action: 'upload'
+          app_location: '${{ env.WORKING_DIR }}'
+          output_location: ''
+          skip_app_build: true
 
       - name: Health Check
         run: |
           echo "Waiting for Static Web App to deploy..."
           sleep 30
-          SWA_URL="https://${{ needs.terraform-apply.outputs.swa_hostname }}"
+          SWA_URL="https://${{ steps.get-swa.outputs.swa_hostname }}"
           echo "Checking deployment at: $SWA_URL"
           
           for i in {1..15}; do
@@ -211,4 +247,3 @@ jobs:
           echo "⚠️ Health check did not return 200 OK after 15 attempts"
           echo "Note: Static Web Apps may take a few minutes to fully propagate"
           echo "Check manually at: $SWA_URL"
-
