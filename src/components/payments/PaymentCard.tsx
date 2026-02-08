@@ -17,10 +17,13 @@ import {
     HoverCardTrigger,
 } from "@/components/ui/hover-card";
 import { useMemo } from "react";
+import Link from "next/link";
 
 interface PaymentCardProps {
     payment: ClaimPaymentWithPrice;
     onRefresh?: () => void;
+    invoiceId?: string;
+    invoiceTitle?: string;
 }
 
 // Create reverse mapping from feedId to symbol
@@ -30,14 +33,14 @@ const FEED_ID_TO_SYMBOL: Record<string, string> = {
     [FEED_IDS["BTC/USD"]]: "BTC",
 };
 
-export function PaymentCard({ payment, onRefresh }: PaymentCardProps) {
+export function PaymentCard({ payment, onRefresh, invoiceId, invoiceTitle }: PaymentCardProps) {
     const { executeClaimPayment, executePaymentEarly, isLoading } = useContract();
     const { contacts } = useContactsStore();
     const [isModalOpen, setIsModalOpen] = useState(false);
 
     const handleExecute = async (e: React.MouseEvent) => {
         e.stopPropagation(); // Prevent opening modal if clicking button inside interactive area
-        
+
         // Determine if triggers are hit
         const current = payment.currentPrice / Math.pow(10, 3);
         const stopLoss = Number(payment.stopLossPrice) / Math.pow(10, 3);
@@ -45,7 +48,7 @@ export function PaymentCard({ payment, onRefresh }: PaymentCardProps) {
         const stopLossHit = current > 0 && current <= stopLoss;
         const takeProfitHit = current > 0 && current >= takeProfit;
         const canExecute = !payment.executed && (stopLossHit || takeProfitHit);
-        
+
         try {
             if (canExecute) {
                 // Triggers hit - normal execution
@@ -162,6 +165,18 @@ export function PaymentCard({ payment, onRefresh }: PaymentCardProps) {
                             <p>To: <span className={cn("font-medium", contact ? "text-primary" : "font-mono text-xs")}>
                                 {receiverName}
                             </span></p>
+                            {invoiceId && (
+                                <p>Invoice: <Link href={`/invoices/${invoiceId}`} className="font-medium text-primary hover:underline hover:text-primary/80 transition-colors">
+                                    {invoiceTitle ? (
+                                        <span className="inline-flex items-center gap-1">
+                                            {invoiceTitle}
+                                            <span className="text-muted-foreground font-mono font-normal text-[10px] opacity-70">#{invoiceId}</span>
+                                        </span>
+                                    ) : (
+                                        `#${invoiceId}`
+                                    )}
+                                </Link></p>
+                            )}
                         </div>
                     </div>
                     <Badge

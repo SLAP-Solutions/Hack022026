@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useWallet } from "../../hooks/useWallet";
 import { usePayments } from "../../hooks/usePayments";
 import { useTransactionHistory } from "../../hooks/useTransactionHistory";
 import { useFTSOPrices } from "../../hooks/useFTSOPrices";
+import { useInvoicesStore } from "../../stores/useInvoicesStore";
 import { CreatePaymentForm } from "../../components/payments/CreatePaymentForm";
 import { PaymentsList } from "../../components/payments/PaymentsList";
 import { TransactionHistory } from "../../components/payments/TransactionHistory";
@@ -23,8 +24,29 @@ export default function PaymentsPage() {
     const { payments, isLoading, refetch } = usePayments();
     const { transactions, loading: txLoading, error: txError, refetch: refetchTx } = useTransactionHistory();
     const { prices } = useFTSOPrices();
+    const { invoices, fetchInvoices } = useInvoicesStore();
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [activeTab, setActiveTab] = useState<TabType>("payments");
+
+    useEffect(() => {
+        if (address) {
+            fetchInvoices(address);
+        }
+    }, [address, fetchInvoices]);
+
+    const paymentToInvoiceMap = useMemo(() => {
+        const map: Record<string, { id: string; title: string }> = {};
+        invoices.forEach(inv => {
+            inv.payments?.forEach(p => {
+                map[p.id.toString()] = { id: inv.id, title: inv.title };
+            });
+        });
+        return map;
+    }, [invoices]);
+
+    const invoiceOptions = useMemo(() => {
+        return invoices.map(inv => ({ id: inv.id, title: inv.title }));
+    }, [invoices]);
 
     if (!isConnected) {
         return (
@@ -117,6 +139,8 @@ export default function PaymentsPage() {
                                 payments={payments}
                                 isLoading={isLoading}
                                 onRefresh={refetch}
+                                paymentToInvoiceMap={paymentToInvoiceMap}
+                                invoices={invoiceOptions}
                             />
                         )}
 
