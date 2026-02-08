@@ -5,6 +5,7 @@ import { useContract } from "@/hooks/useContract";
 import { useContactsStore } from "@/stores/useContactsStore";
 import { FEED_IDS } from "@/lib/contract/constants";
 import { ethers } from "ethers";
+import { useInvoicesStore } from "@/stores/useInvoicesStore";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -22,11 +23,13 @@ type PaymentMode = "trigger" | "instant";
 
 interface CreatePaymentFormProps {
     onSuccess?: () => void;
+    invoiceId?: string;
 }
 
-export function CreatePaymentForm({ onSuccess }: CreatePaymentFormProps) {
+export function CreatePaymentForm({ onSuccess, invoiceId }: CreatePaymentFormProps) {
     const { createClaimPayment, createInstantPayment, getCurrentPrice, isLoading } = useContract();
     const { contacts, fetchContacts } = useContactsStore();
+    const { addPayment } = useInvoicesStore();
 
     useEffect(() => {
         fetchContacts();
@@ -87,7 +90,31 @@ export function CreatePaymentForm({ onSuccess }: CreatePaymentFormProps) {
                 const collateralWei = calculateRequiredCollateral(stopLoss);
                 const collateralEth = ethers.formatEther(collateralWei.toString());
 
-                await createClaimPayment(receiver, usdCents, feed, stopLoss, takeProfit, expiryDays, collateralEth);
+                const txHash = await createClaimPayment(receiver, usdCents, feed, stopLoss, takeProfit, expiryDays, collateralEth);
+
+                // If we have an invoiceId, link this payment in the store
+                if (invoiceId) {
+                    const newPayment = {
+                        id: BigInt(Date.now()), // Mock ID for UI, in reality would use contract events or ID
+                        payer: "You", // Connected wallet
+                        receiver: receiver,
+                        usdAmount: parseFloat(usdAmount),
+                        cryptoFeedId: FEED_IDS[feed],
+                        stopLossPrice: Number(stopLossInput),
+                        takeProfitPrice: Number(takeProfitInput),
+                        collateralAmount: BigInt(ethers.parseEther(collateralEth)),
+                        createdAt: BigInt(Math.floor(Date.now() / 1000)),
+                        expiresAt: BigInt(Math.floor(Date.now() / 1000) + (expiryDays * 86400)),
+                        executed: false,
+                        executedAt: BigInt(0),
+                        executedPrice: BigInt(0),
+                        paidAmount: BigInt(0),
+                        originalAmount: parseFloat(usdAmount),
+                        status: 'pending' as const
+                    };
+                    addPayment(invoiceId, newPayment);
+                }
+
                 alert("✅ Trigger-based payment created successfully!");
             }
 

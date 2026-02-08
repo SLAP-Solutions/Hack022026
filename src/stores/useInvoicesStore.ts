@@ -22,7 +22,7 @@ export const useInvoicesStore = create<InvoicesStore>((set, get) => ({
         set({ isLoading: true, error: null });
         try {
             const url = walletId ? `/api/invoices?walletId=${walletId}` : '/api/invoices';
-            const response = await fetch(url);
+            const response = await fetch(url, { cache: 'no-store' });
             if (!response.ok) throw new Error('Failed to fetch invoices');
 
             const text = await response.text();
