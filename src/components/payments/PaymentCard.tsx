@@ -291,6 +291,10 @@ export function PaymentCard({ payment, onRefresh, invoiceId, invoiceTitle }: Pay
                             </>
                         ) : (
                             <>
+                                <span className="text-muted-foreground">Executed On:</span>
+                                <span className="font-mono text-right">
+                                    {new Date(Number(payment.executedAt) * 1000).toLocaleString()}
+                                </span>
                                 <span className="text-muted-foreground">Price at Execution:</span>
                                 <span className="font-mono text-right">
                                     ${(Number(payment.executedPrice) / multiplier).toFixed(2)}

@@ -44,11 +44,11 @@ export default function InvoiceDetailPage() {
     const { payments: livePayments } = usePayments();
     const [isRiskModalOpen, setIsRiskModalOpen] = useState(false);
     const [isPaymentSidebarOpen, setIsPaymentSidebarOpen] = useState(false);
-    const [refreshTimer, setRefreshTimer] = useState(10);
+    const [refreshTimer, setRefreshTimer] = useState(2);
 
     // Reset timer when payments update
     useEffect(() => {
-        setRefreshTimer(10);
+        setRefreshTimer(2);
     }, [livePayments]);
 
     // Countdown timer
@@ -227,7 +227,12 @@ export default function InvoiceDetailPage() {
                             <span className="text-xs font-medium">Created</span>
                         </div>
                         <p className="font-semibold">
-                            {new Date(invoice.dateCreated).toLocaleDateString()}
+                            {new Date(invoice.dateCreated).toLocaleDateString('en-US', {
+                                year: 'numeric',
+                                month: 'long',
+                                day: 'numeric',
+                                timeZone: 'UTC'
+                            })}
                         </p>
                     </CardContent>
                 </Card>

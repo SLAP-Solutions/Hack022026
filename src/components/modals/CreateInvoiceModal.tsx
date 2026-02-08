@@ -35,7 +35,7 @@ export function CreateInvoiceModal({ isOpen, onClose }: CreateClaimModalProps) {
     const [description, setDescription] = useState("");
     const [claimantName, setClaimantName] = useState("");
     const [type, setType] = useState("");
-    const [dateNotified, setDateNotified] = useState("");
+    const [dateCreated, setDateCreated] = useState("");
     const [mode, setMode] = useState<"manual" | "upload">("manual");
     const [file, setFile] = useState<File | null>(null);
 
@@ -133,7 +133,7 @@ export function CreateInvoiceModal({ isOpen, onClose }: CreateClaimModalProps) {
                 claimantName,
                 type,
                 walletId: address,
-                ...(dateNotified && { dateNotified })
+                ...(dateCreated && { dateCreated })
             });
             handleClose();
         } catch (error) {
@@ -150,7 +150,7 @@ export function CreateInvoiceModal({ isOpen, onClose }: CreateClaimModalProps) {
         setDescription("");
         setClaimantName("");
         setType("");
-        setDateNotified("");
+        setDateCreated("");
         setMode("manual");
         setFile(null);
         setProcessingStatus("idle");
@@ -238,16 +238,16 @@ export function CreateInvoiceModal({ isOpen, onClose }: CreateClaimModalProps) {
                         </div>
 
                         <div className="space-y-2">
-                            <Label htmlFor="dateNotified">Date Notified (Optional)</Label>
+                            <Label htmlFor="dateCreated">Date Created (Optional)</Label>
                             <Input
-                                id="dateNotified"
+                                id="dateCreated"
                                 type="date"
-                                value={dateNotified}
-                                onChange={(e) => setDateNotified(e.target.value)}
-                                placeholder="When was the client notified?"
+                                value={dateCreated}
+                                onChange={(e) => setDateCreated(e.target.value)}
+                                placeholder="When was the invoice created?"
                             />
                             <p className="text-xs text-muted-foreground">
-                                When was the client notified of this invoice?
+                                When was the invoice created? (Leave blank for today)
                             </p>
                         </div>
 
