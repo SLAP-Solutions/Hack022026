@@ -1,12 +1,12 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useFTSOPrices } from "../../hooks/useFTSOPrices";
+import { usePrices } from "../../context/PriceContext";
 import { PriceCard } from "./PriceCard";
 import { Clock } from "lucide-react";
 
 export function PriceDashboard() {
-    const { prices, nextRefresh } = useFTSOPrices();
+    const { prices, nextRefresh } = usePrices();
     const feeds = ["FLR/USD", "ETH/USD", "BTC/USD"];
 
     const [secondsLeft, setSecondsLeft] = useState(0);
@@ -40,6 +40,7 @@ export function PriceDashboard() {
                     timestamp={prices[feed].timestamp}
                     loading={prices[feed].loading}
                     error={prices[feed].error}
+                    decimals={prices[feed].decimals}
                 />
             ))}
         </div>

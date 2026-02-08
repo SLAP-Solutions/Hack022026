@@ -3,6 +3,7 @@ import { Merriweather, Manrope } from "next/font/google";
 import "./globals.css";
 import { AppSidebar } from "../components/layout/AppSidebar";
 import { WalletProvider } from "../context/WalletContext";
+import { PriceProvider } from "../context/PriceContext";
 import { WalletGate } from "../components/wallet/WalletGate";
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { ThemeProvider } from "@/components/theme-provider";
@@ -44,17 +45,19 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <WalletProvider>
-            <WalletGate>
-              <SidebarProvider>
-                <AppSidebar />
-                <SidebarInset className="p-4 pl-0 h-screen overflow-hidden bg-sidebar">
-                  <main className="bg-white dark:bg-neutral-950 rounded-xl border border-slate-200 dark:border-neutral-800 h-full overflow-auto">
-                    {children}
-                  </main>
-                  <Toaster />
-                </SidebarInset>
-              </SidebarProvider>
-            </WalletGate>
+            <PriceProvider>
+              <WalletGate>
+                <SidebarProvider>
+                  <AppSidebar />
+                  <SidebarInset className="p-4 pl-0 h-screen overflow-hidden bg-sidebar">
+                    <main className="bg-white dark:bg-neutral-950 rounded-xl border border-slate-200 dark:border-neutral-800 h-full overflow-auto">
+                      {children}
+                    </main>
+                    <Toaster />
+                  </SidebarInset>
+                </SidebarProvider>
+              </WalletGate>
+            </PriceProvider>
           </WalletProvider>
         </ThemeProvider>
       </body>

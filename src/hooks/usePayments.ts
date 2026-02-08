@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useContract, ClaimPayment } from "./useContract";
 import { useWallet } from "./useWallet";
+import { usePrices } from "@/context/PriceContext";
 import { FEED_IDS } from "@/lib/contract/constants";
 
 // Create reverse mapping from feedId to symbol
@@ -20,6 +21,7 @@ export interface ClaimPaymentWithPrice extends ClaimPayment {
 export function usePayments() {
     const { address } = useWallet();
     const contract = useContract();
+    const { prices: globalPrices } = usePrices(); // Use global price provider
     const [payments, setPayments] = useState<ClaimPaymentWithPrice[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -44,7 +46,7 @@ export function usePayments() {
                 return;
             }
 
-            const { getTotalPayments, getClaimPayment, getCurrentPrice } = contractRef.current;
+            const { getTotalPayments, getClaimPayment } = contractRef.current;
 
             try {
                 // Only show loading spinner on initial load
@@ -60,22 +62,21 @@ export function usePayments() {
                     try {
                         const payment = await getClaimPayment(i);
                         if (payment.payer.toLowerCase() === address.toLowerCase()) {
-                            // Fetch current price for this payment's feed
+                            // Get price from global provider instead of fetching independently
                             const feedSymbol = FEED_ID_TO_SYMBOL[payment.cryptoFeedId];
                             let currentPrice = 0;
-                            if (feedSymbol) {
-                                try {
-                                    const priceData = await getCurrentPrice(feedSymbol);
-                                    currentPrice = priceData.price;
-                                } catch (priceErr) {
-                                    console.error(`Failed to fetch price for ${feedSymbol}:`, priceErr);
-                                }
+                            let decimals = 0;
+
+                            if (feedSymbol && globalPrices[feedSymbol]) {
+                                const priceData = globalPrices[feedSymbol];
+                                currentPrice = priceData.price;
+                                decimals = priceData.decimals;
                             }
 
                             allPayments.push({
                                 ...payment,
                                 currentPrice,
-                                decimals: feedSymbol ? (await getCurrentPrice(feedSymbol)).decimals : 0,
+                                decimals,
                             });
                         }
                     } catch (err) {
@@ -119,7 +120,7 @@ export function usePayments() {
             cancelled = true;
             clearTimeout(timeoutId);
         };
-    }, [address, refetchTrigger]);
+    }, [address, refetchTrigger, globalPrices]);
 
     const refetch = () => {
         hasFetchedOnce.current = false;
