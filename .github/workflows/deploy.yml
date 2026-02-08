@@ -172,12 +172,14 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: '${{ env.WORKING_DIR }}/package-lock.json'
 
       - name: Install dependencies
         working-directory: ${{ env.WORKING_DIR }}
         run: |
-          rm -f package-lock.json
-          npm install
+          npm ci
+          npm install --no-save lightningcss-linux-x64-gnu
 
       - name: Build Next.js app
         working-directory: ${{ env.WORKING_DIR }}
