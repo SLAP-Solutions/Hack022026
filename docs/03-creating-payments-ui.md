@@ -28,7 +28,7 @@ Complete guide to creating optimized crypto payments and invoices.
 
 ### Step 1: Connect Your Wallet
 
-1. Visit the FlareOptimize dApp
+1. Visit the Slapsure dApp
 2. Click **"Connect Wallet"** button
 3. MetaMask popup appears
 4. Select your account
