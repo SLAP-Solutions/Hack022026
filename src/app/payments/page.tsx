@@ -25,7 +25,7 @@ export default function PaymentsPage() {
 
     if (!isConnected) {
         return (
-            <div className="flex items-center justify-center min-h-full">
+            <div className="flex items-center justify-center min-h-full -m-6">
                 <Card className="w-full max-w-md text-center">
                     <CardHeader>
                         <div className="mx-auto w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mb-4">
@@ -50,7 +50,7 @@ export default function PaymentsPage() {
                         {address?.slice(0, 6)}...{address?.slice(-4)}
                     </div>
                     {!sidebarOpen && (
-                        <Button
+                        <Button 
                             onClick={() => setSidebarOpen(true)}
                             className="bg-primary text-primary-foreground hover:bg-primary/90"
                             size="sm"
