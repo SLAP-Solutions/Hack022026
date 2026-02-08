@@ -136,7 +136,7 @@ jobs:
             --registry-username "$ACR_USERNAME" \
             --registry-password "$ACR_PASSWORD" \
             --restart-policy Always \
-            --environment-variables RPC_URL=https://coston2-api.flare.network/ext/C/rpc POLL_INTERVAL=15000 GAS_LIMIT=500000 CONTRACT_ADDRESS=${{ secrets.CONTRACT_ADDRESS }} \
+            --environment-variables RPC_URL=https://coston2-api.flare.network/ext/C/rpc POLL_INTERVAL=3000 GAS_LIMIT=500000 CONTRACT_ADDRESS=${{ secrets.CONTRACT_ADDRESS }} \
             --secure-environment-variables PRIVATE_KEY=${{ secrets.KEEPER_PRIVATE_KEY }}
 
       - name: Verify Keeper Deployment
