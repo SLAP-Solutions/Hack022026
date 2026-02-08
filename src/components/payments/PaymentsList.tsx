@@ -73,7 +73,7 @@ export function PaymentsList({ payments, isLoading, onRefresh, paymentToInvoiceM
                     </Button>
                 </div>
 
-                <div className="w-full sm:w-[250px]">
+                <div className="w-full sm:w-[300px] sm:ml-auto">
                     <Select value={invoiceFilter} onValueChange={setInvoiceFilter}>
                         <SelectTrigger>
                             <SelectValue placeholder="Filter by Invoice" />
@@ -83,7 +83,7 @@ export function PaymentsList({ payments, isLoading, onRefresh, paymentToInvoiceM
                             <SelectItem value="none">No Invoice</SelectItem>
                             {invoices?.map((invoice) => (
                                 <SelectItem key={invoice.id} value={invoice.id}>
-                                    <span className="truncate block max-w-[200px]">
+                                    <span className="truncate block">
                                         {invoice.title || `Invoice #${invoice.id}`}
                                     </span>
                                 </SelectItem>

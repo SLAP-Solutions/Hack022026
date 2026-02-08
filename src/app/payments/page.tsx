@@ -133,7 +133,7 @@ export default function PaymentsPage() {
 
                 {/* Page Content */}
                 <div className="flex-1 overflow-auto p-6">
-                    <div className="max-w-7xl">
+                    <div className="w-full">
                         {activeTab === "payments" && (
                             <PaymentsList
                                 payments={payments}

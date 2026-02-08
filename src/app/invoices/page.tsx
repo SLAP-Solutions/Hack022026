@@ -36,20 +36,41 @@ export default function InvoicesPage() {
     }, [fetchInvoices, address]);
 
     // Merge live payment status into invoices
-    const mergedInvoices = invoices.map(invoice => ({
-        ...invoice,
-        payments: invoice.payments?.map(payment => {
+    const mergedInvoices = invoices.map(invoice => {
+        const updatedPayments = invoice.payments?.map(payment => {
             const livePayment = livePayments.find(p => p.id === Number(payment.id));
             if (livePayment) {
                 return {
                     ...payment,
                     status: (livePayment.executed ? 'executed' : 'pending') as 'pending' | 'executed',
+                    executed: livePayment.executed,
                     executedAt: BigInt(livePayment.executedAt),
                 };
             }
-            return payment;
-        }) || []
-    }));
+            return {
+                ...payment,
+                status: (payment.executed ? 'executed' : 'pending') as 'pending' | 'executed',
+            };
+        }) || [];
+
+        let computedStatus = invoice.status;
+        if (updatedPayments.length > 0) {
+            const allExecuted = updatedPayments.every(p => p.status === 'executed');
+
+            if (allExecuted) {
+                computedStatus = 'settled';
+            } else {
+                const someExecuted = updatedPayments.some(p => p.status === 'executed');
+                computedStatus = someExecuted ? 'processing' : 'pending';
+            }
+        }
+
+        return {
+            ...invoice,
+            payments: updatedPayments,
+            status: computedStatus,
+        };
+    });
 
     const filteredInvoices = filter === "all"
         ? mergedInvoices
