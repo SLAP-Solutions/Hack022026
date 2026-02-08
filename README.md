@@ -12,7 +12,7 @@
 
 Businesses and individuals need to make payments in volatile crypto (ETH, SOL, BTC) but want to lock in stable USD or USDC values. As crypto prices fluctuate, the amount needed to pay the same USD value changes dramatically. **Slapsure lets you pay invoices when crypto prices are favorable, minimizing the amount of crypto spent.**
 
-Similar to how escrow accounts hold funds in high-interest accounts to maximize returns before release, **Slapsure holds payment obligations until market conditions are optimal** - but instead of earning interest, you save crypto by paying at the best price.
+Similar to how solicitors hold funds in high-interest accounts to maximize returns before release, **Slapsure holds payment obligations until market conditions are optimal** - but instead of earning interest, you save crypto by paying at the best price.
 
 ### Real Impact
 
