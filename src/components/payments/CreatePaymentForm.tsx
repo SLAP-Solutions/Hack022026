@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useContract } from "@/hooks/useContract";
 import { useContactsStore } from "@/stores/useContactsStore";
 import { FEED_IDS } from "@/lib/contract/constants";
@@ -33,6 +33,10 @@ export function CreatePaymentForm({ onSuccess }: CreatePaymentFormProps) {
     useEffect(() => {
         fetchContacts();
     }, [fetchContacts]);
+
+    const uniqueContacts = useMemo(() => {
+        return Array.from(new Map(contacts.map(c => [c.receiverAddress, c])).values());
+    }, [contacts]);
 
     // Form mode
     const [mode, setMode] = useState<PaymentMode>("trigger");
@@ -180,13 +184,13 @@ export function CreatePaymentForm({ onSuccess }: CreatePaymentFormProps) {
                 <div className="space-y-2">
                     <div className="flex justify-between items-center">
                         <Label htmlFor="receiver">Recipient Address</Label>
-                        {contacts.length > 0 && (
+                        {uniqueContacts.length > 0 && (
                             <Select onValueChange={setReceiver}>
                                 <SelectTrigger className="w-[180px] h-7 text-xs">
                                     <SelectValue placeholder="Select contact..." />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    {contacts.map(contact => (
+                                    {uniqueContacts.map(contact => (
                                         <SelectItem key={contact.id} value={contact.receiverAddress}>
                                             {contact.name}
                                         </SelectItem>

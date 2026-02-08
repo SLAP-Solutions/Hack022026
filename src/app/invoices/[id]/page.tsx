@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -11,6 +11,12 @@ import { CreatePaymentForm } from "@/components/payments/CreatePaymentForm";
 import { useContract } from "@/hooks/useContract";
 import { PaymentCard } from "@/components/payments/PaymentCard";
 import { PendingSignaturePaymentCard } from "@/components/payments/PendingSignaturePaymentCard";
+import { FEED_IDS } from "@/lib/contract/constants";
+import { ArrowLeft, Calendar, DollarSign, Tag, Receipt, User, Building, Plus, ShieldAlert, CreditCard, Bell, Clock } from "lucide-react";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { CreatePaymentForm } from "@/components/payments/CreatePaymentForm";
+import { useContract } from "@/hooks/useContract";
+import { PaymentCard } from "@/components/payments/PaymentCard";
 import { FEED_IDS } from "@/lib/contract/constants";
 import { ClaimRiskModal } from "@/components/modals/ClaimRiskModal";
 import { useInvoicesStore } from "@/stores/useInvoicesStore";
@@ -82,6 +88,57 @@ export default function InvoiceDetailPage() {
             console.error("Failed to link payment to invoice", error);
         }
     };
+    const [isPaymentSidebarOpen, setIsPaymentSidebarOpen] = useState(false);
+    const [refreshTimer, setRefreshTimer] = useState(10);
+
+    // Reset timer when payments update
+    useEffect(() => {
+        setRefreshTimer(10);
+    }, [livePayments]);
+
+    // Countdown timer
+    useEffect(() => {
+        const interval = setInterval(() => {
+            setRefreshTimer((prev) => (prev > 0 ? prev - 1 : 0));
+        }, 1000);
+        return () => clearInterval(interval);
+    }, []);
+
+    const handlePaymentSuccess = async (paymentId?: string) => {
+        if (!paymentId) {
+            setIsPaymentSidebarOpen(false);
+            return;
+        }
+
+        try {
+            const paymentDetails = await getClaimPayment(Number(paymentId));
+
+            const newPayment = {
+                id: BigInt(paymentId),
+                payer: paymentDetails.payer,
+                receiver: paymentDetails.receiver,
+                usdAmount: paymentDetails.usdAmount,
+                cryptoFeedId: paymentDetails.cryptoFeedId,
+                stopLossPrice: paymentDetails.stopLossPrice,
+                takeProfitPrice: paymentDetails.takeProfitPrice,
+                collateralAmount: paymentDetails.collateralAmount,
+                createdAt: BigInt(paymentDetails.createdAt),
+                createdAtPrice: paymentDetails.createdAtPrice,
+                expiresAt: BigInt(paymentDetails.expiresAt),
+                status: 'pending' as const,
+                executed: paymentDetails.executed,
+                executedAt: BigInt(paymentDetails.executedAt),
+                executedPrice: paymentDetails.executedPrice,
+                paidAmount: paymentDetails.paidAmount,
+                originalAmount: paymentDetails.usdAmount
+            };
+
+            await addPayment(invoiceId, newPayment);
+            setIsPaymentSidebarOpen(false);
+        } catch (error) {
+            console.error("Failed to link payment to invoice", error);
+        }
+    };
 
     const invoice = getInvoice(invoiceId);
 
@@ -104,7 +161,36 @@ export default function InvoiceDetailPage() {
         );
     }
 
-    const statusInfo = statusConfig[invoice.status as keyof typeof statusConfig];
+    // Derive status based on live payments (matches InvoicesPage logic)
+    const updatedPayments = invoice.payments?.map(payment => {
+        const livePayment = livePayments.find(p => p.id === Number(payment.id));
+        if (livePayment) {
+            return {
+                ...payment,
+                status: (livePayment.executed ? 'executed' : 'pending') as 'pending' | 'executed',
+                executed: livePayment.executed,
+                executedAt: BigInt(livePayment.executedAt),
+            };
+        }
+        return {
+            ...payment,
+            status: (payment.executed ? 'executed' : 'pending') as 'pending' | 'executed',
+        };
+    }) || [];
+
+    let computedStatus = invoice.status;
+    if (updatedPayments.length > 0) {
+        const allExecuted = updatedPayments.every(p => p.status === 'executed');
+
+        if (allExecuted) {
+            computedStatus = 'settled';
+        } else {
+            const someExecuted = updatedPayments.some(p => p.status === 'executed');
+            computedStatus = someExecuted ? 'processing' : 'pending';
+        }
+    }
+
+    const statusInfo = statusConfig[computedStatus as keyof typeof statusConfig] || statusConfig.pending;
 
     return (
         <div className="max-w-7xl mx-auto space-y-6 p-6">
@@ -129,7 +215,7 @@ export default function InvoiceDetailPage() {
                                         {invoice.id}
                                     </Badge>
                                     <Badge className={cn("text-xs border", statusInfo.color)}>
-                                        {invoice.status.toUpperCase()}
+                                        {computedStatus.toUpperCase()}
                                     </Badge>
                                 </div>
                                 <h1 className="text-4xl font-bold font-serif mb-2">
@@ -334,6 +420,10 @@ export default function InvoiceDetailPage() {
                             </Badge>
                         </div>
                         <div className="flex gap-2">
+                            <span className="flex items-center gap-1 text-xs text-muted-foreground self-center mr-2">
+                                <Clock className="w-3 h-3" />
+                                Refreshes in {refreshTimer}s
+                            </span>
                             <Button
                                 variant="outline"
                                 onClick={() => setIsRiskModalOpen(true)}
@@ -379,6 +469,28 @@ export default function InvoiceDetailPage() {
                                         currentPrice: currentPrice,
                                         createdAtPrice: payment.createdAtPrice || BigInt(0),
                                     };
+                    {invoice.payments && invoice.payments.length > 0 ? (
+                        <div className="columns-1 md:columns-2 gap-4 space-y-4">
+                            {invoice.payments.map((payment) => {
+                                // Find price for this payment's feed
+                                const feedSymbol = Object.keys(FEED_IDS).find(
+                                    (key) => FEED_IDS[key as keyof typeof FEED_IDS] === payment.cryptoFeedId
+                                );
+                                const priceData = feedSymbol ? prices[feedSymbol as keyof typeof FEED_IDS] : undefined;
+
+                                // PaymentCard expects price scaled by 1000 (3 decimals)
+                                const currentPrice = priceData ? Math.floor(parseFloat(priceData.price) * 1000) : 0;
+
+                                // Try to find live payment data to ensure status is up to date
+                                const livePayment = livePayments.find(p => p.id === Number(payment.id));
+
+                                // Construct ClaimPaymentWithPrice object
+                                const claimPayment = livePayment || {
+                                    ...payment,
+                                    id: Number(payment.id), // Convert bigint id to number for contract calls
+                                    currentPrice: currentPrice,
+                                    createdAtPrice: payment.createdAtPrice || BigInt(0),
+                                };
 
                                     return (
                                         <div key={payment.id.toString()} className="break-inside-avoid mb-4">
@@ -389,6 +501,15 @@ export default function InvoiceDetailPage() {
                                         </div>
                                     );
                                 })}
+                                return (
+                                    <div key={payment.id.toString()} className="break-inside-avoid mb-4">
+                                        <PaymentCard
+                                            payment={claimPayment as any}
+                                            onRefresh={() => updatePaymentStatus(invoice.id, payment.id, 'executed')}
+                                        />
+                                    </div>
+                                );
+                            })}
                         </div>
                     ) : (
                         <div className="text-center py-8 text-muted-foreground bg-muted/20 rounded-lg">

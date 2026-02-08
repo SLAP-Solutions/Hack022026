@@ -91,6 +91,49 @@ export function PaymentsList({ payments, isLoading, onRefresh, paymentToInvoiceM
                         </SelectContent>
                     </Select>
                 </div>
+            <div className="flex flex-col sm:flex-row gap-4 mb-4 items-start sm:items-center">
+                <div className="flex gap-2">
+                    <Button
+                        onClick={() => setFilter("all")}
+                        variant={filter === "all" ? "default" : "outline"}
+                        size="sm"
+                    >
+                        All ({payments.length})
+                    </Button>
+                    <Button
+                        onClick={() => setFilter("pending")}
+                        variant={filter === "pending" ? "default" : "outline"}
+                        size="sm"
+                    >
+                        Pending ({payments.filter((p) => !p.executed).length})
+                    </Button>
+                    <Button
+                        onClick={() => setFilter("executed")}
+                        variant={filter === "executed" ? "default" : "outline"}
+                        size="sm"
+                    >
+                        Executed ({payments.filter((p) => p.executed).length})
+                    </Button>
+                </div>
+
+                <div className="w-full sm:w-[300px]">
+                    <Select value={invoiceFilter} onValueChange={setInvoiceFilter}>
+                        <SelectTrigger>
+                            <SelectValue placeholder="Filter by Invoice" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="all">All Invoices</SelectItem>
+                            <SelectItem value="none">No Invoice</SelectItem>
+                            {invoices?.map((invoice) => (
+                                <SelectItem key={invoice.id} value={invoice.id}>
+                                    <span className="truncate block">
+                                        {invoice.title || `Invoice #${invoice.id}`}
+                                    </span>
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                </div>
             </div>
 
             {filteredPayments.length === 0 ? (
