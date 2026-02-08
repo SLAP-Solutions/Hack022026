@@ -17,6 +17,7 @@ import {
     HoverCardTrigger,
 } from "@/components/ui/hover-card";
 import { useMemo } from "react";
+import { toast } from "sonner";
 
 interface PaymentCardProps {
     payment: ClaimPaymentWithPrice;
@@ -67,17 +68,17 @@ export function PaymentCard({ payment, onRefresh }: PaymentCardProps) {
             if (canExecute) {
                 // Triggers hit - normal execution
                 await executeClaimPayment(payment.id);
-                alert("Payment executed at trigger price! Check transaction history.");
+                toast.success("Payment executed at trigger price! Check transaction history.");
             } else {
                 // Early execution - bypass triggers
                 await executePaymentEarly(payment.id);
-                alert("Payment executed early! Check transaction history.");
+                toast.success("Payment executed early! Check transaction history.");
             }
             onRefresh?.();
         } catch (error: any) {
             console.error(error);
             const reason = error.message || "Execution failed";
-            alert(`Execution failed: ${reason}`);
+            toast.error(`Execution failed: ${reason}`);
         }
     };
 

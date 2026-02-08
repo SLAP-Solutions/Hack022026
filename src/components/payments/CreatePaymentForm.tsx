@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/select";
 import { Info, Activity } from "lucide-react";
 import { PriceHistoryModal } from "./PriceHistoryModal";
+import { toast } from "sonner";
 
 type PaymentMode = "trigger" | "instant";
 
@@ -71,7 +72,7 @@ export function CreatePaymentForm({ onSuccess, invoiceId }: CreatePaymentFormPro
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!currentPrice) {
-            alert("Waiting for price data...");
+            toast.error("Waiting for price data...");
             return;
         }
 
@@ -83,7 +84,7 @@ export function CreatePaymentForm({ onSuccess, invoiceId }: CreatePaymentFormPro
                 const collateralEth = ethers.formatEther(collateralWei.toString());
 
                 await createInstantPayment(receiver, usdCents, feed, collateralEth);
-                alert("✅ Instant payment executed successfully!");
+                toast.success("Instant payment executed successfully!");
             } else {
                 const stopLoss = BigInt(Math.floor(currentPrice * (1 + stopLossPercent / 100)));
                 const takeProfit = BigInt(Math.floor(currentPrice * (1 + takeProfitPercent / 100)));
@@ -115,7 +116,7 @@ export function CreatePaymentForm({ onSuccess, invoiceId }: CreatePaymentFormPro
                     addPayment(invoiceId, newPayment);
                 }
 
-                alert("✅ Trigger-based payment created successfully!");
+                toast.success("Trigger-based payment created successfully!");
             }
 
             // Reset form
@@ -126,7 +127,7 @@ export function CreatePaymentForm({ onSuccess, invoiceId }: CreatePaymentFormPro
             onSuccess?.();
         } catch (error: any) {
             console.error(error);
-            alert(`Failed: ${error.message || "Unknown error"}`);
+            toast.error(`Failed: ${error.message || "Unknown error"}`);
         }
     };
 
@@ -221,7 +222,7 @@ export function CreatePaymentForm({ onSuccess, invoiceId }: CreatePaymentFormPro
                                             }
                                             return acc;
                                         }, [] as typeof contacts);
-                                        
+
                                         return uniqueContacts.map(contact => (
                                             <SelectItem key={contact.id} value={contact.receiverAddress}>
                                                 {contact.name}

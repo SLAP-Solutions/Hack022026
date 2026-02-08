@@ -14,6 +14,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { toast } from "sonner";
 
 export function ContactModal() {
     const { isOpen, closeModal, contactId } = useContactModal();
@@ -42,13 +43,13 @@ export function ContactModal() {
 
         // Validate form
         if (!name || !receiverAddress) {
-            alert("Please fill in all fields");
+            toast.error("Please fill in all fields");
             return;
         }
 
         // Validate Ethereum address format (basic validation)
         if (!/^0x[a-fA-F0-9]{40}$/.test(receiverAddress)) {
-            alert("Please enter a valid Ethereum address (0x followed by 40 hex characters)");
+            toast.error("Please enter a valid Ethereum address (0x followed by 40 hex characters)");
             return;
         }
 
