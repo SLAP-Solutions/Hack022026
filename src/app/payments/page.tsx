@@ -1,18 +1,19 @@
 "use client";
 
 import { useState } from "react";
-import { useWallet } from "@/hooks/useWallet";
-import { usePayments } from "@/hooks/usePayments";
-import { useTransactionHistory } from "@/hooks/useTransactionHistory";
-import { CreatePaymentForm } from "@/components/payments/CreatePaymentForm";
-import { PaymentsList } from "@/components/payments/PaymentsList";
-import { TransactionHistory } from "@/components/payments/TransactionHistory";
-import { ConnectWallet } from "@/components/wallet/ConnectWallet";
-import { PageHeader } from "@/components/layout/PageHeader";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Wallet, Plus, X, RefreshCw } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { useWallet } from "../../hooks/useWallet";
+import { usePayments } from "../../hooks/usePayments";
+import { useTransactionHistory } from "../../hooks/useTransactionHistory";
+import { useFTSOPrices } from "../../hooks/useFTSOPrices";
+import { CreatePaymentForm } from "../../components/payments/CreatePaymentForm";
+import { PaymentsList } from "../../components/payments/PaymentsList";
+import { TransactionHistory } from "../../components/payments/TransactionHistory";
+import { ConnectWallet } from "../../components/wallet/ConnectWallet";
+import { PageHeader } from "../../components/layout/PageHeader";
+import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
+import { Button } from "../../components/ui/button";
+import { Wallet, Plus, X, RefreshCw, Send, History } from "lucide-react";
+import { cn } from "../../lib/utils";
 
 type TabType = "payments" | "transactions";
 
@@ -20,12 +21,13 @@ export default function PaymentsPage() {
     const { address, isConnected } = useWallet();
     const { payments, isLoading, refetch } = usePayments();
     const { transactions, loading: txLoading, error: txError, refetch: refetchTx } = useTransactionHistory();
+    const { prices } = useFTSOPrices();
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [activeTab, setActiveTab] = useState<TabType>("payments");
 
     if (!isConnected) {
         return (
-            <div className="flex items-center justify-center min-h-full">
+            <div className="flex items-center justify-center min-h-full -m-6">
                 <Card className="w-full max-w-md text-center">
                     <CardHeader>
                         <div className="mx-auto w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mb-4">
@@ -49,51 +51,36 @@ export default function PaymentsPage() {
                     <div className="text-sm text-muted-foreground font-mono bg-muted px-3 py-1.5 rounded-md">
                         {address?.slice(0, 6)}...{address?.slice(-4)}
                     </div>
-                    {!sidebarOpen && (
-                        <Button
-                            onClick={() => setSidebarOpen(true)}
-                            className="bg-primary text-primary-foreground hover:bg-primary/90"
-                            size="sm"
-                        >
-                            <Plus className="w-4 h-4 mr-2" />
-                            Create Payment
-                        </Button>
-                    )}
                 </PageHeader>
 
                 <div className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-                    <div className="px-6 py-2 flex items-center gap-1">
-                        <div className="flex gap-2 flex-nowrap overflow-x-auto">
-                            <Button
-                                variant={activeTab === "payments" ? "default" : "outline"}
-                                className={cn(
-                                    "rounded-full",
-                                    activeTab === "payments"
-                                        ? "bg-primary text-primary-foreground hover:bg-primary/90 border-transparent shadow-sm"
-                                        : "hover:bg-muted"
-                                )}
-                                onClick={() => setActiveTab("payments")}
-                                size="sm"
-                            >
-                                Payments
-                                <span className={cn("ml-2", activeTab === "payments" ? "text-white" : "text-muted-foreground")}>{payments.length}</span>
-                            </Button>
-                            <Button
-                                variant={activeTab === "transactions" ? "default" : "outline"}
-                                className={cn(
-                                    "rounded-full",
-                                    activeTab === "transactions"
-                                        ? "bg-primary text-primary-foreground hover:bg-primary/90 border-transparent shadow-sm"
-                                        : "hover:bg-muted"
-                                )}
-                                onClick={() => setActiveTab("transactions")}
-                                size="sm"
-                            >
-                                Transactions
-                            </Button>
+                    <div className="px-6 py-2 flex items-center justify-between gap-4">
+                        <div className="flex items-center gap-6">
+                            <div className="flex items-center">
+                                <Button
+                                    variant={activeTab === "payments" ? "secondary" : "ghost"}
+                                    className="rounded-full"
+                                    onClick={() => setActiveTab("payments")}
+                                    size="sm"
+                                >
+                                    <Send className="w-4 h-4 mr-2" />
+                                    Payments
+                                    <span className="ml-2 text-muted-foreground">{payments.length}</span>
+                                </Button>
+                                <Button
+                                    variant={activeTab === "transactions" ? "secondary" : "ghost"}
+                                    className="rounded-full"
+                                    onClick={() => setActiveTab("transactions")}
+                                    size="sm"
+                                >
+                                    <History className="w-4 h-4 mr-2" />
+                                    Transactions
+                                </Button>
+                            </div>
                         </div>
-                        {activeTab === "transactions" && (
-                            <div className="flex items-center gap-1 ml-auto">
+
+                        <div className="flex items-center gap-1">
+                            {activeTab === "transactions" && (
                                 <Button
                                     onClick={refetchTx}
                                     variant="ghost"
@@ -102,8 +89,18 @@ export default function PaymentsPage() {
                                 >
                                     <RefreshCw className={`w-4 h-4 ${txLoading ? 'animate-spin' : ''}`} />
                                 </Button>
-                            </div>
-                        )}
+                            )}
+                            {!sidebarOpen && (
+                                <Button
+                                    onClick={() => setSidebarOpen(true)}
+                                    className="rounded-full"
+                                    size="sm"
+                                >
+                                    <Plus className="w-4 h-4 mr-2" />
+                                    Create Payment
+                                </Button>
+                            )}
+                        </div>
                     </div>
                 </div>
 

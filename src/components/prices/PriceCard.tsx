@@ -19,8 +19,6 @@ export function PriceCard({ symbol, price, timestamp, loading, error, className 
 
     useEffect(() => {
         const current = Number(price);
-        // Only run comparison if we have a previous price
-        // (Skipping initial render logic effectively, but setting ref)
         if (prevPriceRef.current !== null) {
             const prev = prevPriceRef.current;
             if (current > prev) setTrend('up');

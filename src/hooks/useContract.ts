@@ -16,6 +16,7 @@ export interface ClaimPayment {
     takeProfitPrice: bigint;
     collateralAmount: bigint;
     createdAt: number;
+    createdAtPrice: bigint;
     expiresAt: number;
     executed: boolean;
     executedAt: number;
@@ -94,6 +95,26 @@ export function useContract() {
         }
     };
 
+    const executePaymentEarly = async (paymentId: number): Promise<string> => {
+        try {
+            setIsLoading(true);
+            setError(null);
+
+            const contract = await getContract();
+            const tx = await contract.executePaymentEarly(paymentId);
+            const receipt = await tx.wait();
+
+            console.log("Payment executed early:", receipt);
+            return tx.hash;
+        } catch (err: any) {
+            const errorMessage = err.reason || err.message || "Unknown error";
+            setError(errorMessage);
+            throw new Error(errorMessage);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
     const getClaimPayment = async (paymentId: number): Promise<ClaimPayment> => {
         const contract = await getContract();
         const payment = await contract.getClaimPayment(paymentId);
@@ -108,6 +129,7 @@ export function useContract() {
             takeProfitPrice: payment.takeProfitPrice,
             collateralAmount: payment.collateralAmount,
             createdAt: Number(payment.createdAt),
+            createdAtPrice: payment.createdAtPrice,
             expiresAt: Number(payment.expiresAt),
             executed: payment.executed,
             executedAt: Number(payment.executedAt),
@@ -196,6 +218,7 @@ export function useContract() {
     return {
         createClaimPayment,
         executeClaimPayment,
+        executePaymentEarly,
         getClaimPayment,
         getTotalPayments,
         getCurrentPrice,

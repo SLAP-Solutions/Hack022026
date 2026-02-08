@@ -19,12 +19,8 @@ RUN mkdir -p ../src/lib/contract
 COPY src/lib/contract/deployment.json ../src/lib/contract/deployment.json
 COPY src/lib/contract/abi.json ../src/lib/contract/abi.json
 
-# Install ts-node globally
+# Install ts-node and typescript
 RUN npm install -g ts-node typescript
-
-# Health check (optional - logs to stdout)
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-  CMD ps aux | grep -q '[t]s-node' || exit 1
 
 # Start keeper
 CMD ["ts-node", "src/index.ts"]
