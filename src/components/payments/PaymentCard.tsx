@@ -35,6 +35,23 @@ export function PaymentCard({ payment, onRefresh }: PaymentCardProps) {
     const { contacts } = useContactsStore();
     const [isModalOpen, setIsModalOpen] = useState(false);
 
+    // Determine payment type
+    // Instant payments have stopLoss === takeProfit (both set to current price at creation)
+    // Trigger payments have different stopLoss and takeProfit values
+    const stopLossBigInt = typeof payment.stopLossPrice === 'bigint' 
+        ? payment.stopLossPrice 
+        : BigInt(Math.floor(payment.stopLossPrice || 0));
+    const takeProfitBigInt = typeof payment.takeProfitPrice === 'bigint' 
+        ? payment.takeProfitPrice 
+        : BigInt(Math.floor(payment.takeProfitPrice || 0));
+    
+    const isInstantPayment = stopLossBigInt === takeProfitBigInt;
+    
+    const decimals = 3;
+    const multiplier = Math.pow(10, decimals);
+    const stopLoss = Number(payment.stopLossPrice) / multiplier;
+    const takeProfit = Number(payment.takeProfitPrice) / multiplier;
+
     const handleExecute = async (e: React.MouseEvent) => {
         e.stopPropagation(); // Prevent opening modal if clicking button inside interactive area
         
@@ -67,13 +84,7 @@ export function PaymentCard({ payment, onRefresh }: PaymentCardProps) {
     // Get ticker symbol from feed ID
     const ticker = FEED_ID_TO_SYMBOL[payment.cryptoFeedId] || "???";
 
-    // Convert prices from feed decimals (assuming 3 decimals for FTSO)
-    const decimals = 3;
-    const multiplier = Math.pow(10, decimals);
-
     const usdAmountDollars = payment.usdAmount / 100;
-    const stopLoss = Number(payment.stopLossPrice) / multiplier;
-    const takeProfit = Number(payment.takeProfitPrice) / multiplier;
     const current = payment.currentPrice / multiplier;
     const executedPrice = payment.executed ? Number(payment.executedPrice) / multiplier : null;
 
@@ -82,9 +93,16 @@ export function PaymentCard({ payment, onRefresh }: PaymentCardProps) {
     const takeProfitHit = current > 0 && current >= takeProfit;
     const canExecute = !payment.executed && (stopLossHit || takeProfitHit);
 
+    // Calculate creation price position on the progress bar
+    const createdAtPrice = Number(payment.createdAtPrice) / multiplier;
+
     // Calculate progress bar position
     const progress = stopLoss < takeProfit
         ? ((current - stopLoss) / (takeProfit - stopLoss)) * 100
+        : 50;
+
+    const creationProgress = stopLoss < takeProfit && createdAtPrice > 0
+        ? ((createdAtPrice - stopLoss) / (takeProfit - stopLoss)) * 100
         : 50;
 
     // Calculate potential payout amounts
@@ -117,7 +135,6 @@ export function PaymentCard({ payment, onRefresh }: PaymentCardProps) {
     const currentPayoutInTicker = current > 0 ? usdAmountDollars / current : 0;
     const refundAmount = collateralAmount - currentPayoutInTicker;
 
-    const createdAtPrice = Number(payment.createdAtPrice) / multiplier;
     const amountAtCreation = createdAtPrice > 0 ? usdAmountDollars / createdAtPrice : 0;
 
     const pnlPercent = (createdAtPrice > 0 && current > 0)
@@ -164,22 +181,35 @@ export function PaymentCard({ payment, onRefresh }: PaymentCardProps) {
                             </span></p>
                         </div>
                     </div>
-                    <Badge
-                        variant="outline"
-                        className={cn(
-                            "text-xs",
-                            payment.executed
-                                ? "bg-green-100 text-green-800 border-green-300"
-                                : canExecute
-                                    ? "bg-yellow-100 text-yellow-800 border-yellow-300"
-                                    : "bg-primary/20 text-primary border-primary/40"
-                        )}
-                    >
-                        {payment.executed ? "Executed" : canExecute ? "Ready" : "Pending"}
-                    </Badge>
+                    <div className="flex gap-2">
+                        <Badge
+                            variant="outline"
+                            className={cn(
+                                "text-xs",
+                                isInstantPayment
+                                    ? "bg-blue-100 text-blue-800 border-blue-300"
+                                    : "bg-purple-100 text-purple-800 border-purple-300"
+                            )}
+                        >
+                            {isInstantPayment ? "⚡ Instant" : "🎯 Trigger"}
+                        </Badge>
+                        <Badge
+                            variant="outline"
+                            className={cn(
+                                "text-xs",
+                                payment.executed
+                                    ? "bg-green-100 text-green-800 border-green-300"
+                                    : canExecute
+                                        ? "bg-yellow-100 text-yellow-800 border-yellow-300"
+                                        : "bg-primary/20 text-primary border-primary/40"
+                            )}
+                        >
+                            {payment.executed ? "Executed" : canExecute ? "Ready" : "Pending"}
+                        </Badge>
+                    </div>
                 </div>
 
-                {!payment.executed && (
+                {!payment.executed && !isInstantPayment && (
                     <HoverCard openDelay={200}>
                         <HoverCardTrigger asChild>
                             <div
@@ -188,6 +218,7 @@ export function PaymentCard({ payment, onRefresh }: PaymentCardProps) {
                             >
                                 <div className="flex justify-between text-xs mb-1">
                                     <span className="text-red-600 font-medium">SL: ${stopLoss.toFixed(2)}</span>
+                                    <span className="text-muted-foreground font-medium text-[10px]">Created: ${createdAtPrice.toFixed(2)}</span>
                                     <span className="text-green-600 font-medium">TP: ${takeProfit.toFixed(2)}</span>
                                 </div>
                                 <div className="w-full bg-muted rounded-full h-3 relative overflow-hidden ring-1 ring-transparent group-hover:ring-primary/20 transition-all">
@@ -198,10 +229,12 @@ export function PaymentCard({ payment, onRefresh }: PaymentCardProps) {
                                         )}
                                         style={{ width: `${Math.max(0, Math.min(100, progress))}%` }}
                                     />
-                                    {progress > 0 && progress < 100 && (
+                                    {/* Creation price marker */}
+                                    {creationProgress >= 0 && creationProgress <= 100 && (
                                         <div
-                                            className="absolute top-0 bottom-0 w-0.5 bg-white z-10 shadow-[0_0_4px_rgba(0,0,0,0.5)]"
-                                            style={{ left: `${payment.executed ? 100 : progress}%` }}
+                                            className="absolute -top-1 -bottom-1 w-0.5 bg-cyan-500 z-[5] shadow-sm"
+                                            style={{ left: `${creationProgress}%` }}
+                                            title={`Created at $${createdAtPrice.toFixed(2)}`}
                                         />
                                     )}
                                 </div>
@@ -228,7 +261,7 @@ export function PaymentCard({ payment, onRefresh }: PaymentCardProps) {
                 {/* Payout breakdown */}
                 <div className="bg-muted/50 p-3 rounded text-sm space-y-2 mb-3">
                     <h4 className="font-semibold text-xs mb-2 border-b pb-1">
-                        {payment.executed ? "Execution Details" : "Estimated Payout Details"}
+                        {payment.executed ? "Execution Details" : isInstantPayment ? "Instant Payment Details" : "Estimated Payout Details"}
                     </h4>
 
                     <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
@@ -248,31 +281,36 @@ export function PaymentCard({ payment, onRefresh }: PaymentCardProps) {
                                     {refundAmount > 0 ? "+" : ""}{refundAmount.toFixed(6)} {ticker}
                                 </span>
 
+                                {!isInstantPayment && (
+                                    <>
+                                        <span className="text-muted-foreground mt-3">If Stop Loss Hit:</span>
+                                        <span className="font-mono text-right text-red-600 mt-3">
+                                            {(usdAmountDollars / stopLoss).toFixed(6)} {ticker}
+                                        </span>
 
-                                <span className="text-muted-foreground mt-3">If Stop Loss Hit:</span>
-                                <span className="font-mono text-right text-red-600 mt-3">
-                                    {(usdAmountDollars / stopLoss).toFixed(6)} {ticker}
-                                </span>
-
-                                <span className="text-muted-foreground">If Take Profit Hit:</span>
-                                <span className="font-mono text-right text-green-600">
-                                    {(usdAmountDollars / takeProfit).toFixed(6)} {ticker}
-                                </span>
+                                        <span className="text-muted-foreground">If Take Profit Hit:</span>
+                                        <span className="font-mono text-right text-green-600">
+                                            {(usdAmountDollars / takeProfit).toFixed(6)} {ticker}
+                                        </span>
+                                    </>
+                                )}
 
                                 <span className="text-muted-foreground mt-2">If Paid Now:</span>
                                 <span className="font-mono text-right text-green-600 mt-2">
                                     {current > 0 ? (usdAmountDollars / current).toFixed(6) : "0.000000"} {ticker}
                                 </span>
 
-                                <div className="col-span-2 border-t pt-1 mt-1 flex justify-between items-center">
-                                    <span className="text-muted-foreground">PNL:</span>
-                                    <span className={cn(
-                                        "font-bold",
-                                        pnlPercent > 0 ? "text-green-600" : pnlPercent < 0 ? "text-red-600" : "text-muted-foreground"
-                                    )}>
-                                        {pnlPercent > 0 ? "+" : ""}{pnlPercent.toFixed(2)}%
-                                    </span>
-                                </div>
+                                {!isInstantPayment && (
+                                    <div className="col-span-2 border-t pt-1 mt-1 flex justify-between items-center">
+                                        <span className="text-muted-foreground">PNL:</span>
+                                        <span className={cn(
+                                            "font-bold",
+                                            pnlPercent > 0 ? "text-green-600" : pnlPercent < 0 ? "text-red-600" : "text-muted-foreground"
+                                        )}>
+                                            {pnlPercent > 0 ? "+" : ""}{pnlPercent.toFixed(2)}%
+                                        </span>
+                                    </div>
+                                )}
                             </>
                         ) : (
                             <>
@@ -296,9 +334,9 @@ export function PaymentCard({ payment, onRefresh }: PaymentCardProps) {
                         onClick={handleExecute}
                         disabled={isLoading}
                         className="w-full"
-                        variant={canExecute ? "default" : "secondary"}
+                        variant={canExecute || isInstantPayment ? "default" : "secondary"}
                     >
-                        {isLoading ? "Executing..." : canExecute ? "⚡ Execute Payment" : "Pay Now (Early)"}
+                        {isLoading ? "Executing..." : isInstantPayment ? "💰 Execute Payment" : canExecute ? "⚡ Execute Payment" : "Pay Now (Early)"}
                     </Button>
                 )}
 

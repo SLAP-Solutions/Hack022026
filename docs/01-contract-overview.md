@@ -2,22 +2,23 @@
 
 ## What is ClaimPayments?
 
-ClaimPayments is a smart contract on Flare Network that enables insurance companies to optimize crypto payments for USD-denominated claims by executing when market prices are favorable. It uses Flare's FTSO (Time Series Oracle) for decentralized real-time price data.
+ClaimPayments is a smart contract on Flare Network that enables businesses and individuals to optimize crypto payments for USD-denominated invoices by executing when market prices are favorable. It uses Flare's FTSO (Time Series Oracle) for decentralized real-time price data.
 
 ## The Problem
 
-Insurance companies hold cryptocurrency reserves but pay claims in fiat (USD). Crypto volatility creates significant inefficiency:
+Businesses and individuals need to make payments in volatile crypto (ETH, BTC, SOL) but invoices are denominated in stable currencies (USD, USDC). Crypto volatility creates significant inefficiency:
 
-- **Price volatility** causes the crypto cost of the same USD claim to vary wildly
+- **Price volatility** causes the crypto cost of the same USD invoice to vary wildly
 - **Paying at suboptimal times** wastes valuable crypto reserves
 - **Manual monitoring** is inefficient and error-prone
 - **Timing the market** requires constant attention
+- **Recipients want USD certainty**, payers want crypto efficiency
 
 ### Example Scenario
 
 ```
-Insurance Company Assets: 10 BTC
-Outstanding Claim: $1,000 USD owed to Alice
+You owe a contractor: $1,000 USD
+You want to pay in: BTC
 
 Day 1: BTC = $50,000
   → Cost: $1,000 ÷ $50,000 = 0.02 BTC
@@ -27,18 +28,29 @@ Day 5: BTC = $70,000
   → SAVES: 0.0057 BTC worth ~$400!
 ```
 
-Paying on Day 5 instead of Day 1 saves **28% in crypto** for the exact same USD claim.
+Paying on Day 5 instead of Day 1 saves **28% in crypto** for the exact same USD invoice.
 
 ## The Solution
 
 ClaimPayments automates optimal payment execution:
 
-1. **Create Payment** - Set USD amount and price triggers
+1. **Create Invoice/Payment** - Set USD amount and price triggers
 2. **Lock Collateral** - Over-collateralize for security (150% ratio)
 3. **Monitor via FTSO** - Flare oracle provides real-time prices
 4. **Auto-Execute** - Triggers when price hits stop loss OR take profit
 5. **Dynamic Calculation** - Crypto amount calculated at execution (not creation)
 6. **Automatic Refunds** - Excess collateral returned instantly
+7. **Instant Option** - Can execute immediately instead of waiting for triggers
+
+### Who Can Use This?
+
+- **Businesses** - Pay vendors, contractors, and invoices at optimal rates
+- **Freelancers** - Set up client payments that execute when prices are favorable
+- **DAOs** - Optimize treasury payments and grants
+- **Individuals** - Time personal transfers to minimize crypto spent
+- **Anyone** - Hold payment obligations and release at best market conditions
+
+Like escrow accounts that earn interest by holding funds longer, FlareOptimize saves crypto by releasing funds at optimal prices.
 
 ## Key Concepts
 
