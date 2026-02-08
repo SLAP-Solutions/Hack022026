@@ -51,7 +51,7 @@ export function PaymentCard({ payment, onRefresh, invoiceId, invoiceTitle }: Pay
 
     const isInstantPayment = stopLossBigInt === takeProfitBigInt;
 
-    const decimals = 3;
+    const decimals = payment.decimals || 3;
     const multiplier = Math.pow(10, decimals);
     const stopLoss = Number(payment.stopLossPrice) / multiplier;
     const takeProfit = Number(payment.takeProfitPrice) / multiplier;
@@ -60,9 +60,9 @@ export function PaymentCard({ payment, onRefresh, invoiceId, invoiceTitle }: Pay
         e.stopPropagation(); // Prevent opening modal if clicking button inside interactive area
 
         // Determine if triggers are hit
-        const current = payment.currentPrice / Math.pow(10, 3);
-        const stopLoss = Number(payment.stopLossPrice) / Math.pow(10, 3);
-        const takeProfit = Number(payment.takeProfitPrice) / Math.pow(10, 3);
+        const current = payment.currentPrice / multiplier;
+        const stopLoss = Number(payment.stopLossPrice) / multiplier;
+        const takeProfit = Number(payment.takeProfitPrice) / multiplier;
         const stopLossHit = current > 0 && current <= stopLoss;
         const takeProfitHit = current > 0 && current >= takeProfit;
         const canExecute = !payment.executed && (stopLossHit || takeProfitHit);

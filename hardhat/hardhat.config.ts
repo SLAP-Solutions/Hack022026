@@ -22,6 +22,21 @@ const config: HardhatUserConfig = {
       chainId: 114,
     },
   },
+  etherscan: {
+    apiKey: {
+      coston2: "abc", // Blockscout doesn't require a real API key
+    },
+    customChains: [
+      {
+        network: "coston2",
+        chainId: 114,
+        urls: {
+          apiURL: "https://coston2-explorer.flare.network/api",
+          browserURL: "https://coston2-explorer.flare.network",
+        },
+      },
+    ],
+  },
 };
 
 export default config;

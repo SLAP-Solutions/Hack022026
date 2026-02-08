@@ -14,6 +14,7 @@ const FEED_ID_TO_SYMBOL: Record<string, keyof typeof FEED_IDS> = {
 
 export interface ClaimPaymentWithPrice extends ClaimPayment {
     currentPrice: number;
+    decimals: number;
 }
 
 export function usePayments() {
@@ -74,6 +75,7 @@ export function usePayments() {
                             allPayments.push({
                                 ...payment,
                                 currentPrice,
+                                decimals: feedSymbol ? (await getCurrentPrice(feedSymbol)).decimals : 0,
                             });
                         }
                     } catch (err) {

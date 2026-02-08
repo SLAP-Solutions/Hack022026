@@ -3,7 +3,7 @@ import * as fs from "fs";
 import * as path from "path";
 
 async function main() {
-    console.log("🚀 Deploying ClaimPayments to Coston2...");
+    console.log("🚀 Deploying SlapsurePayment to Coston2...");
 
     const [deployer] = await ethers.getSigners();
     console.log("📝 Deploying with account:", deployer.address);
@@ -11,16 +11,17 @@ async function main() {
     const balance = await ethers.provider.getBalance(deployer.address);
     console.log("💰 Account balance:", ethers.formatEther(balance), "C2FLR");
 
-    const ClaimPayments = await ethers.getContractFactory("ClaimPayments");
-    const claimPayments = await ClaimPayments.deploy();
+    const SlapsurePayment = await ethers.getContractFactory("SlapsurePayment");
+    const claimPayments = await SlapsurePayment.deploy();
     await claimPayments.waitForDeployment();
 
     const contractAddress = await claimPayments.getAddress();
-    console.log("✅ ClaimPayments deployed to:", contractAddress);
+    console.log("✅ SlapsurePayment deployed to:", contractAddress);
     console.log("🔍 View on explorer: https://coston2-explorer.flare.network/address/" + contractAddress);
+    console.log("🎓 Contract name will appear as: SlapsurePayment");
 
     // Export ABI for frontend
-    const artifactPath = path.join(__dirname, "../artifacts/contracts/ClaimPayments.sol/ClaimPayments.json");
+    const artifactPath = path.join(__dirname, "../artifacts/contracts/ClaimPayments.sol/SlapsurePayment.json");
     const artifact = JSON.parse(fs.readFileSync(artifactPath, "utf8"));
 
     const outputDir = path.join(__dirname, "../../src/lib/contract");
