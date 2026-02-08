@@ -38,8 +38,8 @@ export default function RootLayout({
       <body className={`${manrope.className} antialiased bg-sidebar`}>
         <ThemeProvider
           attribute="class"
-          defaultTheme="system"
-          enableSystem
+          defaultTheme="light"
+          enableSystem={false}
           disableTransitionOnChange
         >
           <WalletProvider>
