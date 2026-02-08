@@ -156,3 +156,6 @@ Desktop.ini
 *.sln.iml
 .vscode/settings.json
 docs/demo-script.md
+
+
+node_modules
