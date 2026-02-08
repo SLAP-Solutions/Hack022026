@@ -144,6 +144,14 @@ export function PaymentCard({ payment, onRefresh, invoiceId, invoiceTitle }: Pay
         ? (1 - (createdAtPrice / current)) * 100
         : 0;
 
+    // Execution metrics
+    const actualPaid = payment.executed && payment.paidAmount
+        ? parseFloat(ethers.formatEther(payment.paidAmount.toString()))
+        : 0;
+    const difference = amountAtCreation - actualPaid;
+    const isSavings = difference > 0;
+    const percentageSaved = amountAtCreation > 0 ? (difference / amountAtCreation) * 100 : 0;
+
     const chartData = useMemo(() => {
         if (!current) return [];
         const points = 20;
@@ -362,37 +370,34 @@ export function PaymentCard({ payment, onRefresh, invoiceId, invoiceTitle }: Pay
                                     {isSavings ? "+" : ""}{percentageSaved.toFixed(2)}%
                                 </span>
                             </>
-                        );
-                                })()}
-                    </>
                         )}
+                    </div>
                 </div>
-            </div>
 
-            {/* Action button */}
-            {!payment.executed && (
-                <Button
-                    onClick={handleExecute}
-                    disabled={isLoading}
-                    className="w-full"
-                    variant={canExecute || isInstantPayment ? "default" : "secondary"}
-                >
-                    {isLoading ? "Executing..." : isInstantPayment ? "💰 Execute Payment" : canExecute ? "⚡ Execute Payment" : "Pay Now (Early)"}
-                </Button>
-            )}
+                {/* Action button */}
+                {!payment.executed && (
+                    <Button
+                        onClick={handleExecute}
+                        disabled={isLoading}
+                        className="w-full"
+                        variant={canExecute || isInstantPayment ? "default" : "secondary"}
+                    >
+                        {isLoading ? "Executing..." : isInstantPayment ? "💰 Execute Payment" : canExecute ? "⚡ Execute Payment" : "Pay Now (Early)"}
+                    </Button>
+                )}
 
-            {/* Link to view modal */}
-            <PriceHistoryModal
-                isOpen={isModalOpen}
-                onClose={() => setIsModalOpen(false)}
-                ticker={ticker}
-                currentPrice={current}
-                initialTp={takeProfit}
-                initialSl={stopLoss}
-                onSave={() => { }} // Read only, no save
-                readOnly={true}
-            />
-        </div >
+                {/* Link to view modal */}
+                <PriceHistoryModal
+                    isOpen={isModalOpen}
+                    onClose={() => setIsModalOpen(false)}
+                    ticker={ticker}
+                    currentPrice={current}
+                    initialTp={takeProfit}
+                    initialSl={stopLoss}
+                    onSave={() => { }} // Read only, no save
+                    readOnly={true}
+                />
+            </div >
         </>
     );
 }
