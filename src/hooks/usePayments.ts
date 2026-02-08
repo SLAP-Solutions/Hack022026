@@ -14,6 +14,7 @@ const FEED_ID_TO_SYMBOL: Record<string, keyof typeof FEED_IDS> = {
 
 export interface ClaimPaymentWithPrice extends ClaimPayment {
     currentPrice: number;
+    decimals: number;
 }
 
 export function usePayments() {
@@ -29,7 +30,7 @@ export function usePayments() {
 
     useEffect(() => {
         let cancelled = false;
-        
+
         // Reset on address change
         if (refetchTrigger === 0) {
             hasFetchedOnce.current = false;
@@ -49,7 +50,7 @@ export function usePayments() {
                 if (showLoading) {
                     setLoading(true);
                 }
-                
+
                 const total = await getTotalPayments();
                 const allPayments: ClaimPaymentWithPrice[] = [];
 
@@ -73,6 +74,7 @@ export function usePayments() {
                             allPayments.push({
                                 ...payment,
                                 currentPrice,
+                                decimals: feedSymbol ? (await getCurrentPrice(feedSymbol)).decimals : 0,
                             });
                         }
                     } catch (err) {
@@ -96,7 +98,7 @@ export function usePayments() {
 
         // Initial fetch with loading
         fetchPayments(!hasFetchedOnce.current);
-        
+
         // Polling without loading
         const interval = setInterval(() => {
             fetchPayments(false);
