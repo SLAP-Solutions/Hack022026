@@ -5,8 +5,8 @@ import "@flarenetwork/flare-periphery-contracts/coston2/ContractRegistry.sol";
 import "@flarenetwork/flare-periphery-contracts/coston2/FtsoV2Interface.sol";
 
 /**
- * @title ClaimPayments
- * @author Insurance dApp Team - ETH Oxford 2026 Hackathon
+ * @title SlapsurePayment
+ * @author Slapsure Team - ETH Oxford 2026 Hackathon
  * @notice Manages insurance claim payments with dynamic crypto amounts based on real-time oracle prices
  * @dev Uses Flare's FTSO v2 for decentralized price feeds
  * 
@@ -24,7 +24,7 @@ import "@flarenetwork/flare-periphery-contracts/coston2/FtsoV2Interface.sol";
  * - Payment executes when: currentPrice ≤ stopLossPrice OR currentPrice ≥ takeProfitPrice
  * - Payment is PENDING when: stopLossPrice < currentPrice < takeProfitPrice
  */
-contract ClaimPayments {
+contract SlapsurePayment {
     /// @notice Flare Time Series Oracle v2 interface
     FtsoV2Interface internal ftsoV2;
 
@@ -118,11 +118,11 @@ contract ClaimPayments {
         uint256 _takeProfitPrice,
         uint256 _expiryDays
     ) external payable returns (uint256 paymentId) {
-        require(_receiver != address(0), "ClaimPayments: Invalid receiver address");
-        require(_usdAmount > 0, "ClaimPayments: USD amount must be positive");
-        require(_takeProfitPrice > _stopLossPrice, "ClaimPayments: Take profit must be > stop loss");
-        require(msg.value > 0, "ClaimPayments: Must provide collateral");
-        require(_expiryDays > 0, "ClaimPayments: Expiry days must be positive");
+        require(_receiver != address(0), "SlapsurePayment: Invalid receiver address");
+        require(_usdAmount > 0, "SlapsurePayment: USD amount must be positive");
+        require(_takeProfitPrice > _stopLossPrice, "SlapsurePayment: Take profit must be > stop loss");
+        require(msg.value > 0, "SlapsurePayment: Must provide collateral");
+        require(_expiryDays > 0, "SlapsurePayment: Expiry days must be positive");
 
         // Query current price from FTSO for reference (visual display in UI)
         (uint256 currentPrice, , ) = ftsoV2.getFeedById(_cryptoFeedId);
@@ -184,9 +184,9 @@ contract ClaimPayments {
     function executeClaimPayment(uint256 _paymentId) external {
         ClaimPayment storage payment = claimPayments[_paymentId];
         
-        require(!payment.executed, "ClaimPayments: Already executed");
-        require(payment.collateralAmount > 0, "ClaimPayments: Payment does not exist");
-        require(block.timestamp <= payment.expiresAt, "ClaimPayments: Payment expired");
+        require(!payment.executed, "SlapsurePayment: Already executed");
+        require(payment.collateralAmount > 0, "SlapsurePayment: Payment does not exist");
+        require(block.timestamp <= payment.expiresAt, "SlapsurePayment: Payment expired");
 
         // Query current price from Flare FTSO v2
         (uint256 currentPrice, int8 decimals, uint64 timestamp) = 
@@ -197,7 +197,7 @@ contract ClaimPayments {
         require(
             currentPrice <= payment.stopLossPrice || 
             currentPrice >= payment.takeProfitPrice,
-            "ClaimPayments: Price not at trigger point (still pending)"
+            "SlapsurePayment: Price not at trigger point (still pending)"
         );
 
         // Calculate crypto amount based on current oracle price for the specified feed
@@ -213,7 +213,7 @@ contract ClaimPayments {
         // Example: If calculation shows 0.05 ETH, we send 0.05 FLR
         uint256 paymentAmount = (payment.usdAmount * 1e18 * (10 ** uint256(int256(decimals)))) / (currentPrice * 100);
 
-        require(paymentAmount <= payment.collateralAmount, "ClaimPayments: Insufficient collateral");
+        require(paymentAmount <= payment.collateralAmount, "SlapsurePayment: Insufficient collateral");
 
         // Update payment state before transfers (checks-effects-interactions pattern)
         payment.executed = true;
@@ -223,7 +223,7 @@ contract ClaimPayments {
 
         // Transfer calculated amount to receiver (in FLR, but amount calculated from feed price)
         (bool paymentSuccess, ) = payable(payment.receiver).call{value: paymentAmount}("");
-        require(paymentSuccess, "ClaimPayments: Payment transfer failed");
+        require(paymentSuccess, "SlapsurePayment: Payment transfer failed");
 
         // Refund excess collateral to payer
         uint256 excessCollateral = payment.collateralAmount - paymentAmount;
@@ -262,10 +262,10 @@ contract ClaimPayments {
     function executePaymentEarly(uint256 _paymentId) external {
         ClaimPayment storage payment = claimPayments[_paymentId];
         
-        require(!payment.executed, "ClaimPayments: Already executed");
-        require(payment.collateralAmount > 0, "ClaimPayments: Payment does not exist");
-        require(msg.sender == payment.payer, "ClaimPayments: Only payer can execute early");
-        require(block.timestamp <= payment.expiresAt, "ClaimPayments: Payment expired");
+        require(!payment.executed, "SlapsurePayment: Already executed");
+        require(payment.collateralAmount > 0, "SlapsurePayment: Payment does not exist");
+        require(msg.sender == payment.payer, "SlapsurePayment: Only payer can execute early");
+        require(block.timestamp <= payment.expiresAt, "SlapsurePayment: Payment expired");
 
         // Query current price from Flare FTSO v2
         (uint256 currentPrice, int8 decimals, uint64 timestamp) = 
@@ -284,7 +284,7 @@ contract ClaimPayments {
 
         // Transfer calculated amount to receiver
         (bool paymentSuccess, ) = payable(payment.receiver).call{value: paymentAmount}("");
-        require(paymentSuccess, "ClaimPayments: Payment transfer failed");
+        require(paymentSuccess, "SlapsurePayment: Payment transfer failed");
 
         // Refund excess collateral to payer
         uint256 excessCollateral = payment.collateralAmount - paymentAmount;
@@ -330,9 +330,9 @@ contract ClaimPayments {
         uint256 _usdAmount,
         bytes21 _cryptoFeedId
     ) external payable returns (uint256 paymentId) {
-        require(_receiver != address(0), "ClaimPayments: Invalid receiver address");
-        require(_usdAmount > 0, "ClaimPayments: USD amount must be positive");
-        require(msg.value > 0, "ClaimPayments: Must provide collateral");
+        require(_receiver != address(0), "SlapsurePayment: Invalid receiver address");
+        require(_usdAmount > 0, "SlapsurePayment: USD amount must be positive");
+        require(msg.value > 0, "SlapsurePayment: Must provide collateral");
 
         // Query current price from FTSO
         (uint256 currentPrice, int8 decimals, uint64 timestamp) = 
@@ -373,7 +373,7 @@ contract ClaimPayments {
         uint256 excessCollateral = msg.value - paymentAmount;
         if (excessCollateral > 0) {
             (bool refundSuccess, ) = payable(msg.sender).call{value: excessCollateral}("");
-            require(refundSuccess, "ClaimPayments: Refund transfer failed");
+            require(refundSuccess, "SlapsurePayment: Refund transfer failed");
         }
 
         emit ClaimPaymentCreated(
@@ -412,9 +412,9 @@ contract ClaimPayments {
     function cancelClaimPayment(uint256 _paymentId) external {
         ClaimPayment storage payment = claimPayments[_paymentId];
         
-        require(!payment.executed, "ClaimPayments: Already executed");
-        require(msg.sender == payment.payer, "ClaimPayments: Only payer can cancel");
-        require(payment.collateralAmount > 0, "ClaimPayments: Payment does not exist");
+        require(!payment.executed, "SlapsurePayment: Already executed");
+        require(msg.sender == payment.payer, "SlapsurePayment: Only payer can cancel");
+        require(payment.collateralAmount > 0, "SlapsurePayment: Payment does not exist");
 
         uint256 refundAmount = payment.collateralAmount;
         
