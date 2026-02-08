@@ -26,6 +26,47 @@ interface CreateClaimModalProps {
 
 type ProcessingStatus = "idle" | "uploading" | "processing" | "success" | "error";
 
+type SSEEvent =
+    | { type: "text"; content: string }
+    | { type: "complete"; response: string }
+    | { type: "error"; error: string; details?: string };
+
+const parseAgentResponse = (response: string, filename: string) => {
+    try {
+        // Try strict JSON parse first
+        const data = JSON.parse(response);
+        return {
+            title: data.title || filename.split('.')[0],
+            description: data.description || data.summary || "No description extracted",
+            claimantName: data.claimantName || data.clientName || "",
+            type: data.type || data.category || "General"
+        };
+    } catch (e) {
+        // Fallback for markdown code blocks or partial JSON
+        const jsonMatch = response.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+            try {
+                const data = JSON.parse(jsonMatch[0]);
+                return {
+                    title: data.title || filename.split('.')[0],
+                    description: data.description || data.summary || "No description extracted",
+                    claimantName: data.claimantName || data.clientName || "",
+                    type: data.type || data.category || "General"
+                };
+            } catch (e2) {
+                console.error("Failed to parse extracted JSON");
+            }
+        }
+
+        return {
+            title: filename.split('.')[0],
+            description: response.substring(0, 200),
+            claimantName: "",
+            type: "General"
+        };
+    }
+};
+
 export function CreateInvoiceModal({ isOpen, onClose }: CreateClaimModalProps) {
     const { addInvoice } = useInvoicesStore();
     const { address } = useWallet();
