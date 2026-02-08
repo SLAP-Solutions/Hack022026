@@ -191,7 +191,7 @@ export function PaymentCard({ payment, onRefresh }: PaymentCardProps) {
                                     : "bg-purple-100 text-purple-800 border-purple-300"
                             )}
                         >
-                            {isInstantPayment ? "⚡ Instant" : "🎯 Trigger"}
+                            {isInstantPayment ? "Instant" :  "Trigger"}
                         </Badge>
                         <Badge
                             variant="outline"
@@ -314,15 +314,56 @@ export function PaymentCard({ payment, onRefresh }: PaymentCardProps) {
                             </>
                         ) : (
                             <>
-                                <span className="text-muted-foreground">Price at Execution:</span>
-                                <span className="font-mono text-right">
-                                    ${(Number(payment.executedPrice) / multiplier).toFixed(2)}
-                                </span>
+                                {(() => {
+                                    const actualPaid = parseFloat(ethers.formatEther(payment.paidAmount.toString()));
+                                    const wouldHavePaid = amountAtCreation;
+                                    const difference = wouldHavePaid - actualPaid;
+                                    const percentageSaved = wouldHavePaid > 0 ? (difference / wouldHavePaid) * 100 : 0;
+                                    const isSavings = difference > 0;
+                                    
+                                    return (
+                                        <>
+                                            <span className="text-muted-foreground">Price at Creation:</span>
+                                            <span className="font-mono text-right">
+                                                ${createdAtPrice.toFixed(2)}
+                                            </span>
 
-                                <span className="text-muted-foreground font-semibold">Actual Payout:</span>
-                                <span className="font-mono text-right font-bold text-green-600">
-                                    {ethers.formatEther(payment.paidAmount.toString())} {ticker}
-                                </span>
+                                            <span className="text-muted-foreground">Would Have Paid:</span>
+                                            <span className="font-mono text-right text-muted-foreground">
+                                                {wouldHavePaid.toFixed(6)} {ticker}
+                                            </span>
+
+                                            <span className="text-muted-foreground mt-3 border-t pt-3">Price at Execution:</span>
+                                            <span className="font-mono text-right mt-3 pt-3 border-t">
+                                                ${(Number(payment.executedPrice) / multiplier).toFixed(2)}
+                                            </span>
+
+                                            <span className="text-muted-foreground font-semibold">Actually Paid:</span>
+                                            <span className={cn(
+                                                "font-mono text-right font-semibold",
+                                                isSavings ? "text-green-600" : difference < 0 ? "text-red-600" : "text-muted-foreground"
+                                            )}>
+                                                {actualPaid.toFixed(6)} {ticker}
+                                            </span>
+
+                                            <span className="text-muted-foreground mt-3 pt-3 border-t">Difference:</span>
+                                            <span className={cn(
+                                                "font-mono text-right font-semibold mt-3 pt-3 border-t",
+                                                isSavings ? "text-green-600" : difference < 0 ? "text-red-600" : "text-muted-foreground"
+                                            )}>
+                                                {isSavings ? "-" : "+"}{Math.abs(difference).toFixed(6)} {ticker}
+                                            </span>
+
+                                            <span className="text-muted-foreground font-semibold">Savings:</span>
+                                            <span className={cn(
+                                                "font-mono text-right font-semibold",
+                                                isSavings ? "text-green-600" : percentageSaved < 0 ? "text-red-600" : "text-muted-foreground"
+                                            )}>
+                                                {isSavings ? "+" : ""}{percentageSaved.toFixed(2)}%
+                                            </span>
+                                        </>
+                                    );
+                                })()}
                             </>
                         )}
                     </div>
