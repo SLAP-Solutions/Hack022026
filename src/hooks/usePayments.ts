@@ -30,6 +30,7 @@ export function usePayments() {
 
     useEffect(() => {
         let cancelled = false;
+        let timeoutId: NodeJS.Timeout;
 
         // Reset on address change
         if (refetchTrigger === 0) {
@@ -96,17 +97,27 @@ export function usePayments() {
             }
         };
 
-        // Initial fetch with loading
-        fetchPayments(!hasFetchedOnce.current);
+        const poll = async () => {
+            if (cancelled) return;
+            await fetchPayments(false);
+            if (!cancelled) {
+                timeoutId = setTimeout(poll, 2000);
+            }
+        };
 
-        // Polling without loading
-        const interval = setInterval(() => {
-            fetchPayments(false);
-        }, 10000);
+        // Initial fetch then start polling
+        const init = async () => {
+            await fetchPayments(!hasFetchedOnce.current);
+            if (!cancelled) {
+                timeoutId = setTimeout(poll, 2000);
+            }
+        };
+
+        init();
 
         return () => {
             cancelled = true;
-            clearInterval(interval);
+            clearTimeout(timeoutId);
         };
     }, [address, refetchTrigger]);
 

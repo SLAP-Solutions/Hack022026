@@ -8,10 +8,11 @@ export interface Payment {
     receiver: string;               // Beneficiary receiving the payment (address)
     usdAmount: number;              // USD value to pay (stored as decimal: $1000.50 = 1000.50)
     cryptoFeedId: string;           // FTSO feed ID for payment crypto (e.g., BTC/USD) - bytes21 as hex string
-    stopLossPrice: number;          // Lower limit: execute if price drops to this (stored as decimal)
-    takeProfitPrice: number;        // Upper limit: execute when price reaches this (stored as decimal)
+    stopLossPrice: bigint;          // Lower limit: execute if price drops to this (stored as decimal)
+    takeProfitPrice: bigint;        // Upper limit: execute when price reaches this (stored as decimal)
     collateralAmount: bigint;       // Native FLR locked as collateral & gas reserve
     createdAt: bigint;              // Block timestamp when payment was created
+    createdAtPrice: bigint;         // Crypto price at time of creation
     expiresAt: bigint;              // Deadline timestamp - payment cannot execute after this
     executed: boolean;              // Whether payment has been completed
     executedAt: bigint;             // Block timestamp when payment was executed (0 if not executed)
@@ -22,8 +23,13 @@ export interface Payment {
 
 /**
  * Payment status derived from the payment data
+ * - pending_signature: Created by agent, awaiting user to sign the transaction
+ * - pending: Signed and submitted to blockchain, awaiting execution
+ * - committed: Collateral locked, waiting for price trigger
+ * - executed: Payment completed
+ * - expired: Payment expired without execution
  */
-export type PaymentStatus = "pending" | "committed" | "executed" | "expired";
+export type PaymentStatus = "pending_signature" | "pending" | "committed" | "executed" | "expired";
 
 /**
  * Helper type for creating new payments (before blockchain submission)
@@ -56,4 +62,8 @@ export interface PaymentDisplay {
     executedAt?: Date;
     executedPrice?: number;
     paidAmount?: string;            // Formatted crypto amount
+    // Agent-created payment fields
+    createdByAgent?: boolean;       // True if created by the agent API
+    agentCreatedAt?: string;        // ISO timestamp when agent created this
+    description?: string;           // Description of the payment
 }

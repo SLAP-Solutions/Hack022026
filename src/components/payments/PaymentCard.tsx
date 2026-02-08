@@ -18,10 +18,13 @@ import {
 } from "@/components/ui/hover-card";
 import { useMemo } from "react";
 import { toast } from "sonner";
+import Link from "next/link";
 
 interface PaymentCardProps {
     payment: ClaimPaymentWithPrice;
     onRefresh?: () => void;
+    invoiceId?: string;
+    invoiceTitle?: string;
 }
 
 // Create reverse mapping from feedId to symbol
@@ -31,7 +34,7 @@ const FEED_ID_TO_SYMBOL: Record<string, string> = {
     [FEED_IDS["BTC/USD"]]: "BTC",
 };
 
-export function PaymentCard({ payment, onRefresh }: PaymentCardProps) {
+export function PaymentCard({ payment, onRefresh, invoiceId, invoiceTitle }: PaymentCardProps) {
     const { executeClaimPayment, executePaymentEarly, isLoading } = useContract();
     const { contacts } = useContactsStore();
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -142,6 +145,14 @@ export function PaymentCard({ payment, onRefresh }: PaymentCardProps) {
         ? (1 - (createdAtPrice / current)) * 100
         : 0;
 
+    // Execution metrics
+    const actualPaid = payment.executed && payment.paidAmount
+        ? parseFloat(ethers.formatEther(payment.paidAmount.toString()))
+        : 0;
+    const difference = amountAtCreation - actualPaid;
+    const isSavings = difference > 0;
+    const percentageSaved = amountAtCreation > 0 ? (difference / amountAtCreation) * 100 : 0;
+
     const chartData = useMemo(() => {
         if (!current) return [];
         const points = 20;
@@ -180,6 +191,18 @@ export function PaymentCard({ payment, onRefresh }: PaymentCardProps) {
                             <p>To: <span className={cn("font-medium", contact ? "text-primary" : "font-mono text-xs")}>
                                 {receiverName}
                             </span></p>
+                            {invoiceId && (
+                                <p>Invoice: <Link href={`/invoices/${invoiceId}`} className="font-medium text-primary hover:underline hover:text-primary/80 transition-colors">
+                                    {invoiceTitle ? (
+                                        <span className="inline-flex items-center gap-1">
+                                            {invoiceTitle}
+                                            <span className="text-muted-foreground font-mono font-normal text-[10px] opacity-70">#{invoiceId}</span>
+                                        </span>
+                                    ) : (
+                                        `#${invoiceId}`
+                                    )}
+                                </Link></p>
+                            )}
                         </div>
                     </div>
                     <div className="flex gap-2">
@@ -315,56 +338,49 @@ export function PaymentCard({ payment, onRefresh }: PaymentCardProps) {
                             </>
                         ) : (
                             <>
-                                {(() => {
-                                    const actualPaid = parseFloat(ethers.formatEther(payment.paidAmount.toString()));
-                                    const wouldHavePaid = amountAtCreation;
-                                    const difference = wouldHavePaid - actualPaid;
-                                    const percentageSaved = wouldHavePaid > 0 ? (difference / wouldHavePaid) * 100 : 0;
-                                    const isSavings = difference > 0;
+                                <span className="text-muted-foreground">Executed On:</span>
+                                <span className="font-mono text-right">
+                                    {new Date(Number(payment.executedAt) * 1000).toLocaleString()}
+                                </span>
 
-                                    return (
-                                        <>
-                                            <span className="text-muted-foreground">Price at Creation:</span>
-                                            <span className="font-mono text-right">
-                                                ${createdAtPrice.toFixed(2)}
-                                            </span>
+                                <span className="text-muted-foreground">Price at Creation:</span>
+                                <span className="font-mono text-right">
+                                    ${createdAtPrice.toFixed(2)}
+                                </span>
 
-                                            <span className="text-muted-foreground">Would Have Paid:</span>
-                                            <span className="font-mono text-right text-muted-foreground">
-                                                {wouldHavePaid.toFixed(6)} {ticker}
-                                            </span>
+                                <span className="text-muted-foreground">Would Have Paid:</span>
+                                <span className="font-mono text-right text-muted-foreground">
+                                    {amountAtCreation.toFixed(6)} {ticker}
+                                </span>
 
-                                            <span className="text-muted-foreground mt-3 border-t pt-3">Price at Execution:</span>
-                                            <span className="font-mono text-right mt-3 pt-3 border-t">
-                                                ${(Number(payment.executedPrice) / multiplier).toFixed(2)}
-                                            </span>
+                                <span className="text-muted-foreground mt-3 border-t pt-3">Price at Execution:</span>
+                                <span className="font-mono text-right mt-3 pt-3 border-t">
+                                    ${(Number(payment.executedPrice) / multiplier).toFixed(2)}
+                                </span>
 
-                                            <span className="text-muted-foreground font-semibold">Actually Paid:</span>
-                                            <span className={cn(
-                                                "font-mono text-right font-semibold",
-                                                isSavings ? "text-green-600" : difference < 0 ? "text-red-600" : "text-muted-foreground"
-                                            )}>
-                                                {actualPaid.toFixed(6)} {ticker}
-                                            </span>
+                                <span className="text-muted-foreground font-semibold">Actually Paid:</span>
+                                <span className={cn(
+                                    "font-mono text-right font-semibold",
+                                    isSavings ? "text-green-600" : difference < 0 ? "text-red-600" : "text-muted-foreground"
+                                )}>
+                                    {actualPaid.toFixed(6)} {ticker}
+                                </span>
 
-                                            <span className="text-muted-foreground mt-3 pt-3 border-t">Difference:</span>
-                                            <span className={cn(
-                                                "font-mono text-right font-semibold mt-3 pt-3 border-t",
-                                                isSavings ? "text-green-600" : difference < 0 ? "text-red-600" : "text-muted-foreground"
-                                            )}>
-                                                {isSavings ? "-" : "+"}{Math.abs(difference).toFixed(6)} {ticker}
-                                            </span>
+                                <span className="text-muted-foreground mt-3 pt-3 border-t">Difference:</span>
+                                <span className={cn(
+                                    "font-mono text-right font-semibold mt-3 pt-3 border-t",
+                                    isSavings ? "text-green-600" : difference < 0 ? "text-red-600" : "text-muted-foreground"
+                                )}>
+                                    {isSavings ? "-" : "+"}{Math.abs(difference).toFixed(6)} {ticker}
+                                </span>
 
-                                            <span className="text-muted-foreground font-semibold">Savings:</span>
-                                            <span className={cn(
-                                                "font-mono text-right font-semibold",
-                                                isSavings ? "text-green-600" : percentageSaved < 0 ? "text-red-600" : "text-muted-foreground"
-                                            )}>
-                                                {isSavings ? "+" : ""}{percentageSaved.toFixed(2)}%
-                                            </span>
-                                        </>
-                                    );
-                                })()}
+                                <span className="text-muted-foreground font-semibold">Savings:</span>
+                                <span className={cn(
+                                    "font-mono text-right font-semibold",
+                                    isSavings ? "text-green-600" : percentageSaved < 0 ? "text-red-600" : "text-muted-foreground"
+                                )}>
+                                    {isSavings ? "+" : ""}{percentageSaved.toFixed(2)}%
+                                </span>
                             </>
                         )}
                     </div>
@@ -393,7 +409,7 @@ export function PaymentCard({ payment, onRefresh }: PaymentCardProps) {
                     onSave={() => { }} // Read only, no save
                     readOnly={true}
                 />
-            </div>
+            </div >
         </>
     );
 }

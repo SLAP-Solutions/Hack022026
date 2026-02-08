@@ -43,7 +43,7 @@ export interface CreateInvoiceInput {
     claimantName: string;  // Consider renaming to clientName in future
     type: string;
     walletId: string;
-    dateNotified?: string; // Optional: when client was notified
+    dateCreated?: string; // Optional: manual creation date
 }
 
 /**

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useContract } from "@/hooks/useContract";
 import { useContactsStore } from "@/stores/useContactsStore";
 import { FEED_IDS } from "@/lib/contract/constants";
@@ -23,7 +23,7 @@ import { toast } from "sonner";
 type PaymentMode = "trigger" | "instant";
 
 interface CreatePaymentFormProps {
-    onSuccess?: () => void;
+    onSuccess?: (paymentId?: string) => void;
     invoiceId?: string;
 }
 
@@ -35,6 +35,10 @@ export function CreatePaymentForm({ onSuccess, invoiceId }: CreatePaymentFormPro
     useEffect(() => {
         fetchContacts();
     }, [fetchContacts]);
+
+    const uniqueContacts = useMemo(() => {
+        return Array.from(new Map(contacts.map(c => [c.receiverAddress, c])).values());
+    }, [contacts]);
 
     // Form mode
     const [mode, setMode] = useState<PaymentMode>("trigger");
@@ -165,6 +169,8 @@ export function CreatePaymentForm({ onSuccess, invoiceId }: CreatePaymentFormPro
         return BigInt(Math.floor((usdCents * 1e18 * decimalsMultiplier) / (price * 100)));
     };
 
+
+
     const requiredCollateralWei = mode === "instant"
         ? calculateInstantCollateral()
         : calculateRequiredCollateral(BigInt(Math.floor(stopLossPrice)));
@@ -204,11 +210,10 @@ export function CreatePaymentForm({ onSuccess, invoiceId }: CreatePaymentFormPro
 
             <form onSubmit={handleSubmit} className="space-y-4">
                 {/* Receiver address */}
-                {/* Receiver address */}
                 <div className="space-y-2">
                     <div className="flex justify-between items-center">
                         <Label htmlFor="receiver">Recipient Address</Label>
-                        {contacts.length > 0 && (
+                        {uniqueContacts.length > 0 && (
                             <Select onValueChange={setReceiver}>
                                 <SelectTrigger className="w-[180px] h-7 text-xs">
                                     <SelectValue placeholder="Select contact..." />

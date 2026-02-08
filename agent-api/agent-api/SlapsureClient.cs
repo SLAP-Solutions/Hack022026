@@ -203,6 +203,30 @@ namespace agent_api
                 "CreatePayment");
         }
 
+        [Description("Adds a pending payment to an invoice that requires user signing. This is the preferred method for agents to create payments - the payment will be added to the invoice with 'pending_signature' status, and the user must manually sign the transaction through the UI to execute it. This ensures user control over all blockchain transactions.")]
+        public async Task<AddPaymentToInvoiceResponse> AddPaymentToInvoiceAsync(
+            [Description("The invoice ID to add the payment to.")] string invoiceId,
+            [Description("The USD amount to pay in cents (e.g., 10000 for $100.00).")] decimal usdAmount,
+            [Description("The wallet ID of the payer (must match the invoice's wallet ID).")] string walletId,
+            [Description("Description of the payment (e.g., 'Lab Work - Blood Test').")] string? description = null,
+            [Description("The wallet address of the payment receiver. Defaults to a placeholder if not provided.")] string? receiver = null,
+            [Description("The price feed to use (e.g., 'ETH/USD'). Defaults to 'ETH/USD'.")] string? cryptoFeedId = null,
+            [Description("Number of days until the payment expires. Defaults to 30.")] int? expiryDays = null)
+        {
+            var request = new AddPaymentToInvoiceRequest
+            {
+                UsdAmount = usdAmount,
+                WalletId = walletId,
+                Description = description,
+                Receiver = receiver,
+                CryptoFeedId = cryptoFeedId ?? "ETH/USD",
+                ExpiryDays = expiryDays ?? 30
+            };
+            return await ExecuteAsync<AddPaymentToInvoiceResponse>(
+                () => _httpClient.PostAsJsonAsync($"/api/invoices/{Uri.EscapeDataString(invoiceId)}/payments", request, _jsonOptions),
+                "AddPaymentToInvoice");
+        }
+
         [Description("Checks if the Slapsure API is healthy and responsive. Returns true if the API is available, false otherwise.")]
         public async Task<bool> CheckHealthAsync()
         {
@@ -285,6 +309,12 @@ namespace agent_api
     {
         [Description("The unique identifier for the contact.")]
         public string Id { get; set; } = string.Empty;
+
+        [Description("The name of the contact (individual or organization).")]
+        public string Name { get; set; } = string.Empty;
+
+        [Description("The wallet address where payments should be sent for this contact.")]
+        public string ReceiverAddress { get; set; } = string.Empty;
 
         [Description("The date and time when the contact was created, in ISO 8601 format.")]
         public string CreatedAt { get; set; } = string.Empty;
@@ -391,5 +421,43 @@ namespace agent_api
 
         [Description("The claim/invoice ID to associate this payment with.")]
         public string? ClaimId { get; set; }
+    }
+
+    [Description("Request object for adding a pending payment to an invoice.")]
+    public class AddPaymentToInvoiceRequest
+    {
+        [Description("The USD amount to pay in cents (e.g., 10000 for $100.00).")]
+        public decimal UsdAmount { get; set; }
+
+        [Description("The wallet ID of the payer (must match the invoice's wallet ID).")]
+        public string WalletId { get; set; } = string.Empty;
+
+        [Description("Description of the payment purpose.")]
+        public string? Description { get; set; }
+
+        [Description("The wallet address of the payment receiver.")]
+        public string? Receiver { get; set; }
+
+        [Description("The price feed to use for crypto conversion.")]
+        public string CryptoFeedId { get; set; } = "ETH/USD";
+
+        [Description("Number of days until the payment expires.")]
+        public int ExpiryDays { get; set; } = 30;
+    }
+
+    [Description("Response object when adding a payment to an invoice.")]
+    public class AddPaymentToInvoiceResponse
+    {
+        [Description("Whether the operation was successful.")]
+        public bool Success { get; set; }
+
+        [Description("The created payment details.")]
+        public Payment? Payment { get; set; }
+
+        [Description("The invoice ID the payment was added to.")]
+        public string InvoiceId { get; set; } = string.Empty;
+
+        [Description("A message describing the result.")]
+        public string Message { get; set; } = string.Empty;
     }
 }

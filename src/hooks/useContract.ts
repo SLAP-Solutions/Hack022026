@@ -67,7 +67,20 @@ export function useContract() {
             const receipt = await tx.wait();
             console.log("Payment created:", receipt);
 
-            return tx.hash;
+            let paymentId = undefined;
+            for (const log of receipt.logs) {
+                try {
+                    const parsed = contract.interface.parseLog(log);
+                    if (parsed?.name === 'ClaimPaymentCreated') {
+                        paymentId = parsed.args[0].toString();
+                        break;
+                    }
+                } catch (e) {
+                    // ignore logs that can't be parsed
+                }
+            }
+
+            return { hash: tx.hash, paymentId };
         } catch (err: any) {
             const errorMessage = err.reason || err.message || "Unknown error";
             setError(errorMessage);
@@ -186,10 +199,6 @@ export function useContract() {
         }
     };
 
-    /**
-     * Creates and executes a payment instantly in a single transaction
-     * Use this for immediate payments without price trigger conditions
-     */
     const createInstantPayment = async (
         receiverAddress: string,
         usdAmountCents: number,
@@ -215,7 +224,21 @@ export function useContract() {
             const receipt = await tx.wait();
             console.log("✅ Instant payment confirmed:", receipt);
 
-            return tx.hash;
+            let paymentId = undefined;
+            for (const log of receipt.logs) {
+                try {
+                    const parsed = contract.interface.parseLog(log);
+                    // Instant payment might typically verify execution, but we look for ID
+                    if (parsed?.name === 'ClaimPaymentCreated' || parsed?.name === 'ClaimPaymentExecuted') {
+                        paymentId = parsed.args[0].toString();
+                        break;
+                    }
+                } catch (e) {
+                    // ignore
+                }
+            }
+
+            return { hash: tx.hash, paymentId };
         } catch (err: any) {
             const errorMessage = err.reason || err.message || "Unknown error";
             setError(errorMessage);

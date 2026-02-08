@@ -16,7 +16,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Loader2, CheckCircle2, AlertCircle, Bot } from "lucide-react";
+import { Loader2, CheckCircle2, AlertCircle, Bot, ArrowRight } from "lucide-react";
 import { toast } from "sonner";
 
 interface CreateClaimModalProps {
@@ -25,87 +25,6 @@ interface CreateClaimModalProps {
 }
 
 type ProcessingStatus = "idle" | "uploading" | "processing" | "success" | "error";
-
-// SSE event types from the API
-interface SSETextEvent {
-    type: "text";
-    content: string;
-}
-
-interface SSECompleteEvent {
-    type: "complete";
-    success: boolean;
-    response: string;
-    fileName: string;
-}
-
-interface SSEErrorEvent {
-    type: "error";
-    error: string;
-    details?: string;
-}
-
-type SSEEvent = SSETextEvent | SSECompleteEvent | SSEErrorEvent;
-
-// Helper function to parse agent response into structured data
-function parseAgentResponse(response: string, fileName: string): {
-    title: string;
-    description: string;
-    claimantName: string;
-    type: string;
-} {
-    let title = fileName.split('.')[0] || "Invoice";
-    let description = "Extracted from uploaded document";
-    let claimantName = "";
-    let type = "General";
-
-    if (!response) {
-        return { title, description, claimantName, type };
-    }
-
-    // Try to extract client/claimant name
-    const clientMatch = response.match(/client[:\s]+([A-Za-z\s]+?)(?:\.|,|\n|$)/i) ||
-        response.match(/claimant[:\s]+([A-Za-z\s]+?)(?:\.|,|\n|$)/i) ||
-        response.match(/name[:\s]+([A-Za-z\s]+?)(?:\.|,|\n|$)/i);
-    if (clientMatch) {
-        claimantName = clientMatch[1].trim();
-    }
-
-    // Try to extract type
-    const typeMatch = response.match(/type[:\s]+([A-Za-z\s]+?)(?:\.|,|\n|$)/i) ||
-        response.match(/category[:\s]+([A-Za-z\s]+?)(?:\.|,|\n|$)/i);
-    if (typeMatch) {
-        type = typeMatch[1].trim();
-    } else if (response.toLowerCase().includes("medical") || response.toLowerCase().includes("health")) {
-        type = "Health";
-    } else if (response.toLowerCase().includes("auto") || response.toLowerCase().includes("vehicle") || response.toLowerCase().includes("car")) {
-        type = "Auto";
-    } else if (response.toLowerCase().includes("home") || response.toLowerCase().includes("property")) {
-        type = "Home";
-    }
-
-    // Try to extract title
-    const titleMatch = response.match(/title[:\s]+([^\n]+?)(?:\.|,|\n|$)/i) ||
-        response.match(/invoice for[:\s]+([^\n]+?)(?:\.|,|\n|$)/i);
-    if (titleMatch) {
-        title = titleMatch[1].trim();
-    } else {
-        title = `${type} Invoice`;
-    }
-
-    // Use the full response as description if it's reasonable length
-    if (response.length < 500) {
-        description = response;
-    } else {
-        const summaryMatch = response.match(/summary[:\s]+([^\n]+)/i) ||
-            response.match(/description[:\s]+([^\n]+)/i);
-        if (summaryMatch) {
-            description = summaryMatch[1].trim();
-        }
-    }
-
-    return { title, description, claimantName, type };
-}
 
 export function CreateInvoiceModal({ isOpen, onClose }: CreateClaimModalProps) {
     const { addInvoice } = useInvoicesStore();
@@ -117,7 +36,7 @@ export function CreateInvoiceModal({ isOpen, onClose }: CreateClaimModalProps) {
     const [description, setDescription] = useState("");
     const [claimantName, setClaimantName] = useState("");
     const [type, setType] = useState("");
-    const [dateNotified, setDateNotified] = useState("");
+    const [dateCreated, setDateCreated] = useState("");
     const [mode, setMode] = useState<"manual" | "upload">("manual");
     const [file, setFile] = useState<File | null>(null);
 
@@ -139,7 +58,7 @@ export function CreateInvoiceModal({ isOpen, onClose }: CreateClaimModalProps) {
         if (!file) return;
 
         if (!address) {
-            toast.error("Please connect your wallet to process invoices");
+            alert("Please connect your wallet to process invoices");
             return;
         }
 
@@ -287,7 +206,7 @@ export function CreateInvoiceModal({ isOpen, onClose }: CreateClaimModalProps) {
                 claimantName,
                 type,
                 walletId: address,
-                ...(dateNotified && { dateNotified })
+                ...(dateCreated && { dateCreated })
             });
             handleClose();
         } catch (error) {
@@ -304,7 +223,7 @@ export function CreateInvoiceModal({ isOpen, onClose }: CreateClaimModalProps) {
         setDescription("");
         setClaimantName("");
         setType("");
-        setDateNotified("");
+        setDateCreated("");
         setMode("manual");
         setFile(null);
         setProcessingStatus("idle");
@@ -394,16 +313,16 @@ export function CreateInvoiceModal({ isOpen, onClose }: CreateClaimModalProps) {
                         </div>
 
                         <div className="space-y-2">
-                            <Label htmlFor="dateNotified">Date Notified (Optional)</Label>
+                            <Label htmlFor="dateCreated">Date Created (Optional)</Label>
                             <Input
-                                id="dateNotified"
+                                id="dateCreated"
                                 type="date"
-                                value={dateNotified}
-                                onChange={(e) => setDateNotified(e.target.value)}
-                                placeholder="When was the client notified?"
+                                value={dateCreated}
+                                onChange={(e) => setDateCreated(e.target.value)}
+                                placeholder="When was the invoice created?"
                             />
                             <p className="text-xs text-muted-foreground">
-                                When was the client notified of this invoice?
+                                When was the invoice created? (Leave blank for today)
                             </p>
                         </div>
 

@@ -131,7 +131,7 @@ namespace agent_api.Controllers
                         if (!isThinking && !string.IsNullOrEmpty(text))
                         {
                             fullResponse.Append(text);
-                            
+
                             // Send SSE event
                             var eventData = JsonSerializer.Serialize(new { type = "text", content = text });
                             await Response.WriteAsync($"data: {eventData}\n\n");
@@ -142,11 +142,11 @@ namespace agent_api.Controllers
                     {
                         hasError = true;
                         errorMessages.Add(errorMessage);
-                        
+
                         // Send error event to client
-                        var errorData = JsonSerializer.Serialize(new 
-                        { 
-                            type = "workflow_error", 
+                        var errorData = JsonSerializer.Serialize(new
+                        {
+                            type = "workflow_error",
                             error = errorMessage,
                             details = exception?.ToString()
                         });
@@ -155,9 +155,9 @@ namespace agent_api.Controllers
                     });
 
                 // Send completion event with full response
-                var completeData = JsonSerializer.Serialize(new 
-                { 
-                    type = "complete", 
+                var completeData = JsonSerializer.Serialize(new
+                {
+                    type = "complete",
                     success = !hasError,
                     response = fullResponse.ToString(),
                     fileName = file.FileName,
@@ -169,11 +169,11 @@ namespace agent_api.Controllers
             catch (Exception ex)
             {
                 // Send error event
-                var errorData = JsonSerializer.Serialize(new 
-                { 
-                    type = "error", 
-                    error = "Failed to process invoice", 
-                    details = ex.Message 
+                var errorData = JsonSerializer.Serialize(new
+                {
+                    type = "error",
+                    error = "Failed to process invoice",
+                    details = ex.Message
                 });
                 await Response.WriteAsync($"data: {errorData}\n\n");
                 await Response.Body.FlushAsync();

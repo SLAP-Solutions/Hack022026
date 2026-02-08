@@ -1,19 +1,24 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Calendar, DollarSign, Tag, Receipt, User, Building, Plus, ShieldAlert, CreditCard, Bell } from "lucide-react";
-import { usePaymentModal } from "@/stores/usePaymentModal";
-import { AddPaymentModal } from "@/components/modals/AddPaymentModal";
+import { ArrowLeft, Calendar, DollarSign, Tag, Receipt, User, Building, Plus, ShieldAlert, CreditCard, Bell, Pen, Clock } from "lucide-react";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { CreatePaymentForm } from "@/components/payments/CreatePaymentForm";
+import { useContract } from "@/hooks/useContract";
+import { PaymentCard } from "@/components/payments/PaymentCard";
+import { PendingSignaturePaymentCard } from "@/components/payments/PendingSignaturePaymentCard";
+import { FEED_IDS } from "@/lib/contract/constants";
 import { ClaimRiskModal } from "@/components/modals/ClaimRiskModal";
 import { useInvoicesStore } from "@/stores/useInvoicesStore";
 import { Slider } from "@/components/ui/slider";
 import { cn } from "@/lib/utils";
 import { getFeedName, getFeedSymbol } from "@/config/feeds";
 import { useFTSOPrices } from "@/hooks/useFTSOPrices";
+import { usePayments } from "@/hooks/usePayments";
 
 const statusConfig = {
     pending: { color: "bg-primary/10 text-primary border-primary/30" },
@@ -24,6 +29,7 @@ const statusConfig = {
 };
 
 const paymentStatusConfig = {
+    pending_signature: { color: "bg-amber-500/20 text-amber-600 border-amber-500/40", label: "Awaiting Signature" },
     pending: { color: "bg-primary/10 text-primary border-primary/30", label: "Pending" },
     committed: { color: "bg-primary/20 text-primary border-primary/40", label: "Committed" },
     executed: { color: "bg-primary/30 text-primary border-primary/50", label: "Executed" },
@@ -34,10 +40,62 @@ export default function InvoiceDetailPage() {
     const params = useParams();
     const router = useRouter();
     const invoiceId = params.id as string;
-    const { getInvoice, updatePaymentStatus } = useInvoicesStore();
-    const { openModal } = usePaymentModal();
+    const { getInvoice, updatePaymentStatus, addPayment } = useInvoicesStore();
+    const { getClaimPayment } = useContract();
     const { prices } = useFTSOPrices();
+    const { payments: livePayments } = usePayments();
     const [isRiskModalOpen, setIsRiskModalOpen] = useState(false);
+    const [isPaymentSidebarOpen, setIsPaymentSidebarOpen] = useState(false);
+    const [refreshTimer, setRefreshTimer] = useState(2);
+
+    // Reset timer when payments update
+    useEffect(() => {
+        setRefreshTimer(2);
+    }, [livePayments]);
+
+    // Countdown timer
+    useEffect(() => {
+        const interval = setInterval(() => {
+            setRefreshTimer((prev) => (prev > 0 ? prev - 1 : 0));
+        }, 1000);
+        return () => clearInterval(interval);
+    }, []);
+
+    const handlePaymentSuccess = async (paymentId?: string) => {
+        if (!paymentId) {
+            setIsPaymentSidebarOpen(false);
+            return;
+        }
+
+        try {
+            const paymentDetails = await getClaimPayment(Number(paymentId));
+
+            const newPayment = {
+                id: BigInt(paymentId),
+                payer: paymentDetails.payer,
+                receiver: paymentDetails.receiver,
+                usdAmount: paymentDetails.usdAmount,
+                cryptoFeedId: paymentDetails.cryptoFeedId,
+                stopLossPrice: paymentDetails.stopLossPrice,
+                takeProfitPrice: paymentDetails.takeProfitPrice,
+                collateralAmount: paymentDetails.collateralAmount,
+                createdAt: BigInt(paymentDetails.createdAt),
+                createdAtPrice: paymentDetails.createdAtPrice,
+                expiresAt: BigInt(paymentDetails.expiresAt),
+                status: 'pending' as const,
+                executed: paymentDetails.executed,
+                executedAt: BigInt(paymentDetails.executedAt),
+                executedPrice: paymentDetails.executedPrice,
+                paidAmount: paymentDetails.paidAmount,
+                originalAmount: paymentDetails.usdAmount
+            };
+
+            await addPayment(invoiceId, newPayment);
+            setIsPaymentSidebarOpen(false);
+        } catch (error) {
+            console.error("Failed to link payment to invoice", error);
+        }
+    };
 
     const invoice = getInvoice(invoiceId);
 
@@ -60,7 +118,36 @@ export default function InvoiceDetailPage() {
         );
     }
 
-    const statusInfo = statusConfig[invoice.status as keyof typeof statusConfig];
+    // Derive status based on live payments (matches InvoicesPage logic)
+    const updatedPayments = invoice.payments?.map(payment => {
+        const livePayment = livePayments.find(p => p.id === Number(payment.id));
+        if (livePayment) {
+            return {
+                ...payment,
+                status: (livePayment.executed ? 'executed' : 'pending') as 'pending' | 'executed',
+                executed: livePayment.executed,
+                executedAt: BigInt(livePayment.executedAt),
+            };
+        }
+        return {
+            ...payment,
+            status: (payment.executed ? 'executed' : 'pending') as 'pending' | 'executed',
+        };
+    }) || [];
+
+    let computedStatus = invoice.status;
+    if (updatedPayments.length > 0) {
+        const allExecuted = updatedPayments.every(p => p.status === 'executed');
+
+        if (allExecuted) {
+            computedStatus = 'settled';
+        } else {
+            const someExecuted = updatedPayments.some(p => p.status === 'executed');
+            computedStatus = someExecuted ? 'processing' : 'pending';
+        }
+    }
+
+    const statusInfo = statusConfig[computedStatus as keyof typeof statusConfig] || statusConfig.pending;
 
     return (
         <div className="max-w-7xl mx-auto space-y-6 p-6">
@@ -85,7 +172,7 @@ export default function InvoiceDetailPage() {
                                         {invoice.id}
                                     </Badge>
                                     <Badge className={cn("text-xs border", statusInfo.color)}>
-                                        {invoice.status.toUpperCase()}
+                                        {computedStatus.toUpperCase()}
                                     </Badge>
                                 </div>
                                 <h1 className="text-4xl font-bold font-serif mb-2">
@@ -106,7 +193,7 @@ export default function InvoiceDetailPage() {
                                 <span className="text-xs font-medium uppercase tracking-wider">Total Cost</span>
                             </div>
                             <div className="text-4xl font-bold bg-gradient-to-r from-primary to-primary/90 bg-clip-text text-transparent">
-                                ${(invoice.payments?.reduce((acc: number, payment: any) => acc + Number(payment.usdAmount), 0) || 0).toFixed(2)}
+                                ${((invoice.payments?.reduce((acc: number, payment: any) => acc + Number(payment.usdAmount), 0) || 0) / 100).toFixed(2)}
                             </div>
                         </div>
                     </CardContent>
@@ -142,7 +229,12 @@ export default function InvoiceDetailPage() {
                             <span className="text-xs font-medium">Created</span>
                         </div>
                         <p className="font-semibold">
-                            {new Date(invoice.dateCreated).toLocaleDateString()}
+                            {new Date(invoice.dateCreated).toLocaleDateString('en-US', {
+                                year: 'numeric',
+                                month: 'long',
+                                day: 'numeric',
+                                timeZone: 'UTC'
+                            })}
                         </p>
                     </CardContent>
                 </Card>
@@ -176,6 +268,108 @@ export default function InvoiceDetailPage() {
                 )}
             </div>
 
+            {/* Pending Signature Payments Section */}
+            {invoice.payments && invoice.payments.filter((p: any) => p.status === 'pending_signature').length > 0 && (
+                <Card className="border-amber-500/40 bg-amber-50/30 dark:bg-amber-950/10">
+                    <CardHeader>
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                                <Pen className="w-5 h-5 text-amber-600" />
+                                <h3 className="text-xl font-semibold text-amber-700 dark:text-amber-500">Payments Awaiting Signature</h3>
+                                <Badge className="bg-amber-500 text-white">
+                                    {invoice.payments.filter((p: any) => p.status === 'pending_signature').length}
+                                </Badge>
+                            </div>
+                        </div>
+                        <p className="text-sm text-muted-foreground mt-1">
+                            These payments were created by the AI agent and require your signature to execute.
+                        </p>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="columns-1 md:columns-2 gap-4 space-y-4">
+                            {invoice.payments
+                                .filter((p: any) => p.status === 'pending_signature')
+                                .map((payment: any) => (
+                                    <div key={payment.id.toString()} className="break-inside-avoid mb-4">
+                                        <PendingSignaturePaymentCard
+                                            payment={payment}
+                                            onSign={async (pendingId, blockchainId) => {
+                                                // After signing, update the payment with the blockchain ID
+                                                // and change status to 'pending'
+                                                try {
+                                                    const paymentDetails = await getClaimPayment(Number(blockchainId));
+                                                    
+                                                    // Update the payment in the invoice
+                                                    const updatedPayments = invoice.payments.map((p: any) => {
+                                                        if (p.id === pendingId) {
+                                                            return {
+                                                                ...p,
+                                                                id: BigInt(blockchainId),
+                                                                status: 'pending',
+                                                                payer: paymentDetails.payer,
+                                                                stopLossPrice: paymentDetails.stopLossPrice,
+                                                                takeProfitPrice: paymentDetails.takeProfitPrice,
+                                                                collateralAmount: paymentDetails.collateralAmount,
+                                                                createdAt: BigInt(paymentDetails.createdAt),
+                                                                createdAtPrice: paymentDetails.createdAtPrice,
+                                                                expiresAt: BigInt(paymentDetails.expiresAt),
+                                                                executed: false,
+                                                            };
+                                                        }
+                                                        return p;
+                                                    });
+
+                                                    // Update via API
+                                                    const replacer = (key: string, value: any) => {
+                                                        if (typeof value === 'bigint') {
+                                                            return value.toString();
+                                                        }
+                                                        return value;
+                                                    };
+
+                                                    await fetch(`/api/invoices/${invoice.id}`, {
+                                                        method: 'PUT',
+                                                        headers: { 'Content-Type': 'application/json' },
+                                                        body: JSON.stringify({ ...invoice, payments: updatedPayments }, replacer),
+                                                    });
+
+                                                    // Refresh the page to show updated data
+                                                    window.location.reload();
+                                                } catch (error) {
+                                                    console.error("Failed to update payment after signing:", error);
+                                                }
+                                            }}
+                                            onCancel={async (pendingId) => {
+                                                // Remove the pending payment from the invoice
+                                                try {
+                                                    const updatedPayments = invoice.payments.filter((p: any) => p.id !== pendingId);
+                                                    
+                                                    const replacer = (key: string, value: any) => {
+                                                        if (typeof value === 'bigint') {
+                                                            return value.toString();
+                                                        }
+                                                        return value;
+                                                    };
+
+                                                    await fetch(`/api/invoices/${invoice.id}`, {
+                                                        method: 'PUT',
+                                                        headers: { 'Content-Type': 'application/json' },
+                                                        body: JSON.stringify({ ...invoice, payments: updatedPayments }, replacer),
+                                                    });
+
+                                                    window.location.reload();
+                                                } catch (error) {
+                                                    console.error("Failed to cancel pending payment:", error);
+                                                }
+                                            }}
+                                        />
+                                    </div>
+                                ))}
+                        </div>
+                    </CardContent>
+                </Card>
+            )}
+
             {/* Payments Section */}
             <Card>
                 <CardHeader>
@@ -183,9 +377,15 @@ export default function InvoiceDetailPage() {
                         <div className="flex items-center gap-2">
                             <Receipt className="w-5 h-5" />
                             <h3 className="text-xl font-semibold">Payments</h3>
-                            <Badge variant="secondary">{invoice.payments.length}</Badge>
+                            <Badge variant="secondary">
+                                {invoice.payments.filter((p: any) => p.status !== 'pending_signature').length}
+                            </Badge>
                         </div>
                         <div className="flex gap-2">
+                            <span className="flex items-center gap-1 text-xs text-muted-foreground self-center mr-2">
+                                <Clock className="w-3 h-3" />
+                                Refreshes in {refreshTimer}s
+                            </span>
                             <Button
                                 variant="outline"
                                 onClick={() => setIsRiskModalOpen(true)}
@@ -196,7 +396,7 @@ export default function InvoiceDetailPage() {
                                 View Risk Exposure
                             </Button>
                             <Button
-                                onClick={() => openModal(invoice.id)}
+                                onClick={() => setIsPaymentSidebarOpen(true)}
                                 size="sm"
                                 className="bg-primary hover:bg-primary/90"
                             >
@@ -207,181 +407,43 @@ export default function InvoiceDetailPage() {
                     </div>
                 </CardHeader>
                 <CardContent>
-                    {invoice.payments && invoice.payments.length > 0 ? (
-                        <div className="space-y-3">
-                            {invoice.payments.map((payment: any) => {
-                                const paymentStatus = paymentStatusConfig[(payment.status || "pending") as keyof typeof paymentStatusConfig];
+                    {invoice.payments && invoice.payments.filter((p: any) => p.status !== 'pending_signature').length > 0 ? (
+                        <div className="columns-1 md:columns-2 gap-4 space-y-4">
+                            {invoice.payments
+                                .filter((p: any) => p.status !== 'pending_signature')
+                                .map((payment: any) => {
+                                    // Find price for this payment's feed
+                                    const feedSymbol = Object.keys(FEED_IDS).find(
+                                        (key) => FEED_IDS[key as keyof typeof FEED_IDS] === payment.cryptoFeedId
+                                    );
+                                    const priceData = feedSymbol ? prices[feedSymbol as keyof typeof FEED_IDS] : undefined;
 
-                                // Calculate display values
-                                const amount = Number(payment.usdAmount);
-                                const lower = Number(payment.stopLossPrice);
-                                const upper = Number(payment.takeProfitPrice);
+                                    // PaymentCard expects price scaled by 1000 (3 decimals)
+                                    const currentPrice = priceData ? Math.floor(parseFloat(priceData.price) * 1000) : 0;
 
-                                return (
-                                    <Card key={payment.id.toString()} className="hover:shadow-md transition-shadow">
-                                        <CardContent className="p-4">
-                                            <div className="flex items-center justify-between mb-3">
-                                                <div className="flex items-center gap-2">
-                                                    <Receipt className="w-4 h-4 text-muted-foreground" />
-                                                    <span className="font-mono text-sm text-muted-foreground">
-                                                        Payment #{payment.id.toString()}
-                                                    </span>
-                                                </div>
-                                                <Badge className={cn("text-xs border", paymentStatus?.color)}>
-                                                    {paymentStatus?.label || "Unknown"}
-                                                </Badge>
-                                            </div>
+                                    // Try to find live payment data to ensure status is up to date
+                                    const livePayment = livePayments.find(p => p.id === Number(payment.id));
 
-                                            {payment.status === 'pending' && payment.expiresAt && (
-                                                <div className="mb-4 p-2 bg-primary/10 dark:bg-primary/20 rounded border border-primary/30 dark:border-primary/40" title={`Expires on ${new Date(Number(payment.expiresAt) * 1000).toLocaleDateString()}`}>
-                                                    <div className="flex justify-between items-baseline">
-                                                        <span className="text-sm font-semibold text-primary">
-                                                            {Math.ceil((new Date(Number(payment.expiresAt) * 1000).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))} Days Remaining
-                                                        </span>
-                                                        <span className="text-xs text-muted-foreground">
-                                                            Window ends: {new Date(Number(payment.expiresAt) * 1000).toLocaleDateString()}
-                                                        </span>
-                                                    </div>
-                                                </div>
-                                            )}
+                                    // Construct ClaimPaymentWithPrice object
+                                    const claimPayment = livePayment || {
+                                        ...payment,
+                                        id: Number(payment.id), // Convert bigint id to number for contract calls
+                                        currentPrice: currentPrice,
+                                        createdAtPrice: payment.createdAtPrice || BigInt(0),
+                                    };
 
-                                            <div className="grid grid-cols-2 gap-4">
-
-                                                <div>
-                                                    <div className="text-xs text-muted-foreground mb-1">Description</div>
-                                                    <div className="text-xl font-bold text-foreground">
-                                                        {payment.description || "Payment"}
-                                                    </div>
-                                                </div>
-                                                <div>
-                                                    <div className="text-xs text-muted-foreground mb-1">Amount</div>
-                                                    <div className="text-sm font-mono font-semibold">
-                                                        ${amount.toFixed(2)}
-                                                    </div>
-                                                    <Badge variant="outline" className="mt-1 text-[10px] h-5">
-                                                        {getFeedName(payment.cryptoFeedId) || "Unknown Feed"}
-                                                    </Badge>
-                                                </div>
-                                                <div>
-                                                    <div className="text-xs text-muted-foreground mb-1">Receiver</div>
-                                                    <div className="text-sm font-mono">
-                                                        {payment.receiver?.slice(0, 6)}...{payment.receiver?.slice(-4)}
-                                                    </div>
-                                                </div>
-                                            </div>
-
-                                            {/* Visual Slider */}
-                                            <div className="mt-4 pt-3 border-t">
-                                                <div className="flex justify-between items-end mb-2">
-                                                    <div className="text-xs text-muted-foreground">
-                                                        Lower: <span className="font-mono font-medium">${lower.toFixed(2)}</span>
-                                                    </div>
-                                                    <div className="text-xs text-muted-foreground">
-                                                        Upper: <span className="font-mono font-medium">${upper.toFixed(2)}</span>
-                                                    </div>
-                                                </div>
-                                                <Slider
-                                                    value={[amount]}
-                                                    max={upper}
-                                                    min={lower}
-                                                    step={0.01}
-                                                    disabled
-                                                    className="opacity-100"
-                                                    trackClassName="bg-gradient-to-r from-red-500 to-green-500"
-                                                    rangeClassName="opacity-0"
-                                                    thumbContent={(() => {
-                                                        const feedName = getFeedName(payment.cryptoFeedId);
-                                                        const priceData = prices[feedName];
-                                                        return priceData && !priceData.loading
-                                                            ? `$${parseFloat(priceData.price).toFixed(2)}`
-                                                            : "...";
-                                                    })()}
-                                                />
-                                            </div>
-
-                                            {payment.status === 'pending' && (
-                                                <div className="mt-4 flex items-center gap-3">
-                                                    <Button
-                                                        size="sm"
-                                                        className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground"
-                                                        onClick={() => updatePaymentStatus(invoice.id, payment.id, 'committed')}
-                                                    >
-                                                        <Receipt className="w-4 h-4 mr-2" />
-                                                        Commit
-                                                    </Button>
-                                                </div>
-                                            )}
-
-                                            {payment.status === 'committed' && (
-                                                <div className="mt-4 flex items-center gap-3">
-                                                    <Button
-                                                        size="sm"
-                                                        className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground"
-                                                        onClick={() => updatePaymentStatus(invoice.id, payment.id, 'executed')}
-                                                    >
-                                                        <CreditCard className="w-4 h-4 mr-2" />
-                                                        Pay Now
-                                                    </Button>
-
-                                                    {(() => {
-                                                        if (!payment.originalAmount) return null;
-
-                                                        const feedName = getFeedName(payment.cryptoFeedId);
-                                                        const feedSymbol = getFeedSymbol(payment.cryptoFeedId);
-                                                        const currentPriceData = prices[feedName];
-
-                                                        if (!currentPriceData) return null;
-
-                                                        const currentPrice = parseFloat(currentPriceData.price);
-                                                        if (!currentPrice) return null;
-
-                                                        const currentCryptoAmount = amount / currentPrice;
-                                                        const originalCryptoAmount = payment.originalAmount / currentPrice;
-                                                        const diff = originalCryptoAmount - currentCryptoAmount;
-                                                        const isSaving = diff > 0;
-                                                        const percentDiff = (Math.abs(diff) / payment.originalAmount) * 100;
-
-                                                        // Removed absolute threshold, just check for non-zero to show even small diffs
-                                                        if (Math.abs(diff) === 0) return null;
-
-                                                        return (
-                                                            <div className={cn(
-                                                                "text-xs px-3 py-1.5 rounded-md font-medium flex flex-col items-end leading-tight min-w-[120px]",
-                                                                isSaving
-                                                                    ? "text-green-700 bg-green-50 dark:bg-green-900/20 dark:text-green-400 border border-green-200 dark:border-green-800"
-                                                                    : "text-red-700 bg-red-50 dark:bg-red-900/20 dark:text-red-400 border border-red-200 dark:border-red-800"
-                                                            )}>
-                                                                {isSaving ? (
-                                                                    <>
-                                                                        <span className="font-bold">Save {diff.toFixed(4)} {feedSymbol}</span>
-                                                                        <span className="text-[10px] opacity-80">({percentDiff.toFixed(1)}%)</span>
-                                                                    </>
-                                                                ) : (
-                                                                    <>
-                                                                        <span className="font-bold">+{Math.abs(diff).toFixed(4)} {feedSymbol}</span>
-                                                                        <span className="text-[10px] opacity-80">({percentDiff.toFixed(1)}%)</span>
-                                                                    </>
-                                                                )}
-                                                            </div>
-                                                        );
-                                                    })()}
-                                                </div>
-                                            )}
-
-                                            {payment.executedAt > 0 && (
-                                                <div className="mt-3 pt-3 border-t">
-                                                    <div className="text-xs text-muted-foreground">
-                                                        Executed: {new Date(Number(payment.executedAt) * 1000).toLocaleString()}
-                                                    </div>
-                                                </div>
-                                            )}
-                                        </CardContent>
-                                    </Card>
-                                );
-                            })}
+                                    return (
+                                        <div key={payment.id.toString()} className="break-inside-avoid mb-4">
+                                            <PaymentCard
+                                                payment={claimPayment as any}
+                                                onRefresh={() => updatePaymentStatus(invoice.id, payment.id, 'executed')}
+                                            />
+                                        </div>
+                                    );
+                                })}
                         </div>
                     ) : (
-                        <div className="text-center py-8 text-muted-foreground">
+                        <div className="text-center py-8 text-muted-foreground bg-muted/20 rounded-lg">
                             <Receipt className="w-12 h-12 mx-auto mb-2 opacity-50" />
                             <p>No payments recorded yet</p>
                         </div>
@@ -390,7 +452,14 @@ export default function InvoiceDetailPage() {
             </Card>
 
             {/* Modals */}
-            <AddPaymentModal />
+            <Sheet open={isPaymentSidebarOpen} onOpenChange={setIsPaymentSidebarOpen}>
+                <SheetContent className="w-[400px] sm:w-[540px] overflow-y-auto">
+                    <SheetHeader className="mb-6">
+                        <SheetTitle>Create Payment Order</SheetTitle>
+                    </SheetHeader>
+                    <CreatePaymentForm onSuccess={handlePaymentSuccess} />
+                </SheetContent>
+            </Sheet>
             <ClaimRiskModal
                 open={isRiskModalOpen}
                 onOpenChange={setIsRiskModalOpen}

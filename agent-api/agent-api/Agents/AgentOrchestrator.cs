@@ -201,11 +201,22 @@ namespace agent_api.Agents
                 return;
             }
             
-            // Use the user's wallet ID if provided, otherwise fall back to extracted data
-            var walletIdToUse = !string.IsNullOrEmpty(state.WalletId) ? state.WalletId : invoiceData.WalletId;
+            // CRITICAL: Always use the user's wallet ID from state - never use extracted wallet ID from document
+            // The user's wallet ID was set at the start of the workflow from the authenticated user
+            var walletIdToUse = state.WalletId;
+            if (string.IsNullOrEmpty(walletIdToUse))
+            {
+                var errorMsg = "No wallet ID provided. User must be authenticated with a connected wallet.";
+                state.Errors.Add($"Step 2 failed: {errorMsg}");
+                if (onTextUpdate != null) await onTextUpdate($"\n\n**WORKFLOW STOPPED**: Step 2 failed - {errorMsg}\n\n", false);
+                if (onError != null) await onError($"Invoice creation failed - {errorMsg}", null);
+                return;
+            }
             
-            _logger?.LogInformation("Parsed invoice data: Title={Title}, Claimant={Claimant}, Type={Type}, WalletId={WalletId}", 
-                invoiceData.Title, invoiceData.ClaimantName, invoiceData.Type, walletIdToUse);
+            _logger?.LogInformation("Creating invoice with user's wallet ID: {WalletId} (extracted from document was: {ExtractedWalletId})", 
+                walletIdToUse, invoiceData.WalletId);
+            _logger?.LogInformation("Parsed invoice data: Title={Title}, Claimant={Claimant}, Type={Type}", 
+                invoiceData.Title, invoiceData.ClaimantName, invoiceData.Type);
             
             if (onTextUpdate != null)
             {
@@ -287,55 +298,186 @@ namespace agent_api.Agents
             state.ContactId = ExtractIdFromResult(step3Result, "contact");
             state.CurrentStep = 4;
             
-            // Step 4: Payment Creation
-            _logger?.LogInformation("Starting Step 4: Payment Creation");
+            // Step 4: Payment Creation - Direct API call to add payments to invoice
+            _logger?.LogInformation("Starting Step 4: Payment Creation (Direct API Call)");
             if (onTextUpdate != null)
             {
-                await onTextUpdate("\n\n## Step 4/4: Creating Payments\n\n", false);
+                await onTextUpdate("\n\n## Step 4/4: Adding Payments to Invoice\n\n", false);
             }
             
-            var paymentDefinition = _agents.GetByName("paymentcreator");
-            var (step4Result, step4Success, step4Error) = await RunWorkflowStepAsync(
-                client,
-                "paymentcreator",
-                CreateStepMessages(state.ExtractedData, $"""
-                    Create payments for ALL line items from the invoice.
-                    
-                    Invoice ID: {state.InvoiceId ?? "unknown"}
-                    Wallet ID: {state.WalletId}
-                    
-                    For EACH line item in the extracted data:
-                    1. Call CreatePaymentAsync with:
-                       - receiver: Use a placeholder address "0x0000000000000000000000000000000000000001" (or extract from document if available)
-                       - usdAmount: The line item amount
-                       - walletId: "{state.WalletId}"
-                       - description: The line item description
-                       - claimId: "{state.InvoiceId}"
-                       - paymentType: "instant"
-                    
-                    2. Continue until ALL line items have payments created
-                    3. Provide a summary of all payments created
-                    
-                    DO NOT STOP until every line item has a payment. Report each payment ID as you create them.
-                    """),
-                null,
-                onTextUpdate,
-                onError,
-                paymentDefinition?.GetTools(_toolsFactory));
+            // First, we need to find the receiver wallet address from the invoice data
+            // The receiver should come from the contact associated with the claimant
+            string? receiverAddress = null;
             
-            if (!step4Success)
+            // Try to find the receiver address from the contacts
+            try
             {
-                var errorMsg = step4Error ?? "Payment creation failed";
+                if (onTextUpdate != null)
+                {
+                    await onTextUpdate($"Looking up receiver wallet address for: **{invoiceData.ClaimantName}**...\n", false);
+                }
+                
+                var contacts = await _slapsureClient.GetContactsAsync();
+                var matchingContact = contacts.FirstOrDefault(c => 
+                    c.Name?.Equals(invoiceData.ClaimantName, StringComparison.OrdinalIgnoreCase) == true ||
+                    c.Name?.Contains(invoiceData.ClaimantName, StringComparison.OrdinalIgnoreCase) == true);
+                
+                if (matchingContact != null && !string.IsNullOrEmpty(matchingContact.ReceiverAddress))
+                {
+                    receiverAddress = matchingContact.ReceiverAddress;
+                    _logger?.LogInformation("Found receiver address {ReceiverAddress} for contact {ContactName}", 
+                        receiverAddress, matchingContact.Name);
+                    if (onTextUpdate != null)
+                    {
+                        await onTextUpdate($"  ✓ Found receiver: `{receiverAddress}` (Contact: {matchingContact.Name})\n", false);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogWarning(ex, "Failed to look up contacts for receiver address");
+            }
+            
+            // If no receiver address found, we cannot create payments - end the workflow
+            if (string.IsNullOrEmpty(receiverAddress))
+            {
+                var errorMsg = $"Cannot create payments: No receiver wallet address found for claimant '{invoiceData.ClaimantName}'. Please add a contact with a receiver address for this claimant first.";
+                _logger?.LogError("No receiver address found for claimant: {ClaimantName}", invoiceData.ClaimantName);
+                state.Errors.Add($"Step 4 failed: {errorMsg}");
+                if (onTextUpdate != null) 
+                {
+                    await onTextUpdate($"\n\n**WORKFLOW STOPPED**: {errorMsg}\n\n", false);
+                    await onTextUpdate($"""
+                        
+                        **To resolve this issue:**
+                        1. Go to the Contacts page
+                        2. Add a new contact for "{invoiceData.ClaimantName}"
+                        3. Include their wallet receiver address
+                        4. Then try processing this invoice again
+                        
+                        The invoice has been created (ID: `{state.InvoiceId}`), but payments could not be added without a valid receiver address.
+                        """, false);
+                }
+                if (onError != null) await onError(errorMsg, null);
+                return;
+            }
+            
+            // Create payments directly using the AddPaymentToInvoiceAsync method
+            // This adds payments with "pending_signature" status that require user signing
+            var paymentsCreated = 0;
+            var paymentErrors = new List<string>();
+            
+            if (invoiceData.LineItems?.Any() == true)
+            {
+                foreach (var lineItem in invoiceData.LineItems)
+                {
+                    try
+                    {
+                        if (onTextUpdate != null)
+                        {
+                            await onTextUpdate($"Adding payment for: {lineItem.Description} (${lineItem.Amount:F2})...\n", false);
+                        }
+                        
+                        // Convert amount to cents for the API
+                        var amountInCents = lineItem.Amount * 100;
+                        
+                        var paymentResult = await _slapsureClient.AddPaymentToInvoiceAsync(
+                            invoiceId: state.InvoiceId!,
+                            usdAmount: amountInCents,
+                            walletId: state.WalletId!,
+                            description: lineItem.Description,
+                            receiver: receiverAddress,
+                            cryptoFeedId: "ETH/USD",
+                            expiryDays: 30);
+                        
+                        if (paymentResult.Success)
+                        {
+                            paymentsCreated++;
+                            state.PaymentIds.Add(paymentResult.Payment?.Id ?? "unknown");
+                            _logger?.LogInformation("Payment added: {PaymentId} for {Description}", 
+                                paymentResult.Payment?.Id, lineItem.Description);
+                            
+                            if (onTextUpdate != null)
+                            {
+                                await onTextUpdate($"  ✓ Payment added (ID: `{paymentResult.Payment?.Id}`) - **Requires user signing**\n", false);
+                            }
+                        }
+                        else
+                        {
+                            paymentErrors.Add($"Failed to add payment for {lineItem.Description}: {paymentResult.Message}");
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        var errorMsg = $"Failed to add payment for {lineItem.Description}: {ex.Message}";
+                        _logger?.LogError(ex, "Failed to add payment for line item: {Description}", lineItem.Description);
+                        paymentErrors.Add(errorMsg);
+                    }
+                }
+            }
+            else
+            {
+                // No line items - create a single payment for the total
+                try
+                {
+                    if (onTextUpdate != null)
+                    {
+                        await onTextUpdate($"Adding payment for total: ${invoiceData.Total:F2}...\n", false);
+                    }
+                    
+                    var amountInCents = invoiceData.Total * 100;
+                    
+                    var paymentResult = await _slapsureClient.AddPaymentToInvoiceAsync(
+                        invoiceId: state.InvoiceId!,
+                        usdAmount: amountInCents,
+                        walletId: state.WalletId!,
+                        description: $"Total for {invoiceData.Title}",
+                        receiver: receiverAddress,
+                        cryptoFeedId: "ETH/USD",
+                        expiryDays: 30);
+                    
+                    if (paymentResult.Success)
+                    {
+                        paymentsCreated++;
+                        state.PaymentIds.Add(paymentResult.Payment?.Id ?? "unknown");
+                        
+                        if (onTextUpdate != null)
+                        {
+                            await onTextUpdate($"  ✓ Payment added (ID: `{paymentResult.Payment?.Id}`) - **Requires user signing**\n", false);
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    paymentErrors.Add($"Failed to add total payment: {ex.Message}");
+                    _logger?.LogError(ex, "Failed to add total payment");
+                }
+            }
+            
+            // Check if we created any payments
+            var step4Success = paymentsCreated > 0;
+            if (!step4Success && paymentErrors.Any())
+            {
+                var errorMsg = string.Join("; ", paymentErrors);
                 state.Errors.Add($"Step 4 failed: {errorMsg}");
                 if (onTextUpdate != null) await onTextUpdate($"\n\n**WORKFLOW STOPPED**: Step 4 failed - {errorMsg}\n\n", false);
                 if (onError != null) await onError($"Payment creation failed - {errorMsg}", null);
                 return;
             }
             
+            if (paymentErrors.Any())
+            {
+                state.Errors.AddRange(paymentErrors);
+            }
+            
             // Final Summary
             _logger?.LogInformation("Workflow completed - generating summary");
             if (onTextUpdate != null)
             {
+                var paymentSummary = paymentsCreated > 0 
+                    ? $"- **{paymentsCreated} payment(s) added** - awaiting your signature in the invoice details page"
+                    : "- No payments created";
+                    
                 await onTextUpdate($"""
                     
                     
@@ -343,11 +485,16 @@ namespace agent_api.Agents
                     
                     **Summary:**
                     - Document analyzed and data extracted
-                    - Invoice created: {state.InvoiceId ?? "See above"}
+                    - Invoice created: `{state.InvoiceId ?? "See above"}`
                     - Contacts processed
-                    - Payments created for line items
+                    {paymentSummary}
                     
-                    {(state.Errors.Any() ? $"**Errors encountered:**\n{string.Join("\n", state.Errors.Select(e => $"- {e}"))}" : "")}
+                    **Next Steps:**
+                    1. Go to the invoice details page
+                    2. Review the pending payments
+                    3. Sign each payment transaction to execute them
+                    
+                    {(state.Errors.Any() ? $"**Warnings/Errors:**\n{string.Join("\n", state.Errors.Select(e => $"- {e}"))}" : "")}
                     """, false);
             }
         }

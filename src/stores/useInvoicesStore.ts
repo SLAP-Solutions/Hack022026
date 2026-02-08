@@ -6,11 +6,11 @@ interface InvoicesStore {
     invoices: Invoice[];
     isLoading: boolean;
     error: string | null;
-    fetchInvoices: (walletId?: string) => Promise<void>;
+    fetchInvoices: (walletId?: string, showLoading?: boolean) => Promise<void>;
     addInvoice: (invoice: CreateInvoiceInput) => Promise<void>;
     getInvoice: (id: string) => Invoice | undefined;
     addPayment: (invoiceId: string, payment: Payment) => Promise<void>;
-    updatePaymentStatus: (invoiceId: string, paymentId: string | bigint, status: 'pending' | 'committed' | 'executed' | 'expired') => Promise<void>;
+    updatePaymentStatus: (invoiceId: string, paymentId: string | bigint, status: 'pending_signature' | 'pending' | 'committed' | 'executed' | 'expired') => Promise<void>;
 }
 
 export const useInvoicesStore = create<InvoicesStore>((set, get) => ({
@@ -18,10 +18,12 @@ export const useInvoicesStore = create<InvoicesStore>((set, get) => ({
     isLoading: false,
     error: null,
 
-    fetchInvoices: async (walletId?: string) => {
-        set({ isLoading: true, error: null });
+    fetchInvoices: async (walletId?: string, showLoading = true) => {
+        if (showLoading) set({ isLoading: true, error: null });
         try {
-            const url = walletId ? `/api/invoices?walletId=${walletId}` : '/api/invoices';
+            // Lowercase the walletId to match how it's stored in the database
+            const normalizedWalletId = walletId?.toLowerCase();
+            const url = normalizedWalletId ? `/api/invoices?walletId=${normalizedWalletId}` : '/api/invoices';
             const response = await fetch(url, { cache: 'no-store' });
             if (!response.ok) throw new Error('Failed to fetch invoices');
 
@@ -112,7 +114,7 @@ export const useInvoicesStore = create<InvoicesStore>((set, get) => ({
         }
     },
 
-    updatePaymentStatus: async (invoiceId: string, paymentId: string | bigint, status: 'pending' | 'committed' | 'executed' | 'expired') => {
+    updatePaymentStatus: async (invoiceId: string, paymentId: string | bigint, status: 'pending_signature' | 'pending' | 'committed' | 'executed' | 'expired') => {
         set({ isLoading: true, error: null });
         try {
             const invoice = get().invoices.find(inv => inv.id === invoiceId);
