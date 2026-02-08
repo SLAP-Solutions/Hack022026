@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -44,6 +44,20 @@ export default function InvoiceDetailPage() {
     const { payments: livePayments } = usePayments();
     const [isRiskModalOpen, setIsRiskModalOpen] = useState(false);
     const [isPaymentSidebarOpen, setIsPaymentSidebarOpen] = useState(false);
+    const [refreshTimer, setRefreshTimer] = useState(10);
+
+    // Reset timer when payments update
+    useEffect(() => {
+        setRefreshTimer(10);
+    }, [livePayments]);
+
+    // Countdown timer
+    useEffect(() => {
+        const interval = setInterval(() => {
+            setRefreshTimer((prev) => (prev > 0 ? prev - 1 : 0));
+        }, 1000);
+        return () => clearInterval(interval);
+    }, []);
 
     const handlePaymentSuccess = async (paymentId?: string) => {
         if (!paymentId) {
@@ -102,7 +116,36 @@ export default function InvoiceDetailPage() {
         );
     }
 
-    const statusInfo = statusConfig[invoice.status as keyof typeof statusConfig];
+    // Derive status based on live payments (matches InvoicesPage logic)
+    const updatedPayments = invoice.payments?.map(payment => {
+        const livePayment = livePayments.find(p => p.id === Number(payment.id));
+        if (livePayment) {
+            return {
+                ...payment,
+                status: (livePayment.executed ? 'executed' : 'pending') as 'pending' | 'executed',
+                executed: livePayment.executed,
+                executedAt: BigInt(livePayment.executedAt),
+            };
+        }
+        return {
+            ...payment,
+            status: (payment.executed ? 'executed' : 'pending') as 'pending' | 'executed',
+        };
+    }) || [];
+
+    let computedStatus = invoice.status;
+    if (updatedPayments.length > 0) {
+        const allExecuted = updatedPayments.every(p => p.status === 'executed');
+
+        if (allExecuted) {
+            computedStatus = 'settled';
+        } else {
+            const someExecuted = updatedPayments.some(p => p.status === 'executed');
+            computedStatus = someExecuted ? 'processing' : 'pending';
+        }
+    }
+
+    const statusInfo = statusConfig[computedStatus as keyof typeof statusConfig] || statusConfig.pending;
 
     return (
         <div className="max-w-7xl mx-auto space-y-6 p-6">
@@ -127,7 +170,7 @@ export default function InvoiceDetailPage() {
                                         {invoice.id}
                                     </Badge>
                                     <Badge className={cn("text-xs border", statusInfo.color)}>
-                                        {invoice.status.toUpperCase()}
+                                        {computedStatus.toUpperCase()}
                                     </Badge>
                                 </div>
                                 <h1 className="text-4xl font-bold font-serif mb-2">
@@ -228,6 +271,9 @@ export default function InvoiceDetailPage() {
                             <Badge variant="secondary">{invoice.payments.length}</Badge>
                         </div>
                         <div className="flex gap-2">
+                            <span className="text-xs text-muted-foreground self-center mr-2">
+                                Refreshes in {refreshTimer}s
+                            </span>
                             <Button
                                 variant="outline"
                                 onClick={() => setIsRiskModalOpen(true)}

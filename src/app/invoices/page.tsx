@@ -32,6 +32,10 @@ export default function InvoicesPage() {
     useEffect(() => {
         if (address) {
             fetchInvoices(address);
+            const interval = setInterval(() => {
+                fetchInvoices(address, false);
+            }, 10000);
+            return () => clearInterval(interval);
         }
     }, [fetchInvoices, address]);
 

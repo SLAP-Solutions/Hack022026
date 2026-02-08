@@ -6,7 +6,7 @@ interface InvoicesStore {
     invoices: Invoice[];
     isLoading: boolean;
     error: string | null;
-    fetchInvoices: (walletId?: string) => Promise<void>;
+    fetchInvoices: (walletId?: string, showLoading?: boolean) => Promise<void>;
     addInvoice: (invoice: CreateInvoiceInput) => Promise<void>;
     getInvoice: (id: string) => Invoice | undefined;
     addPayment: (invoiceId: string, payment: Payment) => Promise<void>;
@@ -18,8 +18,8 @@ export const useInvoicesStore = create<InvoicesStore>((set, get) => ({
     isLoading: false,
     error: null,
 
-    fetchInvoices: async (walletId?: string) => {
-        set({ isLoading: true, error: null });
+    fetchInvoices: async (walletId?: string, showLoading = true) => {
+        if (showLoading) set({ isLoading: true, error: null });
         try {
             const url = walletId ? `/api/invoices?walletId=${walletId}` : '/api/invoices';
             const response = await fetch(url);

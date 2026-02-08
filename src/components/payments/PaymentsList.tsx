@@ -48,7 +48,7 @@ export function PaymentsList({ payments, isLoading, onRefresh, paymentToInvoiceM
 
     return (
         <div>
-            <div className="flex flex-col sm:flex-row gap-4 mb-4 justify-between items-start sm:items-center">
+            <div className="flex flex-col sm:flex-row gap-4 mb-4 items-start sm:items-center">
                 <div className="flex gap-2">
                     <Button
                         onClick={() => setFilter("all")}
@@ -73,7 +73,7 @@ export function PaymentsList({ payments, isLoading, onRefresh, paymentToInvoiceM
                     </Button>
                 </div>
 
-                <div className="w-full sm:w-[300px] sm:ml-auto">
+                <div className="w-full sm:w-[300px]">
                     <Select value={invoiceFilter} onValueChange={setInvoiceFilter}>
                         <SelectTrigger>
                             <SelectValue placeholder="Filter by Invoice" />
