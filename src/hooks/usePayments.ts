@@ -101,7 +101,7 @@ export function usePayments() {
             if (cancelled) return;
             await fetchPayments(false);
             if (!cancelled) {
-                timeoutId = setTimeout(poll, 2000);
+                timeoutId = setTimeout(poll, 10000);
             }
         };
 
@@ -109,7 +109,7 @@ export function usePayments() {
         const init = async () => {
             await fetchPayments(!hasFetchedOnce.current);
             if (!cancelled) {
-                timeoutId = setTimeout(poll, 2000);
+                timeoutId = setTimeout(poll, 10000);
             }
         };
 
