@@ -38,15 +38,15 @@ export function PaymentCard({ payment, onRefresh }: PaymentCardProps) {
     // Determine payment type
     // Instant payments have stopLoss === takeProfit (both set to current price at creation)
     // Trigger payments have different stopLoss and takeProfit values
-    const stopLossBigInt = typeof payment.stopLossPrice === 'bigint' 
-        ? payment.stopLossPrice 
+    const stopLossBigInt = typeof payment.stopLossPrice === 'bigint'
+        ? payment.stopLossPrice
         : BigInt(Math.floor(payment.stopLossPrice || 0));
-    const takeProfitBigInt = typeof payment.takeProfitPrice === 'bigint' 
-        ? payment.takeProfitPrice 
+    const takeProfitBigInt = typeof payment.takeProfitPrice === 'bigint'
+        ? payment.takeProfitPrice
         : BigInt(Math.floor(payment.takeProfitPrice || 0));
-    
+
     const isInstantPayment = stopLossBigInt === takeProfitBigInt;
-    
+
     const decimals = 3;
     const multiplier = Math.pow(10, decimals);
     const stopLoss = Number(payment.stopLossPrice) / multiplier;
@@ -54,7 +54,7 @@ export function PaymentCard({ payment, onRefresh }: PaymentCardProps) {
 
     const handleExecute = async (e: React.MouseEvent) => {
         e.stopPropagation(); // Prevent opening modal if clicking button inside interactive area
-        
+
         // Determine if triggers are hit
         const current = payment.currentPrice / Math.pow(10, 3);
         const stopLoss = Number(payment.stopLossPrice) / Math.pow(10, 3);
@@ -62,7 +62,7 @@ export function PaymentCard({ payment, onRefresh }: PaymentCardProps) {
         const stopLossHit = current > 0 && current <= stopLoss;
         const takeProfitHit = current > 0 && current >= takeProfit;
         const canExecute = !payment.executed && (stopLossHit || takeProfitHit);
-        
+
         try {
             if (canExecute) {
                 // Triggers hit - normal execution
@@ -191,7 +191,7 @@ export function PaymentCard({ payment, onRefresh }: PaymentCardProps) {
                                     : "bg-purple-100 text-purple-800 border-purple-300"
                             )}
                         >
-                            {isInstantPayment ? "Instant" :  "Trigger"}
+                            {isInstantPayment ? "Instant" : "Trigger"}
                         </Badge>
                         <Badge
                             variant="outline"
@@ -217,9 +217,9 @@ export function PaymentCard({ payment, onRefresh }: PaymentCardProps) {
                                 onClick={() => setIsModalOpen(true)}
                             >
                                 <div className="flex justify-between text-xs mb-1">
-                                    <span className="text-red-600 font-medium">SL: ${stopLoss.toFixed(2)}</span>
+                                    <span className="text-red-600 font-medium">LB: ${stopLoss.toFixed(2)}</span>
                                     <span className="text-muted-foreground font-medium text-[10px]">Created: ${createdAtPrice.toFixed(2)}</span>
-                                    <span className="text-green-600 font-medium">TP: ${takeProfit.toFixed(2)}</span>
+                                    <span className="text-green-600 font-medium">UB: ${takeProfit.toFixed(2)}</span>
                                 </div>
                                 <div className="w-full bg-muted rounded-full h-3 relative overflow-hidden ring-1 ring-transparent group-hover:ring-primary/20 transition-all">
                                     <div
@@ -283,12 +283,12 @@ export function PaymentCard({ payment, onRefresh }: PaymentCardProps) {
 
                                 {!isInstantPayment && (
                                     <>
-                                        <span className="text-muted-foreground mt-3">If Stop Loss Hit:</span>
+                                        <span className="text-muted-foreground mt-3">If Lower Bound Hit:</span>
                                         <span className="font-mono text-right text-red-600 mt-3">
                                             {(usdAmountDollars / stopLoss).toFixed(6)} {ticker}
                                         </span>
 
-                                        <span className="text-muted-foreground">If Take Profit Hit:</span>
+                                        <span className="text-muted-foreground">If Upper Bound Hit:</span>
                                         <span className="font-mono text-right text-green-600">
                                             {(usdAmountDollars / takeProfit).toFixed(6)} {ticker}
                                         </span>
@@ -320,7 +320,7 @@ export function PaymentCard({ payment, onRefresh }: PaymentCardProps) {
                                     const difference = wouldHavePaid - actualPaid;
                                     const percentageSaved = wouldHavePaid > 0 ? (difference / wouldHavePaid) * 100 : 0;
                                     const isSavings = difference > 0;
-                                    
+
                                     return (
                                         <>
                                             <span className="text-muted-foreground">Price at Creation:</span>
