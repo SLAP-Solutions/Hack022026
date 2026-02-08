@@ -431,7 +431,7 @@ export function CreatePaymentForm({ onSuccess, invoiceId }: CreatePaymentFormPro
                         <div className="grid grid-cols-2 gap-2 text-sm">
                             <span className="text-muted-foreground">Collateral Required:</span>
                             <span className="font-semibold text-right">
-                                {parseFloat(requiredCollateralEth).toFixed(6)} FLR
+                                {parseFloat(requiredCollateralEth).toFixed(6)} {ticker}
                             </span>
 
                             {mode === "trigger" && (
