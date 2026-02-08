@@ -8,10 +8,11 @@ export interface Payment {
     receiver: string;               // Beneficiary receiving the payment (address)
     usdAmount: number;              // USD value to pay (stored as decimal: $1000.50 = 1000.50)
     cryptoFeedId: string;           // FTSO feed ID for payment crypto (e.g., BTC/USD) - bytes21 as hex string
-    stopLossPrice: number;          // Lower limit: execute if price drops to this (stored as decimal)
-    takeProfitPrice: number;        // Upper limit: execute when price reaches this (stored as decimal)
+    stopLossPrice: bigint;          // Lower limit: execute if price drops to this (stored as decimal)
+    takeProfitPrice: bigint;        // Upper limit: execute when price reaches this (stored as decimal)
     collateralAmount: bigint;       // Native FLR locked as collateral & gas reserve
     createdAt: bigint;              // Block timestamp when payment was created
+    createdAtPrice: bigint;         // Crypto price at time of creation
     expiresAt: bigint;              // Deadline timestamp - payment cannot execute after this
     executed: boolean;              // Whether payment has been completed
     executedAt: bigint;             // Block timestamp when payment was executed (0 if not executed)

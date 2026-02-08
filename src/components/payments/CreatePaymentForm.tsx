@@ -21,7 +21,7 @@ import { PriceHistoryModal } from "./PriceHistoryModal";
 type PaymentMode = "trigger" | "instant";
 
 interface CreatePaymentFormProps {
-    onSuccess?: () => void;
+    onSuccess?: (paymentId?: string) => void;
 }
 
 export function CreatePaymentForm({ onSuccess }: CreatePaymentFormProps) {
@@ -65,47 +65,6 @@ export function CreatePaymentForm({ onSuccess }: CreatePaymentFormProps) {
         }).catch(console.error);
     }, [feed]);
 
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!currentPrice) {
-            alert("Waiting for price data...");
-            return;
-        }
-
-        const usdCents = Math.floor(parseFloat(usdAmount) * 100);
-
-        try {
-            if (mode === "instant") {
-                const collateralWei = calculateInstantCollateral();
-                const collateralEth = ethers.formatEther(collateralWei.toString());
-
-                await createInstantPayment(receiver, usdCents, feed, collateralEth);
-                alert("✅ Instant payment executed successfully!");
-            } else {
-                const stopLoss = BigInt(Math.floor(currentPrice * (1 + stopLossPercent / 100)));
-                const takeProfit = BigInt(Math.floor(currentPrice * (1 + takeProfitPercent / 100)));
-                const collateralWei = calculateRequiredCollateral(stopLoss);
-                const collateralEth = ethers.formatEther(collateralWei.toString());
-
-                await createClaimPayment(receiver, usdCents, feed, stopLoss, takeProfit, expiryDays, collateralEth);
-                alert("✅ Trigger-based payment created successfully!");
-            }
-
-            // Reset form
-            setReceiver("");
-            setUsdAmount("10");
-
-            // Call success callback if provided
-            onSuccess?.();
-        } catch (error: any) {
-            console.error(error);
-            alert(`Failed: ${error.message || "Unknown error"}`);
-        }
-    };
-
-    const stopLossPrice = currentPrice ? currentPrice * (1 + stopLossPercent / 100) : 0;
-    const takeProfitPrice = currentPrice ? currentPrice * (1 + takeProfitPercent / 100) : 0;
-
     const calculateRequiredCollateral = (stopLoss: bigint) => {
         if (!usdAmount || stopLoss <= BigInt(0)) return BigInt(0);
 
@@ -136,6 +95,46 @@ export function CreatePaymentForm({ onSuccess }: CreatePaymentFormProps) {
         const decimalsMultiplier = Math.pow(10, decimals);
         return BigInt(Math.floor((usdCents * 1e18 * decimalsMultiplier) / (price * 100)));
     };
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!currentPrice) {
+            alert("Waiting for price data...");
+            return;
+        }
+
+        const usdCents = Math.floor(parseFloat(usdAmount) * 100);
+
+        try {
+            if (mode === "instant") {
+                const collateralWei = calculateInstantCollateral();
+                const collateralEth = ethers.formatEther(collateralWei.toString());
+
+                const result = await createInstantPayment(receiver, usdCents, feed, collateralEth);
+                alert("✅ Instant payment executed successfully!");
+                onSuccess?.(result.paymentId);
+            } else {
+                const stopLoss = BigInt(Math.floor(currentPrice * (1 + stopLossPercent / 100)));
+                const takeProfit = BigInt(Math.floor(currentPrice * (1 + takeProfitPercent / 100)));
+                const collateralWei = calculateRequiredCollateral(stopLoss);
+                const collateralEth = ethers.formatEther(collateralWei.toString());
+
+                const result = await createClaimPayment(receiver, usdCents, feed, stopLoss, takeProfit, expiryDays, collateralEth);
+                alert("✅ Trigger-based payment created successfully!");
+                onSuccess?.(result.paymentId);
+            }
+
+            // Reset form
+            setReceiver("");
+            setUsdAmount("10");
+        } catch (error: any) {
+            console.error(error);
+            alert(`Failed: ${error.message || "Unknown error"}`);
+        }
+    };
+
+    const stopLossPrice = currentPrice ? currentPrice * (1 + stopLossPercent / 100) : 0;
+    const takeProfitPrice = currentPrice ? currentPrice * (1 + takeProfitPercent / 100) : 0;
 
     const requiredCollateralWei = mode === "instant"
         ? calculateInstantCollateral()
@@ -175,7 +174,6 @@ export function CreatePaymentForm({ onSuccess }: CreatePaymentFormProps) {
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-4">
-                {/* Receiver address */}
                 {/* Receiver address */}
                 <div className="space-y-2">
                     <div className="flex justify-between items-center">
