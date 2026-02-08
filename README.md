@@ -34,6 +34,15 @@ Similar to how escrow accounts hold funds in high-interest accounts to maximize 
 - **DAOs** - Execute treasury payments at best market conditions
 - **Anyone** - Hold payment obligations and release at optimal prices
 
+### 🤝 Trust & Web2 Business Benefits
+
+Slapsure isn't just for crypto-native users. It provides fundamental improvements for traditional Web2 business operations:
+
+- **Verifiable Proof of Funds**: Locking collateral acts as a "Proof of Payment Capability." Recipients can see the funds are secured by code, eliminating payment uncertainty.
+- **Cheaper International Fees**: Bypass traditional bank wire markups and SWIFT fees by settling on the Flare network.
+- **Definite Promise to Pay**: Unlike a credit card authorization or check, a Slapsure payment is a cryptographically secured guarantee of settlement.
+- **24/7 Settlement**: Automated execution triggers can settle payments on weekends or holidays, instantly.
+
 ## 🎯 How It Works
 
 1. **Create Invoice/Payment** - Enter USD amount owed, choose payment crypto (ETH, BTC, etc.)

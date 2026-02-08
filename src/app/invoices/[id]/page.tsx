@@ -50,14 +50,14 @@ export default function InvoiceDetailPage() {
     const { payments: livePayments } = usePayments();
     const [isPaymentSidebarOpen, setIsPaymentSidebarOpen] = useState(false);
     const [isExposureModalOpen, setIsExposureModalOpen] = useState(false);
-    const [refreshTimer, setRefreshTimer] = useState(2);
+    const [refreshTimer, setRefreshTimer] = useState(5);
     const [isEditingDueDate, setIsEditingDueDate] = useState(false);
     const [dueDate, setDueDate] = useState<string>('');
     const [isLoading, setIsLoading] = useState(false);
 
     // Reset timer when payments update
     useEffect(() => {
-        setRefreshTimer(2);
+        setRefreshTimer(5);
     }, [livePayments]);
 
     // Countdown timer

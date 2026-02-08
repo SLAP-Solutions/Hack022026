@@ -27,11 +27,11 @@ export default function PaymentsPage() {
     const { invoices, fetchInvoices } = useInvoicesStore();
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [activeTab, setActiveTab] = useState<TabType>("payments");
-    const [refreshTimer, setRefreshTimer] = useState(2);
+    const [refreshTimer, setRefreshTimer] = useState(5);
 
     // Reset timer when payments update
     useEffect(() => {
-        setRefreshTimer(2);
+        setRefreshTimer(5);
     }, [payments]);
 
     // Countdown timer
