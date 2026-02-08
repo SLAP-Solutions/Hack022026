@@ -377,7 +377,7 @@ export function PaymentCard({ payment, onRefresh }: PaymentCardProps) {
                         className="w-full"
                         variant={canExecute || isInstantPayment ? "default" : "secondary"}
                     >
-                        {isLoading ? "Executing..." : isInstantPayment ? "💰 Execute Payment" : canExecute ? "⚡ Execute Payment" : "Pay Now (Early)"}
+                        {isLoading ? "Executing..." : isInstantPayment ? "Execute Payment" : canExecute ? "Execute Payment" : "Pay Now (Early)"}
                     </Button>
                 )}
 
