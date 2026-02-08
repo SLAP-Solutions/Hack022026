@@ -65,8 +65,8 @@ export function AppSidebar() {
               alt="SLAPSure Logo"
               width={120}
               height={32}
-              className="h-8 w-auto object-contain group-data-[collapsible=icon]:hidden"
-              style={{ maxHeight: '32px', height: '32px' }}
+              className="h-8 w-[170px] object-contain group-data-[collapsible=icon]:hidden"
+              style={{ width: '170px', height: '50px' }}
               priority
             />
             <Image
