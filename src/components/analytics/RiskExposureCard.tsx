@@ -26,30 +26,50 @@ export function RiskExposureCard({ claims, title = "Overall Payment Estate", var
     const [graphRange, setGraphRange] = useState<'1H' | '24H' | '1W' | '1M' | '3M' | '1Y' | 'ALL'>('1M');
 
     // Calculate Estate Aggregates
-    const filteredClaimsForEstate = useMemo(() => {
-        if (estateFilter === 'combined') return claims;
-
-        return claims.map(claim => ({
-            ...claim,
-            payments: claim.payments?.filter((p: any) => {
-                if (estateFilter === 'active') return p.status === 'pending';
-                if (estateFilter === 'closed') return ['executed', 'expired'].includes(p.status);
-                return true;
-            }) || []
-        }));
-    }, [estateFilter, claims]);
-
     const estateAggregates = useMemo(() => {
-        return filteredClaimsForEstate.reduce((acc, claim) => {
-            const claimPayments = claim.payments || [];
+        // Handle both flat payments array and nested invoices
+        const allPayments = claims.some(c => c.payments)
+            ? claims.flatMap(c => c.payments || [])
+            : claims;
 
-            acc.lower += claimPayments.reduce((sum: number, p: any) => sum + (Number(p.stopLossPrice) / 100), 0);
-            acc.current += claimPayments.reduce((sum: number, p: any) => sum + (Number(p.usdAmount) / 100), 0);
-            acc.upper += claimPayments.reduce((sum: number, p: any) => sum + (Number(p.takeProfitPrice) / 100), 0);
+        const filtered = allPayments.filter((p: any) => {
+            if (estateFilter === 'active') return !p.executed;
+            if (estateFilter === 'closed') return p.executed;
+            return true;
+        });
+
+        const multiplier = 1000; // 3 decimals for prices
+
+        return filtered.reduce((acc, p) => {
+            const usdDollars = Number(p.usdAmount) / 100;
+            const slPrice = Number(p.stopLossPrice) / multiplier;
+            const tpPrice = Number(p.takeProfitPrice) / multiplier;
+            const currentPrice = Number(p.currentPrice) / multiplier || 0;
+
+            acc.current += usdDollars;
+
+            // Goal of this visualization: 
+            // Current = Total USD we pay
+            // LB = Total value of tokens if forced to execute at Lower Bound (relative to current price)
+            // UB = Total value of tokens if executed at Upper Bound (relative to current price)
+
+            if (slPrice > 0 && currentPrice > 0) {
+                // tokens_needed = dollars / sl_price
+                // current_value_of_those_tokens = tokens_needed * current_price
+                acc.lower += (usdDollars / slPrice) * currentPrice;
+            } else {
+                acc.lower += usdDollars;
+            }
+
+            if (tpPrice > 0 && currentPrice > 0) {
+                acc.upper += (usdDollars / tpPrice) * currentPrice;
+            } else {
+                acc.upper += usdDollars;
+            }
 
             return acc;
         }, { lower: 0, current: 0, upper: 0 });
-    }, [filteredClaimsForEstate]);
+    }, [estateFilter, claims]);
 
     const totalLowerBound = estateAggregates.lower;
     const totalEstateCurrent = estateAggregates.current;
@@ -118,36 +138,36 @@ export function RiskExposureCard({ claims, title = "Overall Payment Estate", var
 
             <div className="flex justify-between items-end">
                 <div>
-                    <p className="text-xs text-muted-foreground mb-1">Total Lower Bound (Stop Loss)</p>
+                    <p className="text-xs text-muted-foreground mb-1">Max Cost Exposure (LB)</p>
                     <p className="font-mono font-bold text-lg text-red-600">${totalLowerBound.toLocaleString(undefined, { minimumFractionDigits: 2 })}</p>
                 </div>
                 <div className="text-center">
-                    <p className="text-xs text-muted-foreground mb-1">Total Current Value</p>
+                    <p className="text-xs text-muted-foreground mb-1">Total Fixed Obligation</p>
                     <p className="font-mono font-bold text-3xl text-primary">${totalEstateCurrent.toLocaleString(undefined, { minimumFractionDigits: 2 })}</p>
                 </div>
                 <div className="text-right">
-                    <p className="text-xs text-muted-foreground mb-1">Total Upper Bound (Take Profit)</p>
+                    <p className="text-xs text-muted-foreground mb-1">Min Cost Advantage (UB)</p>
                     <p className="font-mono font-bold text-lg text-green-600">${totalUpperBound.toLocaleString(undefined, { minimumFractionDigits: 2 })}</p>
                 </div>
             </div>
 
             <div className="pt-2 pb-6">
                 <Slider
-                    defaultValue={[totalLowerBound + (totalUpperBound - totalLowerBound) * 0.5]} // Mock position for now as we don't have real-time price feeds for all
-                    value={[totalEstateCurrent]}
-                    max={totalUpperBound || 100} // Prevent 0 max
-                    min={totalLowerBound}
+                    defaultValue={[50]}
+                    value={[totalEstateCurrent > 0 ? ((totalLowerBound - totalEstateCurrent) / (totalLowerBound - totalUpperBound) * 100) : 50]}
+                    max={100}
+                    min={0}
                     step={0.01}
                     disabled
                     className="opacity-100"
                     trackClassName="bg-gradient-to-r from-red-500 via-yellow-400 to-green-500 h-4"
                     rangeClassName="opacity-0"
-                    thumbContent="Current"
+                    thumbContent="You"
                 />
-                <div className="flex justify-between mt-2 text-xs text-muted-foreground">
-                    <span>High Risk Zone</span>
-                    <span>Optimal Zone</span>
-                    <span>Profit Zone</span>
+                <div className="flex justify-between mt-2 text-[10px] text-muted-foreground uppercase font-bold tracking-wider">
+                    <span className="text-red-600/80">Cost Ceiling</span>
+                    <span>Neutral</span>
+                    <span className="text-green-600/80">Market Advantage</span>
                 </div>
             </div>
 
@@ -195,7 +215,7 @@ export function RiskExposureCard({ claims, title = "Overall Payment Estate", var
                             <Line
                                 type="monotone"
                                 dataKey="upper"
-                                name="Upper Bound (Take Profit)"
+                                name="Market Advantage Projection"
                                 stroke="#22c55e"
                                 strokeWidth={2}
                                 dot={false}
@@ -212,7 +232,7 @@ export function RiskExposureCard({ claims, title = "Overall Payment Estate", var
                             <Line
                                 type="monotone"
                                 dataKey="lower"
-                                name="Lower Bound (Stop Loss)"
+                                name="Max Exposure"
                                 stroke="#ef4444"
                                 strokeWidth={2}
                                 dot={false}
@@ -230,7 +250,7 @@ export function RiskExposureCard({ claims, title = "Overall Payment Estate", var
     }
 
     return (
-        <Card className="border-2 border-primary/10 bg-gradient-to-br from-background to-primary/5">
+        <Card className="border-2 border-primary/10 bg-white">
             <CardHeader>
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                     <div className="flex items-center gap-2">

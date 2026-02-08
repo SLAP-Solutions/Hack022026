@@ -19,15 +19,79 @@ import { MetricCard } from "@/components/analytics/MetricCard";
 import { ExposureSummary } from "@/components/analytics/ExposureSummary";
 import { PaymentsBreakdown } from "@/components/analytics/PaymentsBreakdown";
 import { AverageSavingsCard } from "@/components/analytics/AverageSavingsCard";
+import { useInvoicesStore } from "@/stores/useInvoicesStore";
+import { useState, useEffect, useMemo } from "react";
 
 export default function Home() {
   const { address, isConnected, isInitializing } = useWallet();
   const { payments, isLoading: paymentsLoading } = usePayments();
   const { prices, refresh: refreshPrices } = useFTSOPrices();
-  
+  const { invoices, fetchInvoices, isLoading: invoicesLoading, error: storeError } = useInvoicesStore();
+  const [activeTab, setActiveTab] = useState<"invoices" | "payments">("invoices");
+
+  useEffect(() => {
+    if (address) {
+      fetchInvoices(address);
+    }
+  }, [address, fetchInvoices]);
+
+  // Calculate Statistics
+  const stats = useMemo(() => {
+    const totalInvoices = invoices.length;
+    const activeInvoices = invoices.filter(c => ['pending', 'processing', 'approved'].includes(c.status)).length;
+    const settledInvoices = invoices.filter(c => c.status === 'settled').length;
+
+    // Only pending payments are "Active Deposits" (locked collateral)
+    const activeDepositsUSD = payments
+      .filter(p => !p.executed)
+      .reduce((acc, p) => acc + (Number(p.usdAmount) / 100), 0);
+
+    const executedPayments = payments.filter(p => p.executed).length;
+    const pendingPayments = payments.filter(p => !p.executed).length;
+
+    return {
+      totalInvoices,
+      activeInvoices,
+      settledInvoices,
+      activeDepositsUSD,
+      executedPayments,
+      pendingPayments,
+    };
+  }, [invoices, payments]);
+
+  // Chart Data for Invoices
+  const statusDistribution = useMemo(() => [
+    { name: 'Pending', value: invoices.filter(c => c.status === 'pending').length, color: '#f59e0b' },
+    { name: 'Processing', value: invoices.filter(c => c.status === 'processing').length, color: '#ec4899' },
+    { name: 'Approved', value: invoices.filter(c => c.status === 'approved').length, color: '#22c55e' },
+    { name: 'Settled', value: invoices.filter(c => c.status === 'settled').length, color: '#10b981' },
+    { name: 'Rejected', value: invoices.filter(c => c.status === 'rejected').length, color: '#ef4444' },
+  ].filter(item => item.value > 0), [invoices]);
+
+  const invoicesByTotalCost = useMemo(() => invoices.map(invoice => ({
+    name: invoice.title.length > 15 ? invoice.title.substring(0, 15) + '...' : invoice.title,
+    cost: (invoice.totalCost || (invoice.payments?.reduce((acc, p) => acc + Number(p.usdAmount), 0) || 0)) / 100,
+  })).sort((a, b) => b.cost - a.cost).slice(0, 5), [invoices]);
+
+  // Payment performance data derived from real payments
+  const performanceData = useMemo(() => {
+    const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const data = days.map(name => ({ name, value: 0 }));
+
+    payments.forEach(p => {
+      const date = new Date(Number(p.createdAt) * 1000);
+      const dayIndex = date.getDay();
+      data[dayIndex].value += Number(p.usdAmount) / 100;
+    });
+
+    // If no real data yet, provide a slight "baseline" to make it look active
+    // but clearly marked as real data if it shows 0
+    return data;
+  }, [payments]);
+
   // Calculate all payment metrics
   const metrics = usePaymentMetrics(payments);
-  
+
   // Calculate processed payment value for breakdown
   const processedValue = metrics.processedPayments.reduce(
     (acc, p) => acc + p.usdAmount / 100,
