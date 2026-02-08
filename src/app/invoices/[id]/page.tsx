@@ -148,7 +148,7 @@ export default function InvoiceDetailPage() {
                                 <span className="text-xs font-medium uppercase tracking-wider">Total Cost</span>
                             </div>
                             <div className="text-4xl font-bold bg-gradient-to-r from-primary to-primary/90 bg-clip-text text-transparent">
-                                ${(invoice.payments?.reduce((acc: number, payment: any) => acc + Number(payment.usdAmount), 0) || 0).toFixed(2)}
+                                ${((invoice.payments?.reduce((acc: number, payment: any) => acc + Number(payment.usdAmount), 0) || 0) / 100).toFixed(2)}
                             </div>
                         </div>
                     </CardContent>

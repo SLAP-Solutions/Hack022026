@@ -271,7 +271,7 @@ export function CreatePaymentForm({ onSuccess }: CreatePaymentFormProps) {
                         </div>
                         <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-2">
-                                <Label htmlFor="stopLoss">Stop Loss Price ($)</Label>
+                                <Label htmlFor="stopLoss">Lower bound price ($)</Label>
                                 <div className="space-y-1">
                                     <Input
                                         id="stopLoss"
@@ -299,7 +299,7 @@ export function CreatePaymentForm({ onSuccess }: CreatePaymentFormProps) {
                             </div>
 
                             <div className="space-y-2">
-                                <Label htmlFor="takeProfit">Take Profit Price ($)</Label>
+                                <Label htmlFor="takeProfit">Upper bound price ($)</Label>
                                 <div className="space-y-1">
                                     <Input
                                         id="takeProfit"

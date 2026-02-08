@@ -136,7 +136,7 @@ export function InvoiceCard(props: InvoiceCardProps) {
                                                 <div>
                                                     <p className="text-xs text-muted-foreground">Amount</p>
                                                     <p className="font-semibold">
-                                                        ${Number(payment.usdAmount).toFixed(2)} ({payment.cryptoSymbol})
+                                                        ${(Number(payment.usdAmount) / 100).toFixed(2)} ({payment.cryptoSymbol})
                                                     </p>
                                                 </div>
                                                 <div>

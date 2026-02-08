@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { useInvoicesStore } from "@/stores/useInvoicesStore";
 import { useWallet } from "@/hooks/useWallet";
+import { usePayments } from "@/hooks/usePayments";
 import { Loader2, Plus } from "lucide-react";
 import { Invoice } from "@/types/invoice";
 import { CreateInvoiceModal } from "@/components/modals/CreateInvoiceModal";
@@ -22,6 +23,7 @@ const statusConfig = {
 
 export default function InvoicesPage() {
     const { invoices, isLoading, fetchInvoices } = useInvoicesStore();
+    const { payments: livePayments } = usePayments();
     const { address } = useWallet();
     const [filter, setFilter] = useState<string>("all");
     const [isCreateOpen, setIsCreateOpen] = useState(false);
@@ -33,9 +35,25 @@ export default function InvoicesPage() {
         }
     }, [fetchInvoices, address]);
 
+    // Merge live payment status into invoices
+    const mergedInvoices = invoices.map(invoice => ({
+        ...invoice,
+        payments: invoice.payments?.map(payment => {
+            const livePayment = livePayments.find(p => p.id === Number(payment.id));
+            if (livePayment) {
+                return {
+                    ...payment,
+                    status: (livePayment.executed ? 'executed' : 'pending') as 'pending' | 'executed',
+                    executedAt: BigInt(livePayment.executedAt),
+                };
+            }
+            return payment;
+        }) || []
+    }));
+
     const filteredInvoices = filter === "all"
-        ? invoices
-        : invoices.filter(invoice => invoice.status === filter);
+        ? mergedInvoices
+        : mergedInvoices.filter(invoice => invoice.status === filter);
 
     if (isLoading && invoices.length === 0) {
         return (
@@ -98,7 +116,7 @@ export default function InvoicesPage() {
                                 claimantName={invoice.claimantName}
                                 type={invoice.type}
                                 status={invoice.status as any}
-                                totalCost={invoice.payments?.reduce((acc: number, p: any) => acc + Number(p.usdAmount), 0) || 0}
+                                totalCost={(invoice.payments?.reduce((acc: number, p: any) => acc + Number(p.usdAmount), 0) || 0) / 100}
                                 dateCreated={invoice.dateCreated as string}
                                 dateSettled={invoice.dateSettled as string}
                                 payments={invoice.payments as any}
